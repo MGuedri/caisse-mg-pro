@@ -95,7 +95,7 @@ export const POSScreen: React.FC = () => {
               <CardContent className="p-4 text-center">
                 <div className="text-4xl mb-2">{product.icon}</div>
                 <h3 className="font-semibold text-white mb-1 truncate">{product.name}</h3>
-                <p className="text-orange-500 font-bold text-lg">{product.price.toFixed(2)} DT</p>
+                <p className="text-orange-500 font-bold text-lg">{product.price.toFixed(3)} DT</p>
                 <p className="text-gray-400 text-sm">Stock: {product.stock}</p>
               </CardContent>
             </Card>

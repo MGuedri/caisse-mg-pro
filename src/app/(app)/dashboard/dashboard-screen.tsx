@@ -33,9 +33,9 @@ const TotalCreditCard: React.FC = () => {
 
 const TopProductsCard: React.FC = () => {
     const topProducts = [
-        { name: 'Express', sold: 2, color: 'bg-yellow-400' },
-        { name: 'Cappuccin', sold: 2, color: 'bg-gray-400' },
-        { name: 'Cappuccin Noisette', sold: 2, color: 'bg-orange-400' }
+        { name: 'Café express', sold: 2, color: 'bg-yellow-400' },
+        { name: 'Capucin', sold: 2, color: 'bg-gray-400' },
+        { name: 'Thé au menthe', sold: 2, color: 'bg-green-400' }
     ];
 
     return (
@@ -125,7 +125,7 @@ const DataManagementCard: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `caisse-mg-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `caisse-mp-backup-${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -137,7 +137,7 @@ const DataManagementCard: React.FC = () => {
           reader.onload = (e) => {
             try {
               const data = JSON.parse(e.target?.result as string);
-              localStorage.setItem('caisse_mg_data', JSON.stringify(data));
+              localStorage.setItem('caisse_mp_data', JSON.stringify(data));
               window.location.reload();
             } catch (error) {
               alert('Erreur lors de la restauration');

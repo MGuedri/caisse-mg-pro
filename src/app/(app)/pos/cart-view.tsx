@@ -140,7 +140,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
                     </Button>
                   </div>
                   <span className="text-orange-500 font-bold">
-                    {(item.price * item.quantity).toFixed(2)} DT
+                    {(item.price * item.quantity).toFixed(3)} DT
                   </span>
                 </div>
               </CardContent>
@@ -160,7 +160,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
             <div className="space-y-2 mb-4">
               <div className="flex justify-between">
                 <span className="text-gray-300">Sous-total:</span>
-                <span className="text-white">{subtotal.toFixed(2)} DT</span>
+                <span className="text-white">{subtotal.toFixed(3)} DT</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -173,12 +173,12 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
                   />
                   <label htmlFor="vat-toggle" className="text-gray-300 text-sm">TVA (19%)</label>
                 </div>
-                <span className="text-gray-300">{vatAmount.toFixed(2)} DT</span>
+                <span className="text-gray-300">{vatAmount.toFixed(3)} DT</span>
               </div>
               <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-700">
                 <span className="text-lg font-bold text-white">Total:</span>
                 <span className="text-2xl font-bold text-orange-500">
-                  {total.toFixed(2)} DT
+                  {total.toFixed(3)} DT
                 </span>
               </div>
             </div>
@@ -213,7 +213,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
                   
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Total à payer: <span className="text-orange-500 font-bold">{total.toFixed(2)} DT</span>
+                      Total à payer: <span className="text-orange-500 font-bold">{total.toFixed(3)} DT</span>
                     </label>
                     <Input
                       type="number"
@@ -229,7 +229,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
                     <div className="p-3 bg-gray-700 rounded">
                       <p className="text-sm">Monnaie à rendre:</p>
                       <p className="text-xl font-bold text-green-500">
-                        {change.toFixed(2)} DT
+                        {change.toFixed(3)} DT
                       </p>
                     </div>
                   )}

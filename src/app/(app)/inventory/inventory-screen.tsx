@@ -91,7 +91,7 @@ export const InventoryScreen: React.FC = () => {
             <CardContent className="p-4 flex-grow text-center">
               <div className="text-4xl mb-2">{product.icon}</div>
               <h3 className="font-semibold text-white">{product.name}</h3>
-              <p className="text-orange-500 font-bold">{product.price.toFixed(2)} DT</p>
+              <p className="text-orange-500 font-bold">{product.price.toFixed(3)} DT</p>
               <p className="text-gray-400">Stock: {product.stock}</p>
               <Badge variant="outline" className="mt-2 text-gray-400 border-gray-600">{product.category}</Badge>
             </CardContent>
@@ -134,7 +134,7 @@ export const InventoryScreen: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <Input placeholder="Nom" value={formData.name || ''} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} className="bg-gray-700 border-gray-600" />
-            <Input type="number" step="0.01" placeholder="Prix (DT)" value={formData.price || ''} onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))} className="bg-gray-700 border-gray-600" />
+            <Input type="number" step="0.001" placeholder="Prix (DT)" value={formData.price || ''} onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))} className="bg-gray-700 border-gray-600" />
             <Input placeholder="Catégorie" value={formData.category || ''} onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))} className="bg-gray-700 border-gray-600" />
             <Input type="number" placeholder="Stock" value={formData.stock || ''} onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))} className="bg-gray-700 border-gray-600" />
             <Input placeholder="Icône (emoji)" value={formData.icon || ''} onChange={(e) => setFormData(prev => ({ ...prev, icon: e.target.value }))} className="bg-gray-700 border-gray-600" />

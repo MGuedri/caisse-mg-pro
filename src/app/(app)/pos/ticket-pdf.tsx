@@ -27,14 +27,14 @@ export const TicketPDF: React.FC<{ order: Order, commerceName?: string }> = ({ o
           {order.items.map((item, idx) => (
             <View key={idx} style={styles.row}>
               <Text>{item.name} x{item.quantity}</Text>
-              <Text>{(item.price * item.quantity).toFixed(2)} DT</Text>
+              <Text>{(item.price * item.quantity).toFixed(3)} DT</Text>
             </View>
           ))}
 
           <View style={styles.section}>
             <View style={styles.row}>
               <Text style={styles.bold}>Total:</Text>
-              <Text style={styles.bold}>{order.total.toFixed(2)} DT</Text>
+              <Text style={styles.bold}>{order.total.toFixed(3)} DT</Text>
             </View>
           </View>
 
