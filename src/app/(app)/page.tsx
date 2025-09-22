@@ -12,7 +12,6 @@ import {
   Package,
   Users,
   LogOut,
-  Home
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +53,7 @@ const MainApp: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="text-2xl font-bold text-orange-500">MG</div>
-            <nav className="hidden md:flex gap-1">
+            <nav className="flex gap-1">
               {visibleNav.map(item => (
                 <Button
                   key={item.id}
@@ -68,7 +67,7 @@ const MainApp: React.FC = () => {
                   `}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
                 </Button>
               ))}
             </nav>
@@ -89,27 +88,13 @@ const MainApp: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-20 md:pb-0">
+      <main className="flex-1 overflow-auto">
         {currentView === 'pos' && <POSScreen />}
         {currentView === 'dashboard' && <DashboardScreen />}
         {currentView === 'products' && <InventoryScreen />}
         {currentView === 'management' && <ManagementScreen />}
       </main>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 flex justify-around p-2">
-          {visibleNav.map(item => (
-            <Button
-              key={item.id}
-              variant="ghost"
-              onClick={() => setCurrentView(item.id)}
-              className={`flex flex-col items-center h-auto p-1 ${currentView === item.id ? 'text-orange-500' : 'text-gray-400'}`}
-            >
-              <item.icon className="h-6 w-6" />
-              <span className="text-xs mt-1">{item.label}</span>
-            </Button>
-          ))}
-      </nav>
     </div>
   );
 };
