@@ -8,15 +8,15 @@ import { Button } from '@/components/ui/button';
 
 export const LoginScreen: React.FC = () => {
   const { setUser, setCurrentView } = useApp();
-  const [email, setEmail] = useState('admin@caisse-mg.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('mg.06sbz@gmail.com');
+  const [password, setPassword] = useState('06034434mg');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
+    if (email === 'mg.06sbz@gmail.com' && password === '06034434mg') {
       setUser({ 
         id: '1', 
-        name: 'Admin', 
+        name: 'Issam Bayaoui', 
         email, 
         role: 'SuperAdmin',
         isSuperAdmin: true,
@@ -24,14 +24,18 @@ export const LoginScreen: React.FC = () => {
       });
       setCurrentView('pos');
     }
+    // You can add more users here, e.g. for Mourad
+    else {
+      alert('Email ou mot de passe incorrect');
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-gray-800 border-gray-700">
         <CardHeader className="text-center">
-          <div className="text-3xl font-bold text-orange-500 mb-2">MG</div>
-          <CardTitle className="text-white text-2xl">Caisse MG</CardTitle>
+          <div className="text-3xl font-bold text-orange-500 mb-2">MP</div>
+          <CardTitle className="text-white text-2xl">Café Mon Plaisir</CardTitle>
           <p className="text-gray-400">Connectez-vous à votre espace</p>
         </CardHeader>
         <CardContent className="pt-6">

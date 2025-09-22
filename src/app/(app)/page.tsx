@@ -52,7 +52,7 @@ const MainApp: React.FC = () => {
       <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="text-2xl font-bold text-orange-500">MG</div>
+            <div className="text-2xl font-bold text-orange-500">MP</div>
             <nav className="flex gap-1">
               {visibleNav.map(item => (
                 <Button
@@ -75,7 +75,7 @@ const MainApp: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <SyncStatus />
             <div className="hidden sm:flex items-center gap-2">
-              <Image src="https://i.pravatar.cc/150?img=3" alt={user.name} width={32} height={32} className="rounded-full"/>
+              <Image src="https://i.pravatar.cc/150?u=issam" alt={user.name} width={32} height={32} className="rounded-full"/>
               <div>
                  <span className="font-medium text-sm">{user.name}</span>
                  <Badge className="ml-2 bg-blue-600 text-white text-xs">{user.role}</Badge>

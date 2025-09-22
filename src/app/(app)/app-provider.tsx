@@ -117,18 +117,22 @@ export const useApp = () => {
 // DONNÉES INITIALES
 // ======================
 const initialProducts: Product[] = [
-  { id: '1', name: 'Express', price: 1.7, category: 'Café', stock: 100, icon: '☕' },
-  { id: '2', name: 'Cappuccino', price: 2.0, category: 'Café', stock: 100, icon: '☕' },
-  { id: '3', name: 'Cappuccino Noisette', price: 3.0, category: 'Café', stock: 100, icon: '☕' },
-  { id: '4', name: 'Chocolat Chaud', price: 2.5, category: 'Boissons', stock: 100, icon: '🍫' },
-  { id: '5', name: 'Américain', price: 2.5, category: 'Café', stock: 100, icon: '☕' },
-  { id: '6', name: 'Café Crème', price: 3.0, category: 'Café', stock: 100, icon: '☕' },
-  { id: '7', name: 'Croissant', price: 1.5, category: 'Pâtisserie', stock: 50, icon: '🥐' },
-  { id: '8', name: 'Pain au Chocolat', price: 2.0, category: 'Pâtisserie', stock: 30, icon: '🍫' },
+  { id: '1', name: 'Café express', price: 1.7, category: 'Caffeinated Beverages', stock: 100, icon: '☕' },
+  { id: '2', name: 'Capucin', price: 2.0, category: 'Caffeinated Beverages', stock: 100, icon: '☕' },
+  { id: '3', name: 'Café direct', price: 1.7, category: 'Caffeinated Beverages', stock: 100, icon: '☕' },
+  { id: '4', name: 'Café lait au chocolat', price: 1.2, category: 'Caffeinated Beverages', stock: 100, icon: '🍫' },
+  { id: '5', name: 'Café filtre', price: 1.2, category: 'Caffeinated Beverages', stock: 100, icon: '☕' },
+  { id: '6', name: 'Thé vert', price: 1.0, category: 'Tea', stock: 100, icon: '🍵' },
+  { id: '7', name: 'Thé au menthe', price: 1.2, category: 'Tea', stock: 50, icon: '🍵' },
+  { id: '8', name: 'Jus citron', price: 1.0, category: 'Fresh Juices', stock: 30, icon: '🍋' },
+  { id: '9', name: 'Citron + menthe', price: 1.1, category: 'Fresh Juices', stock: 100, icon: '🍋' },
+  { id: '10', name: 'Gazeuz', price: 1.5, category: 'Boissons', stock: 100, icon: '🥤' },
+  { id: '11', name: 'Eau minérale 1.5 litre', price: 1.5, category: 'Boissons', stock: 100, icon: '💧' },
+  { id: '12', name: 'Eau minérale 0.5 litre', price: 1.0, category: 'Boissons', stock: 100, icon: '💧' },
 ];
 
 const initialClients: Client[] = [
-  { id: '1', name: 'Issam Bayaoui', email: 'issam@email.com', phone: '+216 20 123 456', isVip: true, credit: 0, avatar: 'https://i.pravatar.cc/150?img=1' },
+  { id: '1', name: 'Issam Bayaoui', email: 'mg.06sbz@gmail.com', phone: '+216 20 123 456', isVip: true, credit: 0, avatar: 'https://i.pravatar.cc/150?img=1' },
   { id: '2', name: 'Ahmed Ben Ali', email: 'ahmed@email.com', phone: '+216 22 987 654', isVip: false, credit: 15.5, avatar: 'https://i.pravatar.cc/150?img=2' },
 ];
 
@@ -182,7 +186,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Charger depuis localStorage au démarrage
   useEffect(() => {
-    const saved = localStorage.getItem('caisse_mg_data');
+    const saved = localStorage.getItem('caisse_mp_data');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -214,7 +218,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       expenses,
       timestamp: new Date().toISOString()
     };
-    localStorage.setItem('caisse_mg_data', JSON.stringify(data));
+    localStorage.setItem('caisse_mp_data', JSON.stringify(data));
   }, [products, clients, employees, orders, expenses]);
 
   // Détecter état réseau
