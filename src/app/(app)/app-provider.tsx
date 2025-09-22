@@ -139,8 +139,8 @@ const initialProducts: Product[] = [
 ];
 
 const initialClients: Client[] = [
-  { id: '1', name: 'Issam Bayaoui', email: 'mg.06sbz@gmail.com', phone: '+216 20 123 456', isVip: true, credit: 0, avatar: 'https://i.pravatar.cc/150?img=1' },
-  { id: '2', name: 'Ahmed Ben Ali', email: 'ahmed@email.com', phone: '+216 22 987 654', isVip: false, credit: 15.5, avatar: 'https://i.pravatar.cc/150?img=2' },
+  { id: '1', name: 'Issam Bayaoui', email: 'mg.06sbz@gmail.com', phone: '+216 20 123 456', isVip: true, credit: 0, avatar: 'https://i.pravatar.cc/150?img=60' },
+  { id: '2', name: 'Ahmed Ben Ali', email: 'ahmed@email.com', phone: '+216 22 987 654', isVip: false, credit: 15.5, avatar: 'https://i.pravatar.cc/150?img=32' },
 ];
 
 const initialEmployees: Employee[] = [
@@ -156,7 +156,7 @@ const initialEmployees: Employee[] = [
     advance: 100,
     balance: 700,
     isTopEmployee: true,
-    avatar: 'https://i.pravatar.cc/150?img=3'
+    avatar: 'https://i.pravatar.cc/150?img=11'
   },
   {
     id: '2',
@@ -170,7 +170,7 @@ const initialEmployees: Employee[] = [
     advance: 200,
     balance: 1000,
     isTopEmployee: true,
-    avatar: 'https://i.pravatar.cc/150?img=4'
+    avatar: 'https://i.pravatar.cc/150?img=16'
   }
 ];
 
