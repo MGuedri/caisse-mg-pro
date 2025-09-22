@@ -71,7 +71,7 @@ const MainApp: React.FC = () => {
                   `}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <span className="hidden md:inline">{item.label}</span>
                 </Button>
               ))}
             </nav>
