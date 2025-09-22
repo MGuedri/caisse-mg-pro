@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { useApp } from '@/app/(app)/app-provider';
+import { useApp, Employee } from '@/app/(app)/app-provider';
 import {
-  Card, CardContent, CardHeader
+  Card, CardContent, CardHeader, CardDescription, CardTitle
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,8 +15,135 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import {
-  Users, Trash2, Edit, Plus, Wallet, DollarSign, FileText, Star, UserPlus, Clock, Calendar, Landmark
+  Users, Trash2, Edit, Plus, Wallet, DollarSign, FileText, Star, UserPlus, Clock, Calendar, Landmark, RefreshCw, AlertTriangle
 } from 'lucide-react';
+
+// --- Salaries Tab ---
+const SalariesTabContent: React.FC = () => {
+    const { employees, setEmployees } = useApp();
+  
+    const totalBrut = employees.reduce((acc, emp) => acc + emp.salary, 0);
+    const totalAdvance = employees.reduce((acc, emp) => acc + emp.advance, 0);
+    const totalToPay = totalBrut - totalAdvance;
+  
+    const handlePay = (employeeId: string) => {
+        // Logic to handle payment, for now we can just log it
+        console.log(`Paying employee ${employeeId}`);
+    };
+
+    const handleNewMonth = () => {
+        // Logic to reset for a new month
+        console.log("Starting a new month for salaries");
+    }
+
+    type SalaryStatus = 'paid' | 'pending' | 'partial';
+
+    const getEmployeeSalaryStatus = (employee: Employee): SalaryStatus => {
+        if (employee.balance === 0) return 'paid';
+        if (employee.advance > 0 && employee.balance > 0) return 'partial';
+        return 'pending';
+    }
+
+    return (
+      <div>
+        <Card className="bg-gray-800 border-gray-700 mb-6">
+            <CardHeader>
+                <CardTitle className="text-white">Gestion des Salaires</CardTitle>
+                <CardDescription className="text-gray-400">
+                    Suivi et paiement des salaires des employés pour le mois en cours.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <Card className="bg-teal-900/50 border-teal-800">
+                        <CardHeader>
+                            <div className="flex items-center gap-4">
+                                <Landmark className="h-8 w-8 text-teal-400"/>
+                                <div>
+                                    <p className="text-sm text-gray-400">Masse Salariale (Brut)</p>
+                                    <p className="text-2xl font-bold text-white">{totalBrut.toFixed(3)} DT</p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                    </Card>
+                    <Card className="bg-red-900/50 border-red-800">
+                        <CardHeader>
+                            <div className="flex items-center gap-4">
+                                <Wallet className="h-8 w-8 text-red-400"/>
+                                <div>
+                                    <p className="text-sm text-gray-400">Total Acomptes Versés</p>
+                                    <p className="text-2xl font-bold text-red-400">{totalAdvance.toFixed(3)} DT</p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                    </Card>
+                    <Card className="bg-green-900/50 border-green-800">
+                         <CardHeader>
+                            <div className="flex items-center gap-4">
+                                <DollarSign className="h-8 w-8 text-green-400"/>
+                                <div>
+                                    <p className="text-sm text-gray-400">Solde Total à Payer</p>
+                                    <p className="text-2xl font-bold text-green-400">{totalToPay.toFixed(3)} DT</p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                    </Card>
+                </div>
+                 <Button variant="outline" onClick={handleNewMonth} className="border-gray-600 text-gray-300">
+                    <RefreshCw className="mr-2 h-4 w-4" /> Nouveau Mois
+                </Button>
+            </CardContent>
+        </Card>
+        
+        <div className="space-y-4">
+            {employees.map(employee => {
+                const status = getEmployeeSalaryStatus(employee);
+                return (
+                    <Card key={employee.id} className="bg-gray-800 border-gray-700">
+                        <CardContent className="p-4">
+                            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <Image src={employee.avatar} alt={employee.name} width={48} height={48} className="rounded-full" />
+                                    <div>
+                                        <p className="font-bold text-white">{employee.name}</p>
+                                        <p className="text-sm text-gray-400">{employee.role}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    {status === 'pending' && <Badge variant="destructive" className="bg-yellow-600/20 text-yellow-400 border-yellow-500 gap-1"><AlertTriangle className="h-3 w-3"/>En attente</Badge>}
+                                    {status === 'paid' && <Badge variant="default" className="bg-green-600/20 text-green-400 border-green-500">Payé</Badge>}
+                                    {status === 'partial' && <Badge variant="secondary" className="bg-blue-600/20 text-blue-400 border-blue-500">Partiel</Badge>}
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-3 gap-4 text-center mt-4 pt-4 border-t border-gray-700">
+                                <div>
+                                    <p className="text-sm text-gray-400">Salaire Brut</p>
+                                    <p className="font-bold text-white">{employee.salary.toFixed(3)} DT</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-400">Acompte</p>
+                                    <p className="font-bold text-orange-400">{employee.advance.toFixed(3)} DT</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-400">Solde à Payer</p>
+                                    <p className="font-bold text-green-400">{employee.balance.toFixed(3)} DT</p>
+                                </div>
+                            </div>
+                             <div className="mt-4 flex justify-end gap-2">
+                                <Button size="sm" variant="outline" className="border-gray-600">Détails</Button>
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handlePay(employee.id)} disabled={employee.balance === 0}>
+                                    <DollarSign className="mr-1 h-4 w-4"/> Payer
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            })}
+        </div>
+      </div>
+    );
+}
+
 
 export const ManagementScreen: React.FC = () => {
   const { clients, employees, expenses } = useApp();
@@ -240,13 +367,7 @@ export const ManagementScreen: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="salaries">
-           <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-6 text-center text-gray-400">
-                <Wallet className="h-12 w-12 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">Gestion des Salaires</h3>
-                <p>Cette section est en cours de développement.</p>
-              </CardContent>
-            </Card>
+          <SalariesTabContent/>
         </TabsContent>
 
         <TabsContent value="expenses">
