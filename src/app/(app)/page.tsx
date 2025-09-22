@@ -12,12 +12,16 @@ import {
   Package,
   Users,
   LogOut,
+  User,
+  Building,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { SyncStatus } from '@/components/sync-status';
 import { useEffect } from 'react';
 import Image from 'next/image'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 // --- NAVIGATION PRINCIPALE ---
 const MainApp: React.FC = () => {
@@ -74,16 +78,40 @@ const MainApp: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <SyncStatus />
-            <div className="hidden sm:flex items-center gap-2">
-              <Image src="https://i.pravatar.cc/150?img=60" alt={user.name} width={32} height={32} className="rounded-full"/>
-              <div>
-                 <span className="font-medium text-sm">{user.name}</span>
-                 <Badge className="ml-2 bg-blue-600 text-white text-xs">{user.role}</Badge>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-gray-300 hover:bg-gray-700">
-              <LogOut className="h-5 w-5" />
-            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src="https://i.pravatar.cc/150?img=60" alt={user.name} />
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 bg-gray-800 border-gray-700 text-white" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-2 p-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-400"/>
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                    </div>
+                     <div className="flex items-center gap-2">
+                       <Building className="h-4 w-4 text-gray-400"/>
+                       <p className="text-xs leading-none text-gray-400">Café Mon Plaisir</p>
+                    </div>
+                     <div className="flex items-center gap-2">
+                       <p className="text-xs leading-none text-gray-400">{user.email}</p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-700"/>
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:!bg-orange-500/80">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
           </div>
         </div>
       </header>
