@@ -57,7 +57,7 @@ const MainApp: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="text-2xl font-bold text-orange-500">MP</div>
-            <nav className="flex gap-2">
+            <nav className="flex gap-1">
               {visibleNav.map(item => (
                 <Button
                   key={item.id}
