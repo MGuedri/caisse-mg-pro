@@ -1,3 +1,76 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "prod-001",
+      "description": "A cup of espresso coffee.",
+      "imageUrl": "https://picsum.photos/seed/1/400/300",
+      "imageHint": "espresso coffee"
+    },
+    {
+      "id": "prod-002",
+      "description": "A cup of latte with art.",
+      "imageUrl": "https://picsum.photos/seed/2/400/300",
+      "imageHint": "latte art"
+    },
+    {
+      "id": "prod-003",
+      "description": "A cup of cappuccino.",
+      "imageUrl": "https://picsum.photos/seed/3/400/300",
+      "imageHint": "cappuccino foam"
+    },
+    {
+      "id": "prod-004",
+      "description": "A freshly baked croissant.",
+      "imageUrl": "https://picsum.photos/seed/4/400/300",
+      "imageHint": "croissant pastry"
+    },
+    {
+      "id": "prod-005",
+      "description": "A blueberry muffin.",
+      "imageUrl": "https://picsum.photos/seed/5/400/300",
+      "imageHint": "blueberry muffin"
+    },
+    {
+      "id": "prod-006",
+      "description": "A glass of fresh orange juice.",
+      "imageUrl": "https://picsum.photos/seed/6/400/300",
+      "imageHint": "orange juice"
+    },
+    {
+      "id": "prod-007",
+      "description": "A glass of iced tea with lemon.",
+      "imageUrl": "https://picsum.photos/seed/7/400/300",
+      "imageHint": "iced tea"
+    },
+    {
+      "id": "prod-008",
+      "description": "A bagel with cream cheese.",
+      "imageUrl": "https://picsum.photos/seed/8/400/300",
+      "imageHint": "bagel breakfast"
+    },
+    {
+      "id": "prod-009",
+      "description": "A cup of americano coffee.",
+      "imageUrl": "https://picsum.photos/seed/9/400/300",
+      "imageHint": "americano coffee"
+    },
+    {
+      "id": "prod-010",
+      "description": "A pain au chocolat pastry.",
+      "imageUrl": "https://picsum.photos/seed/10/400/300",
+      "imageHint": "chocolate pastry"
+    },
+    {
+      "id": "prod-011",
+      "description": "A bottle of mineral water.",
+      "imageUrl": "https://picsum.photos/seed/11/400/300",
+      "imageHint": "water bottle"
+    },
+    {
+      "id": "prod-012",
+      "description": "A breakfast sandwich with egg and bacon.",
+      "imageUrl": "https://picsum.photos/seed/12/400/300",
+      "imageHint": "breakfast sandwich"
+    }
+  ]
 }
