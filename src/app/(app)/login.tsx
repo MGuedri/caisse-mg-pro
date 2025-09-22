@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useApp } from '@/app/(app)/app-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -34,7 +35,13 @@ export const LoginScreen: React.FC = () => {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-gray-800 border-gray-700">
         <CardHeader className="text-center">
-          <div className="text-3xl font-bold text-orange-500 mb-2">MP</div>
+          <Image
+              src="/logo.png"
+              alt="Café Mon Plaisir"
+              width={100}
+              height={100}
+              className="mx-auto mb-4"
+          />
           <CardTitle className="text-white text-2xl">Café Mon Plaisir</CardTitle>
           <p className="text-gray-400">Connectez-vous à votre espace</p>
         </CardHeader>

@@ -56,7 +56,12 @@ const MainApp: React.FC = () => {
       <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="text-2xl font-bold text-orange-500">MP</div>
+            <Image
+              src="/logo.png"
+              alt="Café Mon Plaisir"
+              width={40}
+              height={40}
+            />
             <nav className="flex gap-1">
               {visibleNav.map(item => (
                 <Button
