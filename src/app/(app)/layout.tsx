@@ -1,13 +1,15 @@
+import { AppProvider } from "@/app/(app)/app-provider";
+
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <main>
-      {children}
-    </main>
+    <AppProvider>
+      <main>
+        {children}
+      </main>
+    </AppProvider>
   )
 }
-
-    
