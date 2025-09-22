@@ -19,6 +19,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+} from "@/components/ui/sheet"
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog"
@@ -337,7 +345,7 @@ const SyncStatus: React.FC = () => {
       title="Cliquez pour synchroniser"
     >
       {getIcon()}
-      <span className="text-gray-300">
+      <span className="text-gray-300 hidden sm:inline">
        {getStatusText()}
       </span>
     </div>
@@ -552,36 +560,12 @@ const TopProductsChart: React.FC = () => {
   );
 };
 
-// --- POINT DE VENTE ---
-const POSScreen: React.FC = () => {
-  const { products, cart, setCart, orders, setOrders, clients, includeVAT, setIncludeVAT } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Tous');
+// --- Cart Component ---
+const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
+  const { cart, setCart, clients, includeVAT, setIncludeVAT, orders, setOrders } = useApp();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [selectedClient, setSelectedClient] = useState('Client invité');
-
-  const categories = ['Tous', ...new Set(products.map(p => p.category))];
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'Tous' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const addToCart = useCallback((product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        return [...prev, { ...product, quantity: 1 }];
-      }
-    });
-  }, [setCart]);
 
   const updateQuantity = useCallback((id: string, change: number) => {
     setCart(prev => {
@@ -595,7 +579,6 @@ const POSScreen: React.FC = () => {
       return newCart as CartItem[];
     });
   }, [setCart]);
-  
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const vatRate = 0.19;
@@ -620,60 +603,12 @@ const POSScreen: React.FC = () => {
     setIsPaymentOpen(false);
     setPaymentAmount('');
     setSelectedClient('Client invité');
+    if (onClose) onClose();
   };
-
+  
   return (
-    <div className="flex h-[calc(100vh-65px)] bg-gray-900 text-white">
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher un produit..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {categories.map(category => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category)}
-                className={`${selectedCategory === category 
-                  ? "bg-orange-500 hover:bg-orange-600" 
-                  : "border-gray-700 text-gray-300 hover:bg-gray-800"} shrink-0`}
-              >
-                {category}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredProducts.map(product => (
-            <Card 
-              key={product.id} 
-              className="cursor-pointer bg-gray-800 border-gray-700 transition-transform transform hover:scale-105"
-              onClick={() => addToCart(product)}
-            >
-              <CardContent className="p-4 text-center">
-                <div className="text-4xl mb-2">{product.icon}</div>
-                <h3 className="font-semibold text-white mb-1 truncate">{product.name}</h3>
-                <p className="text-orange-500 font-bold text-lg">{product.price.toFixed(2)} DT</p>
-                <p className="text-gray-400 text-sm">Stock: {product.stock}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      <div className="w-96 bg-gray-800 border-l border-gray-700 p-6 flex flex-col">
-        <div className="flex items-center justify-between mb-6">
+    <div className="bg-gray-800 h-full p-6 flex flex-col">
+       <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Panier</h2>
           <Badge variant="secondary" className="bg-orange-500 text-white">
             {cart.reduce((sum, item) => sum + item.quantity, 0)}
@@ -834,6 +769,111 @@ const POSScreen: React.FC = () => {
             </Dialog>
           </div>
         )}
+    </div>
+  )
+}
+
+// --- POINT DE VENTE ---
+const POSScreen: React.FC = () => {
+  const { products, cart, setCart } = useApp();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Tous');
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const categories = ['Tous', ...new Set(products.map(p => p.category))];
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'Tous' || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const addToCart = useCallback((product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prev, { ...product, quantity: 1 }];
+      }
+    });
+  }, [setCart]);
+  
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  return (
+    <div className="md:flex h-[calc(100vh-65px)] bg-gray-900 text-white relative">
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="mb-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Rechercher un produit..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+          </div>
+          
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {categories.map(category => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category)}
+                className={`${selectedCategory === category 
+                  ? "bg-orange-500 hover:bg-orange-600" 
+                  : "border-gray-700 text-gray-300 hover:bg-gray-800"} shrink-0`}
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filteredProducts.map(product => (
+            <Card 
+              key={product.id} 
+              className="cursor-pointer bg-gray-800 border-gray-700 transition-transform transform hover:scale-105"
+              onClick={() => addToCart(product)}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="text-4xl mb-2">{product.icon}</div>
+                <h3 className="font-semibold text-white mb-1 truncate">{product.name}</h3>
+                <p className="text-orange-500 font-bold text-lg">{product.price.toFixed(2)} DT</p>
+                <p className="text-gray-400 text-sm">Stock: {product.stock}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop Cart */}
+      <div className="w-96 border-l border-gray-700 hidden md:block">
+        <CartView />
+      </div>
+
+      {/* Mobile Cart */}
+      <div className="md:hidden">
+         {cartItemCount > 0 && (
+           <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+              <SheetTrigger asChild>
+                <Button className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-orange-500 hover:bg-orange-600 shadow-lg">
+                  <ShoppingCart className="h-8 w-8" />
+                   <Badge className="absolute -top-1 -right-1">{cartItemCount}</Badge>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="p-0 border-none w-full max-w-sm sm:max-w-md">
+                 <CartView onClose={() => setIsCartOpen(false)}/>
+              </SheetContent>
+           </Sheet>
+         )}
       </div>
     </div>
   );
@@ -1348,7 +1388,7 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col text-white">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="text-2xl font-bold text-orange-500">MG</div>
@@ -1370,7 +1410,7 @@ const MainApp: React.FC = () => {
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <SyncStatus />
             <div className="hidden sm:block">
               <span className="text-gray-400">Connecté: </span>
@@ -1384,12 +1424,31 @@ const MainApp: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden pb-16 md:pb-0">
         {currentView === 'pos' && <POSScreen />}
         {currentView === 'dashboard' && <DashboardScreen />}
         {currentView === 'products' && <InventoryScreen />}
         {currentView === 'management' && <ManagementScreen />}
       </main>
+      
+      {/* Bottom Nav for Mobile */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 flex justify-around z-10">
+        {visibleNav.map(item => (
+          <Button
+            key={item.id}
+            variant="ghost"
+            onClick={() => setCurrentView(item.id)}
+            className={`flex flex-col h-16 justify-center items-center rounded-none w-full
+              ${currentView === item.id 
+                ? "text-orange-500" 
+                : "text-gray-400"
+              }`}
+          >
+            <item.icon className="h-6 w-6" />
+            <span className="text-xs mt-1">{item.label}</span>
+          </Button>
+        ))}
+      </nav>
     </div>
   );
 };
