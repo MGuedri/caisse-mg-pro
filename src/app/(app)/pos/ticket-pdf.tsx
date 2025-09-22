@@ -3,6 +3,10 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { Order } from '@/app/(app)/app-provider';
 
+// This component is not currently used because @react-pdf/renderer
+// has issues with the Next.js App Router.
+// It's kept here for future reference if client-side PDF generation is needed.
+
 export const TicketPDF: React.FC<{ order: Order, commerceName?: string }> = ({ order, commerceName = "Café Mon Plaisir" }) => {
   const styles = StyleSheet.create({
     page: { padding: 20, fontFamily: 'Helvetica', fontSize: 10 },

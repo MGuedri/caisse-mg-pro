@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { pdf } from '@react-pdf/renderer';
+// import { pdf } from '@react-pdf/renderer'; // Temporarily disabled due to build issues
 import { useApp, CartItem, Order } from '@/app/(app)/app-provider';
 import {
   Card, CardContent
@@ -15,7 +15,7 @@ import {
 import {
   Plus, Minus, Trash2, CreditCard, Printer, ShoppingCart
 } from 'lucide-react';
-import { TicketPDF } from './ticket-pdf';
+// import { TicketPDF } from './ticket-pdf'; // Temporarily disabled
 
 export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
   const { cart, setCart, clients, includeVAT, setIncludeVAT, orders, setOrders } = useApp();
@@ -65,26 +65,27 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
     // --- PRINT TICKET BUTTON ---
   const PrintTicketButton: React.FC<{ order: Order }> = ({ order }) => {
     const printPDF = async () => {
-      try {
-        const blob = await pdf(<TicketPDF order={order} />).toBlob();
-        const url = URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        document.body.appendChild(iframe);
-        
-        iframe.onload = () => {
-          if(!iframe.contentWindow) return;
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            URL.revokeObjectURL(url);
-            document.body.removeChild(iframe);
-          }, 1000);
-        };
-      } catch (error) {
-        console.error('Erreur impression:', error);
-      }
+      alert("La fonctionnalité d'impression est en cours de développement.");
+      // try {
+      //   const blob = await pdf(<TicketPDF order={order} />).toBlob();
+      //   const url = URL.createObjectURL(blob);
+      //   const iframe = document.createElement('iframe');
+      //   iframe.style.display = 'none';
+      //   iframe.src = url;
+      //   document.body.appendChild(iframe);
+      //   
+      //   iframe.onload = () => {
+      //     if(!iframe.contentWindow) return;
+      //     iframe.contentWindow.focus();
+      //     iframe.contentWindow.print();
+      //     setTimeout(() => {
+      //       URL.revokeObjectURL(url);
+      //       document.body.removeChild(iframe);
+      //     }, 1000);
+      //   };
+      // } catch (error) {
+      //   console.error('Erreur impression:', error);
+      // }
     };
 
     return (
