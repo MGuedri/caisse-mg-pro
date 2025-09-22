@@ -36,6 +36,7 @@ import {
   Plus, Minus, Trash2, Edit, Search, Package, CreditCard, LogOut,
   BarChart3, User, TrendingUp, Printer, Wifi, WifiOff, RefreshCw, AlertCircle
 } from 'lucide-react';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 // ======================
 // TYPES
@@ -870,6 +871,11 @@ const POSScreen: React.FC = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="p-0 border-none w-full max-w-sm sm:max-w-md">
+                 <SheetHeader>
+                   <SheetTitle>
+                     <VisuallyHidden>Shopping Cart</VisuallyHidden>
+                   </SheetTitle>
+                 </SheetHeader>
                  <CartView onClose={() => setIsCartOpen(false)}/>
               </SheetContent>
            </Sheet>
@@ -1463,5 +1469,3 @@ export default function HomePage() {
     </AppProvider>
   );
 }
-
-    
