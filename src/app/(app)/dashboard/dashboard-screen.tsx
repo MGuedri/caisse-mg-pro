@@ -1,279 +1,199 @@
 'use client';
 
 import React from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell
-} from 'recharts';
 import { useApp } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import {
   Download, Upload,
-  DollarSign,
-  Users,
-  Package,
-  User,
+  CreditCard,
+  TrendingUp,
+  ChevronDown
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
 
 
-const SalesChart: React.FC = () => {
-  const mockData = [
-    { month: 'Jan', revenue: 4200 },
-    { month: 'Fév', revenue: 3800 },
-    { month: 'Mar', revenue: 5100 },
-    { month: 'Avr', revenue: 4900 },
-    { month: 'Mai', revenue: 6200 },
-    { month: 'Jun', revenue: 5800 },
-  ];
+const TotalCreditCard: React.FC = () => {
+    const { clients } = useApp();
+    const totalCredit = clients.reduce((sum, client) => sum + client.credit, 0);
 
-  return (
-    <Card className="bg-gray-800 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white">Ventes Mensuelles</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={mockData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-              <XAxis dataKey="month" stroke="#aaa" />
-              <YAxis stroke="#aaa" />
-              <RechartsTooltip contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '8px', color: '#fff' }} />
-              <Bar dataKey="revenue" fill="#FF9800" name="Revenus (DT)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
+    return (
+        <Card className="bg-orange-600/90 border-orange-500 text-white relative overflow-hidden">
+             <CardContent className="p-6">
+                <CreditCard className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
+                <p className="text-sm text-orange-100">Total Crédit</p>
+                <p className="text-3xl font-bold">{totalCredit.toFixed(3)} DT</p>
+             </CardContent>
+        </Card>
+    )
+}
+
+const TopProductsCard: React.FC = () => {
+    const topProducts = [
+        { name: 'Express', sold: 2, color: 'bg-yellow-400' },
+        { name: 'Cappuccin', sold: 2, color: 'bg-gray-400' },
+        { name: 'Cappuccin Noisette', sold: 2, color: 'bg-orange-400' }
+    ];
+
+    return (
+        <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+                <CardTitle className="text-white text-lg">Top Produits du Jour</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    {topProducts.map((product, index) => (
+                        <div key={index}>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="text-white">{index + 1}. {product.name}</span>
+                                <span className="text-gray-400">{product.sold} vendus</span>
+                            </div>
+                            <Progress value={50 + Math.random() * 50} className={`h-2 [&>div]:${product.color}`} />
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
 };
 
-const TopProductsChart: React.FC = () => {
-  const COLORS = ['#FF9800', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-  const mockData = [
-    { name: 'Express', value: 120 },
-    { name: 'Cappuccino', value: 95 },
-    { name: 'Croissant', value: 80 },
-    { name: 'Chocolat Chaud', value: 65 },
-  ];
-
-  return (
+const PeakHourCard: React.FC = () => (
     <Card className="bg-gray-800 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white">Produits Populaires</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={mockData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {mockData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <RechartsTooltip contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '8px', color: '#fff' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
+        <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-white text-lg">Heure de Pointe</CardTitle>
+            <TrendingUp className="h-5 w-5 text-orange-400"/>
+        </CardHeader>
+        <CardContent>
+            <p className="text-2xl font-bold text-orange-400">Soir (18-05h)</p>
+            <p className="text-sm text-gray-400">Période avec le plus de ventes aujourd'hui.</p>
+        </CardContent>
     </Card>
-  );
-};
+);
 
-export const DashboardScreen: React.FC = () => {
-  const { orders, employees, products, clients, expenses } = useApp();
+const SalesHistoryCard: React.FC = () => {
+    const { orders } = useApp();
+    const todayOrders = orders.slice(0, 2); // Mocking today's orders
 
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
-  const recentOrders = orders.slice(0, 5);
-  const topEmployees = employees.filter(emp => emp.isTopEmployee);
+    return (
+        <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+                <CardTitle className="text-white text-lg">Historique Détaillé des Ventes</CardTitle>
+                <CardDescription className="text-gray-400">
+                    Liste de toutes les transactions enregistrées aujourd'hui ({todayOrders.length}).
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    {todayOrders.map(order => (
+                        <div key={order.id} className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white font-medium">{order.clientName}</p>
+                                <p className="text-gray-400 text-sm">#{order.id.slice(-6)}</p>
+                            </div>
+                            <div className="text-right flex items-center gap-2">
+                                <div>
+                                    <p className="text-gray-400 text-sm">{new Date(order.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                    <p className="text-orange-400 font-bold">{order.total.toFixed(3)} DT</p>
+                                </div>
+                                <ChevronDown className="h-4 w-4 text-gray-400"/>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
-  const handleBackup = () => {
-    const data = {
-      products,
-      clients,
-      employees,
-      orders,
-      expenses,
-      timestamp: new Date().toISOString()
+
+const DataManagementCard: React.FC = () => {
+    const { products, clients, employees, orders, expenses } = useApp();
+
+    const handleBackup = () => {
+        const data = {
+          products,
+          clients,
+          employees,
+          orders,
+          expenses,
+          timestamp: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `caisse-mg-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `caisse-mg-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
-  const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target?.result as string);
-          localStorage.setItem('caisse_mg_data', JSON.stringify(data));
-          window.location.reload();
-        } catch (error) {
-          alert('Erreur lors de la restauration');
+    const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = JSON.parse(e.target?.result as string);
+              localStorage.setItem('caisse_mg_data', JSON.stringify(data));
+              window.location.reload();
+            } catch (error) {
+              alert('Erreur lors de la restauration');
+            }
+          };
+          reader.readAsText(file);
         }
       };
-      reader.readAsText(file);
-    }
-  };
+
+    return (
+        <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+                <CardTitle className="text-white">Maintenance et Données</CardTitle>
+                <CardDescription className="text-gray-400">
+                    Sauvegardez ou restaurez les données de votre commerce.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-4 flex-wrap">
+                <Button onClick={handleBackup} className="bg-orange-500 hover:bg-orange-400 text-white">
+                    <Download className="mr-2 h-4 w-4" /> Sauvegarder
+                </Button>
+                <div>
+                    <input type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} id="restore-input" />
+                    <Button onClick={() => document.getElementById('restore-input')?.click()} variant="outline" className="border-white text-white hover:bg-white hover:text-orange-600">
+                        <Upload className="mr-2 h-4 w-4" /> Restaurer
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+
+export const DashboardScreen: React.FC = () => {
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6 bg-gray-900 min-h-full">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Tableau de Bord</h1>
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <SyncStatus />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gray-800 border-gray-700 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-orange-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Revenus Total</p>
-                <p className="text-2xl font-bold">{totalRevenue.toFixed(2)} DT</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gray-800 border-gray-700 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Clients</p>
-                <p className="text-2xl font-bold">{clients.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gray-800 border-gray-700 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Package className="h-8 w-8 text-green-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Produits</p>
-                <p className="text-2xl font-bold">{products.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gray-800 border-gray-700 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-purple-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Employés</p>
-                <p className="text-2xl font-bold">{employees.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TotalCreditCard />
+        <PeakHourCard/>
+        <div className="md:col-span-2">
+            <TopProductsCard />
+        </div>
+        <div className="md:col-span-2">
+            <SalesHistoryCard />
+        </div>
+        <div className="md:col-span-2">
+            <DataManagementCard />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SalesChart />
-        <TopProductsChart />
-      </div>
-
-      <Card className="bg-orange-600 border-orange-500">
-        <CardHeader>
-          <CardTitle className="text-white">Maintenance et Données</CardTitle>
-          <CardDescription className="text-orange-100">
-            Sauvegardez ou restaurez les données de votre commerce.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex gap-4 flex-wrap pt-6">
-          <Button onClick={handleBackup} className="bg-orange-500 hover:bg-orange-400 text-white">
-            <Download className="mr-2 h-4 w-4" /> Sauvegarder
-          </Button>
-          <div>
-            <input type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} id="restore-input" />
-            <Button onClick={() => document.getElementById('restore-input')?.click()} variant="outline" className="border-white text-white hover:bg-white hover:text-orange-600">
-              <Upload className="mr-2 h-4 w-4" /> Restaurer
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Ventes Récentes</CardTitle>
-            <CardDescription className="text-gray-400">Les 5 dernières ventes</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {recentOrders.length > 0 ? (
-              <div className="space-y-3">
-                {recentOrders.map(order => (
-                  <div key={order.id} className="flex items-center justify-between p-3 bg-gray-700 rounded">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">{order.clientName.charAt(0)}</span>
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">{order.clientName}</p>
-                        <p className="text-gray-400 text-sm">{order.timestamp}</p>
-                      </div>
-                    </div>
-                    <span className="text-orange-500 font-bold">+{order.total.toFixed(2)} DT</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-center py-8">Aucune vente récente</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Top Employés</CardTitle>
-            <CardDescription className="text-gray-400">Meilleures évaluations</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {topEmployees.length > 0 ? (
-              <div className="space-y-3">
-                {topEmployees.map(employee => (
-                  <div key={employee.id} className="flex items-center justify-between p-3 bg-gray-700 rounded">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">
-                        <img src={employee.avatar} alt={employee.name} className="w-8 h-8 rounded-full" />
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">{employee.name}</p>
-                        <p className="text-gray-400 text-sm">{employee.role}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-yellow-500 font-bold">★ {employee.evaluation}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-center py-8">Aucun top employé</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };

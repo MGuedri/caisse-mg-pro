@@ -8,15 +8,17 @@ import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
 import { ManagementScreen } from '@/app/(app)/management/management-screen';
 import {
   ShoppingCart,
-  BarChart3,
+  LayoutGrid,
   Package,
   Users,
   LogOut,
+  Home
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SyncStatus } from '@/components/sync-status';
 import { useEffect } from 'react';
+import Image from 'next/image'
 
 // --- NAVIGATION PRINCIPALE ---
 const MainApp: React.FC = () => {
@@ -24,7 +26,7 @@ const MainApp: React.FC = () => {
 
   const navigation = [
     { id: 'pos', label: 'Caisse', icon: ShoppingCart, allowedRoles: ['SuperAdmin', 'Owner', 'Caissier'] },
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, allowedRoles: ['SuperAdmin', 'Owner'] },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid, allowedRoles: ['SuperAdmin', 'Owner'] },
     { id: 'products', label: 'Inventaire', icon: Package, allowedRoles: ['SuperAdmin', 'Owner'] },
     { id: 'management', label: 'Gestion', icon: Users, allowedRoles: ['SuperAdmin', 'Owner'] },
   ];
@@ -52,7 +54,7 @@ const MainApp: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="text-2xl font-bold text-orange-500">MG</div>
-            <nav className="flex gap-1">
+            <nav className="hidden md:flex gap-1">
               {visibleNav.map(item => (
                 <Button
                   key={item.id}
@@ -66,17 +68,19 @@ const MainApp: React.FC = () => {
                   `}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="hidden md:inline">{item.label}</span>
+                  <span>{item.label}</span>
                 </Button>
               ))}
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <SyncStatus />
-            <div className="hidden sm:block">
-              <span className="text-gray-400">Connecté: </span>
-              <span className="font-medium">{user.name}</span>
-              <Badge className="ml-2 bg-blue-600 text-white text-xs">{user.role}</Badge>
+            <div className="hidden sm:flex items-center gap-2">
+              <Image src="https://i.pravatar.cc/150?img=3" alt={user.name} width={32} height={32} className="rounded-full"/>
+              <div>
+                 <span className="font-medium text-sm">{user.name}</span>
+                 <Badge className="ml-2 bg-blue-600 text-white text-xs">{user.role}</Badge>
+              </div>
             </div>
             <Button variant="ghost" size="icon" onClick={handleLogout} className="text-gray-300 hover:bg-gray-700">
               <LogOut className="h-5 w-5" />
@@ -85,12 +89,27 @@ const MainApp: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pb-20 md:pb-0">
         {currentView === 'pos' && <POSScreen />}
         {currentView === 'dashboard' && <DashboardScreen />}
         {currentView === 'products' && <InventoryScreen />}
         {currentView === 'management' && <ManagementScreen />}
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 flex justify-around p-2">
+          {visibleNav.map(item => (
+            <Button
+              key={item.id}
+              variant="ghost"
+              onClick={() => setCurrentView(item.id)}
+              className={`flex flex-col items-center h-auto p-1 ${currentView === item.id ? 'text-orange-500' : 'text-gray-400'}`}
+            >
+              <item.icon className="h-6 w-6" />
+              <span className="text-xs mt-1">{item.label}</span>
+            </Button>
+          ))}
+      </nav>
     </div>
   );
 };
