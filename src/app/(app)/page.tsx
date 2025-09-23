@@ -21,64 +21,7 @@ import { useEffect } from 'react';
 import Image from 'next/image'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-
-const NewLogo = ({ size = 'lg' }: { size?: 'sm' | 'lg' }) => {
-  const containerSize = size === 'lg' ? 'w-48 h-48' : 'w-10 h-10';
-  const mgSize = size === 'lg' ? 'text-7xl' : 'text-xl';
-  const textSize = size === 'lg' ? 'text-xs' : 'text-[4px]';
-  const cafeText = size === 'lg' ? 'Café' : 'C';
-  const plaisirText = size === 'lg' ? 'Mon Plaisir' : 'MP';
-
-  return (
-    <div className={`relative ${containerSize} flex items-center justify-center font-bold font-headline`}>
-      {/* Background shapes */}
-      <div className="absolute inset-0 bg-gray-900 rounded-full"></div>
-      
-      {/* Top Arch */}
-      <div className={`absolute top-0 w-[80%] h-[40%] rounded-b-full bg-orange-500`}></div>
-      
-      {/* Bottom Arch */}
-      <div className={`absolute bottom-0 w-full h-[35%] rounded-t-full bg-orange-500`}></div>
-
-      {/* Blue Banners */}
-      <div className={`absolute top-[20%] w-[60%] h-[8%] bg-cyan-400 transform -skew-y-6`}></div>
-       <div className={`absolute bottom-[22%] w-[70%] h-[8%] bg-cyan-400`}></div>
-
-      {/* Main Text "MG" */}
-      <div className="relative flex items-center justify-center">
-        <span className={`${mgSize} text-cyan-400 transform translate-x-px translate-y-px`}>MG</span>
-        <span className={`absolute ${mgSize} text-white`}>MG</span>
-      </div>
-
-       {/* Decorative Texts */}
-       <span className={`absolute top-[21%] transform -skew-y-6 ${textSize} text-gray-900 tracking-wider`}>{cafeText}</span>
-       <span className={`absolute bottom-[23%] ${textSize} text-gray-900 tracking-wider`}>{plaisirText}</span>
-
-        {/* Sparkles */}
-       {size === 'lg' && (
-         <>
-            <div className={`absolute top-[30%] left-[10%] w-3 h-3 bg-white transform rotate-45`}>
-              <div className="absolute w-full h-[2px] top-1/2 -translate-y-1/2 bg-gray-900"></div>
-              <div className="absolute h-full w-[2px] left-1/2 -translate-x-1/2 bg-gray-900"></div>
-            </div>
-            <div className={`absolute top-[30%] right-[10%] w-3 h-3 bg-white transform rotate-45`}>
-              <div className="absolute w-full h-[2px] top-1/2 -translate-y-1/2 bg-gray-900"></div>
-              <div className="absolute h-full w-[2px] left-1/2 -translate-x-1/2 bg-gray-900"></div>
-            </div>
-            <div className={`absolute bottom-[10%] left-[20%] w-2 h-2 bg-white transform rotate-45`}>
-              <div className="absolute w-full h-[1px] top-1/2 -translate-y-1/2 bg-gray-900"></div>
-              <div className="absolute h-full w-[1px] left-1/2 -translate-x-1/2 bg-gray-900"></div>
-            </div>
-            <div className={`absolute bottom-[10%] right-[20%] w-2 h-2 bg-white transform rotate-45`}>
-              <div className="absolute w-full h-[1px] top-1/2 -translate-y-1/2 bg-gray-900"></div>
-              <div className="absolute h-full w-[1px] left-1/2 -translate-x-1/2 bg-gray-900"></div>
-            </div>
-         </>
-       )}
-    </div>
-  );
-};
+import { Logo } from '@/app/(app)/logo';
 
 
 // --- NAVIGATION PRINCIPALE ---
@@ -114,7 +57,7 @@ const MainApp: React.FC = () => {
       <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <NewLogo size="sm" />
+            <Logo size="sm" />
             <nav className="flex gap-1">
               {visibleNav.map(item => (
                 <Button
