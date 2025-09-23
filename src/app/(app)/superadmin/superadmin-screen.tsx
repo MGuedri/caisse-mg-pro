@@ -70,6 +70,7 @@ export const SuperAdminScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
+  const [commerceToInvoiceId, setCommerceToInvoiceId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -179,7 +180,7 @@ export const SuperAdminScreen: React.FC = () => {
             }).select().single();
 
             if (newUserError || !newUserData) {
-                toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire. ${newUserError?.message}` });
+                toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire: ${newUserError?.message}` });
                 return;
             }
             ownerUser = newUserData;
@@ -550,7 +551,7 @@ export const SuperAdminScreen: React.FC = () => {
                             <div className="flex flex-col sm:flex-row gap-4 items-end">
                                 <div className="w-full sm:w-auto flex-grow">
                                     <Label className="text-gray-300">Sélectionner un commerce</Label>
-                                    <Select>
+                                    <Select onValueChange={(value) => setCommerceToInvoiceId(value)}>
                                         <SelectTrigger className="bg-gray-700 border-gray-600 mt-1">
                                             <SelectValue placeholder="Choisir un commerce..." />
                                         </SelectTrigger>
@@ -563,10 +564,8 @@ export const SuperAdminScreen: React.FC = () => {
                                 </div>
                                 <Button 
                                     onClick={() => {
-                                        const select = document.querySelector('[data-radix-collection-item]') as HTMLElement | null;
-                                        const commerceId = select?.dataset.value;
-                                        if (commerceId) {
-                                            handleGenerateInvoice(commerceId);
+                                        if (commerceToInvoiceId) {
+                                            handleGenerateInvoice(commerceToInvoiceId);
                                         } else {
                                             toast({variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner un commerce.'})
                                         }
