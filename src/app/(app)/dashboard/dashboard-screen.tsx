@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
 import { generateReport } from '@/ai/flows/generate-report-flow';
+import { MonthlySalesChart } from './monthly-sales-chart';
 
 
 const ChiffreAffaireCard: React.FC = () => {
@@ -344,7 +345,7 @@ export const DashboardScreen: React.FC = () => {
       });
 
       const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-      const mailtoLink = `mailto:${user?.ownerEmail ?? ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
+      const mailtoLink = `mailto:${user?.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
       window.location.href = mailtoLink;
 
     } catch (error) {
@@ -376,12 +377,19 @@ export const DashboardScreen: React.FC = () => {
         <NombreVentesCard />
         <NombreClientsCard />
         <TotalCreditCard />
-        <div className="lg:col-span-2">
-            <TopProductsCard />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-3">
+          <MonthlySalesChart />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+            <TopProductsCard />
             <PeakHourCard/>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
         <div className="lg:col-span-4">
             <SalesHistoryCard />
         </div>
