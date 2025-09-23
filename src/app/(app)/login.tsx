@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/app/(app)/logo';
+import { useToast } from '@/hooks/use-toast';
 
 export const LoginScreen: React.FC = () => {
   const { setUser, setCurrentView, commerces } = useApp();
   const [email, setEmail] = useState('onz@live.fr');
   const [password, setPassword] = useState('06034434mg');
+  const { toast } = useToast();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +33,11 @@ export const LoginScreen: React.FC = () => {
 
     if (commerceUser) {
       if (commerceUser.subscription === 'Inactive') {
-        alert("Votre compte est inactif. Veuillez contacter l'administrateur de la plateforme.");
+        toast({
+            variant: "destructive",
+            title: "Accès refusé",
+            description: "Votre compte est inactif. Veuillez contacter l'administrateur de la plateforme.",
+        });
         return;
       }
 
@@ -47,7 +53,11 @@ export const LoginScreen: React.FC = () => {
       });
       setCurrentView('pos');
     } else {
-      alert('Email ou mot de passe incorrect');
+        toast({
+            variant: "destructive",
+            title: "Erreur de connexion",
+            description: "Email ou mot de passe incorrect.",
+        });
     }
   };
 
