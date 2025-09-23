@@ -160,6 +160,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : false);
   const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(null);
 
+  
+  useEffect(() => {
+    // Only run on client
+    const savedCommerceId = localStorage.getItem('viewedCommerceId');
+    if (savedCommerceId) {
+      setViewedCommerceId(JSON.parse(savedCommerceId));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Only run on client
+    if (viewedCommerceId) {
+      localStorage.setItem('viewedCommerceId', JSON.stringify(viewedCommerceId));
+    } else {
+      localStorage.removeItem('viewedCommerceId');
+    }
+  }, [viewedCommerceId]);
+
+
   // Clear all data
   const clearData = () => {
       setProducts([]);
