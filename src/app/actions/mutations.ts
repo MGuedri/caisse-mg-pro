@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { Commerce, Product, Client, Employee, Expense, Order } from '../(app)/app-provider';
 import { add } from 'date-fns';
+import { randomUUID } from 'crypto';
 
 // General purpose function to handle mutations
 async function handleMutation(callback: (supabase: any) => Promise<any>) {
@@ -143,7 +144,7 @@ export async function deleteClient(id: string) {
 export async function addEmployee(employeeData: Omit<Employee, 'id'>) {
     const fullEmployeeData = {
         ...employeeData,
-        avatar: `https://i.pravatar.cc/150?u=${crypto.randomUUID()}`
+        avatar: `https://i.pravatar.cc/150?u=${randomUUID()}`
     };
     return handleMutation(supabase => supabase.from('employees').insert(fullEmployeeData));
 }
