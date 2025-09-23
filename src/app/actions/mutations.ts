@@ -141,7 +141,11 @@ export async function deleteClient(id: string) {
 }
 
 export async function addEmployee(employeeData: Omit<Employee, 'id'>) {
-    return handleMutation(supabase => supabase.from('employees').insert(employeeData));
+    const fullEmployeeData = {
+        ...employeeData,
+        avatar: `https://i.pravatar.cc/150?u=${crypto.randomUUID()}`
+    };
+    return handleMutation(supabase => supabase.from('employees').insert(fullEmployeeData));
 }
 export async function updateEmployee(id: string, employeeData: Partial<Employee>) {
     return handleMutation(supabase => supabase.from('employees').update(employeeData).eq('id', id));
