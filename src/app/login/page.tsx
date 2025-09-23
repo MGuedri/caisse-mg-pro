@@ -1,28 +1,52 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Logo } from '@/app/(app)/logo';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, AlertCircle, CheckCircle2, LogOut } from 'lucide-react';
+import { Logo } from '../(app)/logo';
 
-// Actual response type from our new API route
-type AuthResult = {
+interface AuthResult {
   success: boolean;
   error?: string;
   user?: {
     id: string;
     email: string;
+    role?: string;
+    commerceId?: string;
+    isSuperAdmin?: boolean;
   };
-};
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('onz@live.fr');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
+
+  // Vérifier si déjà connecté au chargement
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/session');
+        if (res.ok) {
+          const { session } = await res.json();
+          if (session?.user) {
+            router.push('/');
+          }
+        }
+      } catch (err) {
+        console.log('No active session or network error');
+      }
+    };
+    checkSession();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,86 +59,134 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ 
+          email: email.trim(), 
+          password: password.trim() 
+        }),
       });
 
-      const result: AuthResult = await response.json();
+      let result: AuthResult;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        throw new Error('Invalid JSON response from server');
+      }
 
-      if (result.success && response.ok) {
-        // On success, redirect to the main application page client-side
-        router.push('/');
-        router.refresh(); // Force a refresh to re-run server components and layout logic
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP error! status: ${response.status}`);
+      }
+
+      if (result.success && result.user) {
+        setSuccess(true);
+        setError(null);
+        
+        // Redirection côté client (safe)
+        setTimeout(() => {
+          router.push('/');
+          router.refresh();
+        }, 1500);
+
       } else {
-        setError(result.error || 'Une erreur de connexion est survenue.');
+        setError(result.error || 'Identifiants invalides');
+        setSuccess(false);
       }
     } catch (err: any) {
-      console.error('Erreur lors de l\'appel de l\'API de connexion:', err);
-      setError('Impossible de communiquer avec le serveur d\'authentification.');
+      console.error('Erreur lors de la connexion:', err);
+      setError(
+        err.message.includes('Network error') 
+          ? 'Erreur réseau — vérifiez votre connexion' 
+          : err.message.includes('Invalid JSON')
+            ? 'Erreur serveur — veuillez réessayer'
+            : err.message || 'Erreur de connexion. Veuillez réessayer.'
+      );
+      setSuccess(false);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-transparent rounded-full flex items-center justify-center mx-auto mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
+      <Card className="w-full max-w-md bg-gray-800 border-gray-700 shadow-lg">
+        <CardHeader className="text-center space-y-4 pt-8">
+          <div className="mx-auto w-20 h-20 bg-transparent rounded-full flex items-center justify-center">
             <Logo />
           </div>
-          <h1 className="text-2xl font-bold text-white">Caisse MG Pro</h1>
-        </div>
+          <CardTitle className="text-2xl font-bold text-white">Caisse MG Pro</CardTitle>
+        </CardHeader>
+        
+        <CardContent className="p-8">
+          {/* Message d'erreur */}
+          {error && (
+            <Alert variant="destructive" className="mb-6 bg-red-600/20 border-red-600 text-red-300">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="font-medium">Erreur de connexion</AlertTitle>
+              <AlertDescription className="text-xs">{error}</AlertDescription>
+            </Alert>
+          )}
 
-        {error && (
-          <div className="bg-red-600/20 border border-red-600 text-red-300 px-4 py-3 rounded mb-6 text-sm">
-            <div className="font-bold mb-1">Erreur de connexion</div>
-            {error}
+          {/* Message de succès */}
+          {success && (
+            <Alert className="mb-6 bg-green-600/20 border-green-600 text-green-300">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle className="font-medium">Connexion réussie !</AlertTitle>
+              <AlertDescription className="text-xs">Bienvenue, redirection en cours...</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading || success}
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500 rounded-lg py-6 px-4"
+                placeholder="Email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading || success}
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500 rounded-lg py-6 px-4"
+                placeholder="Mot de passe"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading || success}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-6 text-base transition-all disabled:opacity-70 rounded-lg"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Connexion...
+                </>
+              ) : success ? (
+                <>
+                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                  Connecté !
+                </>
+              ) : (
+                'Se connecter'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+            <p className="text-xs text-gray-400 text-center">
+              ✅ Compatible Firebase Studio • Aucun redirect serveur
+            </p>
           </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <Input
-              type="email"
-              name="email"
-              placeholder="onz@live.fr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 disabled:opacity-50"
-            />
-          </div>
-
-          <div>
-            <Input
-              type="password"
-              name="password"
-              placeholder="••••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 disabled:opacity-50"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:bg-orange-600/50"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connexion...
-              </>
-            ) : (
-              'Se connecter'
-            )}
-          </Button>
-        </form>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

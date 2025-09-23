@@ -52,8 +52,13 @@ import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
-import { serverSignOut } from '@/app/actions/auth';
 import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
+import { useRouter } from 'next/navigation';
+
+const handleSignOut = async (router: any) => {
+    await fetch('/api/auth/signout', { method: 'POST' });
+    router.push('/login');
+};
 
 export const SuperAdminScreen: React.FC = () => {
   const { 
@@ -65,6 +70,7 @@ export const SuperAdminScreen: React.FC = () => {
     refreshData,
   } = useApp();
 
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
@@ -213,7 +219,7 @@ export const SuperAdminScreen: React.FC = () => {
                    </div>
                  </DropdownMenuLabel>
                  <DropdownMenuSeparator className="bg-gray-700" />
-                 <DropdownMenuItem onClick={async () => await serverSignOut()} className="cursor-pointer hover:!bg-red-600/80">
+                 <DropdownMenuItem onClick={() => handleSignOut(router)} className="cursor-pointer hover:!bg-red-600/80">
                    <LogOut className="mr-2 h-4 w-4" />
                    <span>Déconnexion</span>
                  </DropdownMenuItem>

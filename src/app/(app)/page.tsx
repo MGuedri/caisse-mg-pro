@@ -22,12 +22,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
 import { SyncStatusItem } from '@/components/sync-status-item';
-import { serverSignOut } from '@/app/actions/auth';
+import { useRouter } from 'next/navigation';
 
+
+const handleSignOut = async (router: any) => {
+    await fetch('/api/auth/signout', { method: 'POST' });
+    router.push('/login');
+};
 
 // --- NAVIGATION PRINCIPALE ---
 const MainApp: React.FC = () => {
   const { user, setUser, currentView, setCurrentView, refreshData } = useApp();
+  const router = useRouter();
+
 
   const navigation = [
     { id: 'pos', label: 'Caisse', icon: ShoppingCart, allowedRoles: ['Owner', 'Caissier'] },
@@ -103,7 +110,7 @@ const MainApp: React.FC = () => {
                 <SyncStatusItem />
                 <DropdownMenuSeparator className="bg-gray-700"/>
                 <DropdownMenuItem 
-                  onClick={async () => await serverSignOut()} 
+                  onClick={() => handleSignOut(router)} 
                   className="cursor-pointer hover:!bg-orange-500/80"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
