@@ -191,14 +191,12 @@ export const SuperAdminScreen: React.FC = () => {
         }
         
         // 3. Update user with the new commerce_id
-        const { data: updatedUser, error: userUpdateError } = await supabase
+        const { error: userUpdateError } = await supabase
             .from('users')
             .update({ commerce_id: newCommerceData.id })
-            .eq('id', newUserData.id)
-            .select()
-            .single();
+            .eq('id', newUserData.id);
 
-        if (userUpdateError || !updatedUser) {
+        if (userUpdateError) {
             toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer à l'utilisateur: ${userUpdateError.message}` });
             // Rollback commerce and user creation
             await supabase.from('commerces').delete().eq('id', newCommerceData.id);
@@ -217,11 +215,9 @@ export const SuperAdminScreen: React.FC = () => {
         if (productsError) {
             toast({variant: 'destructive', title: 'Attention', description: `Le commerce a été créé, mais l'inventaire par défaut n'a pas pu être ajouté: ${productsError.message}`});
         }
-
-        setCommerces([...commerces, newCommerceData]);
-        if(viewedCommerceId === newCommerceData.id) {
-          setProducts(prev => [...prev, ...productsToInsert]);
-        }
+        
+        await fetchAllData();
+        setViewedCommerceId(newCommerceData.id);
         toast({ variant: 'success', title: 'Succès', description: 'Commerce et inventaire par défaut ajoutés.' });
     }
     setIsModalOpen(false);
@@ -557,9 +553,9 @@ export const SuperAdminScreen: React.FC = () => {
                             <h4 className="text-lg font-semibold text-white mb-4">Générer une Nouvelle Facture</h4>
                             <div className="flex flex-col sm:flex-row gap-4 items-end">
                                 <div className="w-full sm:w-auto flex-grow">
-                                    <Label className="text-gray-300">Sélectionner un commerce</Label>
-                                    <Select onValueChange={(value) => setCommerceToInvoiceId(value)}>
-                                        <SelectTrigger className="bg-gray-700 border-gray-600 mt-1">
+                                    <Label htmlFor='invoice-commerce-select' className="text-gray-300">Sélectionner un commerce</Label>
+                                    <Select onValueChange={setCommerceToInvoiceId}>
+                                        <SelectTrigger id='invoice-commerce-select' className="bg-gray-700 border-gray-600 mt-1">
                                             <SelectValue placeholder="Choisir un commerce..." />
                                         </SelectTrigger>
                                         <SelectContent className="bg-gray-700 border-gray-600 text-white">
@@ -609,4 +605,5 @@ export const SuperAdminScreen: React.FC = () => {
     
 
     
+
 
