@@ -106,11 +106,38 @@ const TotalCreditCard: React.FC = () => {
 }
 
 const TopProductsCard: React.FC = () => {
-    const topProducts = [
-        { name: 'Café express', sold: 2, color: 'bg-yellow-400' },
-        { name: 'Capucin', sold: 2, color: 'bg-gray-400' },
-        { name: 'Thé au menthe', sold: 2, color: 'bg-green-400' }
-    ];
+    const { orders } = useApp();
+
+    const productSales = orders.flatMap(order => order.items).reduce((acc, item) => {
+        if (!acc[item.name]) {
+            acc[item.name] = 0;
+        }
+        acc[item.name] += item.quantity;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const topProducts = Object.entries(productSales)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name, sold]) => ({ name, sold }));
+
+    const productColors = ['bg-yellow-400', 'bg-gray-400', 'bg-green-400'];
+
+    if (topProducts.length === 0) {
+        return (
+            <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                    <CardTitle className="text-white text-lg">Top Produits du Jour</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-gray-400">Aucune vente enregistrée aujourd'hui.</p>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    const maxSold = topProducts.length > 0 ? Math.max(...topProducts.map(p => p.sold)) : 0;
+
 
     return (
         <Card className="bg-gray-800 border-gray-700">
@@ -125,7 +152,7 @@ const TopProductsCard: React.FC = () => {
                                 <span className="text-white">{index + 1}. {product.name}</span>
                                 <span className="text-gray-400">{product.sold} vendus</span>
                             </div>
-                            <Progress value={50 + Math.random() * 50} className={`h-2 [&>div]:${product.color}`} />
+                            <Progress value={maxSold > 0 ? (product.sold / maxSold) * 100 : 0} className={`h-2 [&>div]:${productColors[index % productColors.length]}`} />
                         </div>
                     ))}
                 </div>
@@ -286,11 +313,20 @@ export const DashboardScreen: React.FC = () => {
       const totalSales = orders.length;
       const totalCredit = clients.reduce((sum, client) => sum + client.credit, 0);
       const peakHour = "Soir (18-05h)"; // Placeholder
-      const topProducts = [ // Placeholder
-          { name: 'Café express', sold: 2 },
-          { name: 'Capucin', sold: 2 },
-          { name: 'Thé au menthe', sold: 2 }
-      ];
+      
+      const productSales = orders.flatMap(order => order.items).reduce((acc, item) => {
+        if (!acc[item.name]) {
+            acc[item.name] = 0;
+        }
+        acc[item.name] += item.quantity;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const topProducts = Object.entries(productSales)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, sold]) => ({ name, sold }));
+
 
       const reportHtml = await generateReport({
         totalRevenue: totalRevenue.toFixed(3) + ' DT',
@@ -303,7 +339,7 @@ export const DashboardScreen: React.FC = () => {
             client: order.clientName,
             time: new Date(order.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             total: order.total.toFixed(3) + ' DT',
-            items: order.items.map(item => `${item.quantity} x ${item.name} @ {item.price.toFixed(3)} DT`),
+            items: order.items.map(item => `${item.quantity} x ${item.name} @ ${item.price.toFixed(3)} DT`),
         })),
       });
 

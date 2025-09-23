@@ -136,7 +136,7 @@ export const InventoryScreen: React.FC = () => {
             <Input placeholder="Nom" value={formData.name || ''} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} className="bg-gray-700 border-gray-600" />
             <Input type="number" step="0.001" placeholder="Prix (DT)" value={formData.price || ''} onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))} className="bg-gray-700 border-gray-600" />
             <Input placeholder="Catégorie" value={formData.category || ''} onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))} className="bg-gray-700 border-gray-600" />
-            <Input type="number" placeholder="Stock" value={formData.stock || ''} onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))} className="bg-gray-700 border-gray-600" />
+            <Input type="number" placeholder="Stock" value={formData.stock || ''} onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value, 10) || 0 }))} className="bg-gray-700 border-gray-600" />
             <Input placeholder="Icône (emoji)" value={formData.icon || ''} onChange={(e) => setFormData(prev => ({ ...prev, icon: e.target.value }))} className="bg-gray-700 border-gray-600" />
           </div>
           <DialogFooter>
