@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import {
-  Users, Trash2, Edit, Plus, Wallet, DollarSign, Star, UserPlus,
+  Users, Trash2, Edit, Plus, Wallet, DollarSign, Star, UserPlus, Landmark,
 } from 'lucide-react';
 import { SalariesTabContent } from './salaries-tab';
 import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
@@ -47,6 +47,8 @@ export const ManagementScreen: React.FC = () => {
 
   const totalCredit = clients.reduce((acc, client) => acc + client.credit, 0);
   const averageEvaluation = employees.length > 0 ? employees.reduce((acc, emp) => acc + emp.evaluation, 0) / employees.length : 0;
+  const totalExpenses = expenses.reduce((acc, exp) => acc + exp.amount, 0);
+  const totalSalaries = employees.reduce((acc, emp) => acc + emp.salary, 0);
 
   const getEvaluationText = (avg: number) => {
     if (avg >= 4.5) return "Excellent";
@@ -71,7 +73,7 @@ export const ManagementScreen: React.FC = () => {
     if (editingClient) {
       setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...clientData } as Client : c));
     } else {
-      setClients([...clients, { ...clientData, id: Date.now().toString(), credit: clientData.credit || 0, isVip: clientData.isVip || false, avatar: clientData.avatar || '' } as Client]);
+      setClients([...clients, { ...clientData, id: Date.now().toString(), credit: clientData.credit || 0, isVip: clientData.isVip || false, avatar: clientData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}` } as Client]);
     }
     setIsClientModalOpen(false);
   };
@@ -88,7 +90,7 @@ export const ManagementScreen: React.FC = () => {
     if (editingEmployee) {
       setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeData, balance: (employeeData.salary || e.salary) - (employeeData.advance || e.advance) } as Employee : e));
     } else {
-      const newEmployee = { ...employeeData, id: Date.now().toString() } as Employee;
+      const newEmployee = { ...employeeData, id: Date.now().toString(), avatar: `https://i.pravatar.cc/150?u=${Date.now()}` } as Employee;
       newEmployee.balance = (newEmployee.salary || 0) - (newEmployee.advance || 0);
       setEmployees([...employees, newEmployee]);
     }
@@ -106,7 +108,7 @@ export const ManagementScreen: React.FC = () => {
     const newExpense: Expense = {
       id: `exp_sal_${Date.now()}`,
       description: `Paiement salaire: ${employee.name}`,
-      amount: employee.salary,
+      amount: employee.balance,
       category: 'Charges Salaires',
       date: new Date().toLocaleDateString('fr-CA')
     };
@@ -352,21 +354,50 @@ export const ManagementScreen: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="expenses">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                    <div className="flex items-center gap-4">
+                        <DollarSign className="h-8 w-8 text-red-400"/>
+                        <div>
+                            <p className="text-sm text-gray-400">Total des Dépenses</p>
+                            <p className="text-2xl font-bold text-white">{totalExpenses.toFixed(3)} DT</p>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+            <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                    <div className="flex items-center gap-4">
+                        <Landmark className="h-8 w-8 text-blue-400"/>
+                        <div>
+                            <p className="text-sm text-gray-400">Estimation Charges Salariales</p>
+                            <p className="text-2xl font-bold text-white">{totalSalaries.toFixed(3)} DT</p>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+            <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                    <Button onClick={() => handleOpenExpenseModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600">
+                        <Plus className="mr-2 h-4 w-4" /> Ajouter une dépense
+                    </Button>
+                </CardHeader>
+            </Card>
+          </div>
+
           <div className="space-y-4">
-            <Button onClick={() => handleOpenExpenseModal()} className="bg-orange-500 hover:bg-orange-600">
-              <Plus className="mr-2 h-4 w-4" /> Ajouter une dépense
-            </Button>
             {expenses.map(expense => (
               <Card key={expense.id} className="bg-gray-800 border-gray-700">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-white">{expense.description}</h3>
-                      <p className="text-gray-400">{expense.category}</p>
-                      <p className="text-gray-400">{expense.date}</p>
+                      <Badge variant="secondary" className="mt-1 mb-2 bg-gray-700 text-gray-300">{expense.category}</Badge>
+                      <p className="text-gray-400 text-sm">{expense.date}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-red-400 font-bold">- {expense.amount.toFixed(2)} DT</p>
+                      <p className="text-red-400 font-bold text-lg">- {expense.amount.toFixed(3)} DT</p>
                       <div className="flex gap-2 mt-2">
                         <Button size="sm" variant="outline" className="border-gray-600" onClick={() => handleOpenExpenseModal(expense)}><Edit className="h-3 w-3" /></Button>
                         <AlertDialog>

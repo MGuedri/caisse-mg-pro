@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -29,7 +30,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onOpenChange, on
     if (client) {
       setFormData(client);
     } else {
-      setFormData({ name: '', email: '', phone: '', isVip: false, credit: 0, avatar: '' });
+      setFormData({ name: '', email: '', phone: '', isVip: false, credit: 0 });
     }
   }, [client, isOpen]);
 
@@ -90,8 +91,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onOpenChange
                 joinDate: new Date().toLocaleDateString('fr-CA'),
                 advance: 0,
                 balance: 0,
-                isTopEmployee: false,
-                avatar: ''
+                isTopEmployee: false
             });
         }
     }, [employee, isOpen]);
