@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/app/(app)/logo';
+import { initialCommerces } from '@/lib/commerces';
 
 
 export const LoginScreen: React.FC = () => {
@@ -25,34 +26,24 @@ export const LoginScreen: React.FC = () => {
         isSuperAdmin: true,
       });
       setCurrentView('superadmin');
+      return;
     }
-    else if (email === 'mg.06sbz@gmail.com' && password === '06034434mg') {
-      setUser({ 
-        id: '1', 
-        name: 'Issam Bayaoui', 
-        email, 
+
+    const commerceUser = initialCommerces.find(c => c.ownerEmail === email && c.password === password);
+
+    if (commerceUser) {
+      setUser({
+        id: commerceUser.id,
+        name: commerceUser.ownerName,
+        email: commerceUser.ownerEmail,
         role: 'Owner',
         isSuperAdmin: false,
-        commerceId: 'mon_plaisir',
-        commerceName: 'Café Mon Plaisir',
-        ownerEmail: 'mg.06sbz@gmail.com',
+        commerceId: commerceUser.id,
+        commerceName: commerceUser.name,
+        ownerEmail: commerceUser.ownerEmail,
       });
       setCurrentView('pos');
-    }
-    else if (email === 'chichkhan@email.com' && password === 'chichkhan') {
-      setUser({ 
-        id: '2', 
-        name: 'Ali', 
-        email, 
-        role: 'Owner',
-        isSuperAdmin: false,
-        commerceId: 'chichkhan',
-        commerceName: 'Café Chichkhan',
-        ownerEmail: 'chichkhan@email.com',
-      });
-      setCurrentView('pos');
-    }
-    else {
+    } else {
       alert('Email ou mot de passe incorrect');
     }
   };

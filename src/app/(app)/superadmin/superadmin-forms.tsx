@@ -28,6 +28,7 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
         name: '', 
         ownerName: '', 
         ownerEmail: '',
+        password: '',
         subscription: 'Trial', 
         creationDate: new Date().toISOString().split('T')[0] 
       });
@@ -48,6 +49,7 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
           <Input placeholder="Nom du Commerce" value={formData.name || ''} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input placeholder="Nom du Propriétaire" value={formData.ownerName || ''} onChange={(e) => setFormData(p => ({...p, ownerName: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input placeholder="Email du Propriétaire" type="email" value={formData.ownerEmail || ''} onChange={(e) => setFormData(p => ({...p, ownerEmail: e.target.value}))} className="bg-gray-700 border-gray-600"/>
+          <Input placeholder="Mot de passe" type="password" value={formData.password || ''} onChange={(e) => setFormData(p => ({...p, password: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Select value={formData.subscription} onValueChange={(value: Commerce['subscription']) => setFormData(p => ({...p, subscription: value}))}>
             <SelectTrigger className="bg-gray-700 border-gray-600">
                 <SelectValue placeholder="Abonnement" />
