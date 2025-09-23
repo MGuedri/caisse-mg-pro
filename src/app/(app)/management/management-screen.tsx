@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { useApp } from '@/app/(app)/app-provider';
+import { useApp, Client, Employee, Expense } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader
 } from "@/components/ui/card"
@@ -15,13 +15,24 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import {
-  Users, Trash2, Edit, Plus, Wallet, DollarSign, FileText, Star, UserPlus,
+  Users, Trash2, Edit, Plus, Wallet, DollarSign, Star, UserPlus,
 } from 'lucide-react';
 import { SalariesTabContent } from './salaries-tab';
+import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
 
 export const ManagementScreen: React.FC = () => {
-  const { clients, employees, expenses } = useApp();
+  const { clients, setClients, employees, setEmployees, expenses, setExpenses } = useApp();
   const [activeTab, setActiveTab] = useState('employees');
+
+  // State for modals
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const totalCredit = clients.reduce((acc, client) => acc + client.credit, 0);
   const averageEvaluation = employees.length > 0 ? employees.reduce((acc, emp) => acc + emp.evaluation, 0) / employees.length : 0;
@@ -39,6 +50,57 @@ export const ManagementScreen: React.FC = () => {
     { value: 'salaries', label: 'Salaires', icon: Wallet },
     { value: 'expenses', label: 'Dépenses', icon: DollarSign },
   ]
+  
+  // --- Client Actions ---
+  const handleOpenClientModal = (client: Client | null = null) => {
+    setEditingClient(client);
+    setIsClientModalOpen(true);
+  };
+  const handleSaveClient = (clientData: Partial<Client>) => {
+    if (editingClient) {
+      setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...clientData } as Client : c));
+    } else {
+      setClients([...clients, { ...clientData, id: Date.now().toString(), credit: clientData.credit || 0 } as Client]);
+    }
+    setIsClientModalOpen(false);
+  };
+  const handleDeleteClient = (clientId: string) => {
+    setClients(clients.filter(c => c.id !== clientId));
+  };
+
+  // --- Employee Actions ---
+  const handleOpenEmployeeModal = (employee: Employee | null = null) => {
+    setEditingEmployee(employee);
+    setIsEmployeeModalOpen(true);
+  }
+  const handleSaveEmployee = (employeeData: Partial<Employee>) => {
+    if (editingEmployee) {
+      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeData } as Employee : e));
+    } else {
+      setEmployees([...employees, { ...employeeData, id: Date.now().toString() } as Employee]);
+    }
+    setIsEmployeeModalOpen(false);
+  }
+  const handleDeleteEmployee = (employeeId: string) => {
+    setEmployees(employees.filter(e => e.id !== employeeId));
+  }
+
+  // --- Expense Actions ---
+  const handleOpenExpenseModal = (expense: Expense | null = null) => {
+    setEditingExpense(expense);
+    setIsExpenseModalOpen(true);
+  }
+  const handleSaveExpense = (expenseData: Partial<Expense>) => {
+    if (editingExpense) {
+      setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...e, ...expenseData } as Expense : e));
+    } else {
+      setExpenses([...expenses, { ...expenseData, id: Date.now().toString(), date: new Date().toLocaleDateString('fr-CA') } as Expense]);
+    }
+    setIsExpenseModalOpen(false);
+  }
+  const handleDeleteExpense = (expenseId: string) => {
+    setExpenses(expenses.filter(e => e.id !== expenseId));
+  }
 
   return (
     <div className="p-6">
@@ -83,7 +145,7 @@ export const ManagementScreen: React.FC = () => {
             </Card>
              <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                 <Button className="w-full h-full bg-orange-500 hover:bg-orange-600">
+                 <Button onClick={() => handleOpenClientModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600">
                     <Plus className="mr-2 h-4 w-4" /> Ajouter un client
                   </Button>
               </CardHeader>
@@ -105,7 +167,7 @@ export const ManagementScreen: React.FC = () => {
                         <p className="text-gray-400 text-sm">{client.phone}</p>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white"><Edit className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white" onClick={() => handleOpenClientModal(client)}><Edit className="h-4 w-4" /></Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
@@ -117,7 +179,7 @@ export const ManagementScreen: React.FC = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="border-gray-600 text-gray-300">Annuler</AlertDialogCancel>
-                              <AlertDialogAction className="bg-red-600">Supprimer</AlertDialogAction>
+                              <AlertDialogAction onClick={() => handleDeleteClient(client.id)} className="bg-red-600">Supprimer</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -162,7 +224,7 @@ export const ManagementScreen: React.FC = () => {
             </Card>
              <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                 <Button className="w-full h-full bg-orange-500 hover:bg-orange-600">
+                 <Button onClick={() => handleOpenEmployeeModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600">
                     <Plus className="mr-2 h-4 w-4" /> Ajouter un employé
                   </Button>
               </CardHeader>
@@ -184,8 +246,22 @@ export const ManagementScreen: React.FC = () => {
                           </div>
                            <div className="flex items-center gap-2">
                             {employee.isTopEmployee && <Badge className="bg-green-600 text-white">Top Employé</Badge>}
-                            <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white"><Edit className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white" onClick={() => handleOpenEmployeeModal(employee)}><Edit className="h-4 w-4" /></Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Supprimer {employee.name} ?</AlertDialogTitle>
+                                  <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="border-gray-600 text-gray-300">Annuler</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteEmployee(employee.id)} className="bg-red-600">Supprimer</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
 
@@ -237,7 +313,7 @@ export const ManagementScreen: React.FC = () => {
 
         <TabsContent value="expenses">
           <div className="space-y-4">
-            <Button className="bg-orange-500 hover:bg-orange-600">
+            <Button onClick={() => handleOpenExpenseModal()} className="bg-orange-500 hover:bg-orange-600">
               <Plus className="mr-2 h-4 w-4" /> Ajouter une dépense
             </Button>
             {expenses.map(expense => (
@@ -252,19 +328,19 @@ export const ManagementScreen: React.FC = () => {
                     <div className="text-right">
                       <p className="text-red-400 font-bold">- {expense.amount.toFixed(2)} DT</p>
                       <div className="flex gap-2 mt-2">
-                        <Button size="sm" variant="outline" className="border-gray-600"><Edit className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="outline" className="border-gray-600" onClick={() => handleOpenExpenseModal(expense)}><Edit className="h-3 w-3" /></Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button size="sm" variant="destructive"><Trash2 className="h-3 w-3" /></Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer ?</AlertDialogTitle>
-                              <AlertDialogDescription>Irreversible.</AlertDialogDescription>
+                              <AlertDialogTitle>Supprimer cette dépense ?</AlertDialogTitle>
+                              <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="border-gray-600 text-gray-300">Annuler</AlertDialogCancel>
-                              <AlertDialogAction className="bg-red-600">Supprimer</AlertDialogAction>
+                              <AlertDialogAction onClick={() => handleDeleteExpense(expense.id)} className="bg-red-600">Supprimer</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -277,6 +353,26 @@ export const ManagementScreen: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* Modals */}
+      <ClientForm 
+        isOpen={isClientModalOpen}
+        onOpenChange={setIsClientModalOpen}
+        onSave={handleSaveClient}
+        client={editingClient}
+      />
+      <EmployeeForm
+        isOpen={isEmployeeModalOpen}
+        onOpenChange={setIsEmployeeModalOpen}
+        onSave={handleSaveEmployee}
+        employee={editingEmployee}
+      />
+      <ExpenseForm
+        isOpen={isExpenseModalOpen}
+        onOpenChange={setIsExpenseModalOpen}
+        onSave={handleSaveExpense}
+        expense={editingExpense}
+      />
     </div>
   );
 };
