@@ -31,7 +31,7 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
         ownerName: '', 
         ownerEmail: '',
         subscription: 'Trial', 
-        creationdate: new Date().toISOString().split('T')[0],
+        creationdate: new Date().toLocaleDateString('fr-CA'), // YYYY-MM-DD
         address: '',
       });
       setOwnerPassword('');
@@ -79,8 +79,3 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
     </Dialog>
   );
 };
-
-
-    
-
-    
