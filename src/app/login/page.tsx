@@ -2,21 +2,20 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
-import { serverSignIn } from '@/app/actions/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Logo } from '@/app/(app)/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { serverSignIn } from '@/app/actions/auth';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('onz@live.fr');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
-    const router = useRouter();
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     React.useEffect(() => {
         const urlError = searchParams.get('error');
@@ -39,7 +38,7 @@ export default function LoginPage() {
         }
     }, [searchParams]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
 
@@ -54,7 +53,8 @@ export default function LoginPage() {
 
         startTransition(() => {
             serverSignIn(formData).catch(err => {
-                // This will likely not be called as server actions with redirect don't return
+                // This will likely not be hit as server actions redirect,
+                // but it's good practice for error handling.
                 setError('Une erreur inattendue est survenue.');
             });
         });
@@ -120,7 +120,7 @@ export default function LoginPage() {
                         ) : (
                             'Se connecter'
                         )}
-                    </button>
+                    </Button>
                 </form>
             </div>
         </div>
