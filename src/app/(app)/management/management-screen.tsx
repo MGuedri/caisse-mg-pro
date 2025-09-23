@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -70,7 +71,7 @@ export const ManagementScreen: React.FC = () => {
     if (editingClient) {
       setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...clientData } as Client : c));
     } else {
-      setClients([...clients, { ...clientData, id: Date.now().toString(), credit: clientData.credit || 0 } as Client]);
+      setClients([...clients, { ...clientData, id: Date.now().toString(), credit: clientData.credit || 0, isVip: clientData.isVip || false, avatar: clientData.avatar || '' } as Client]);
     }
     setIsClientModalOpen(false);
   };
@@ -98,8 +99,21 @@ export const ManagementScreen: React.FC = () => {
   }
 
   const handlePaySalary = (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return;
+
+    // Create a new expense for the salary payment
+    const newExpense: Expense = {
+      id: `exp_sal_${Date.now()}`,
+      description: `Paiement salaire: ${employee.name}`,
+      amount: employee.salary,
+      category: 'Charges Salaires',
+      date: new Date().toLocaleDateString('fr-CA')
+    };
+    setExpenses(prevExpenses => [...prevExpenses, newExpense]);
+
+    // Update employee state to reflect payment
     setEmployees(employees.map(e => e.id === employeeId ? { ...e, advance: 0, balance: 0 } : e));
-    // In a real app you'd probably want to mark it as paid for the month, not just zero out balance.
   }
 
   // --- Expense Actions ---
