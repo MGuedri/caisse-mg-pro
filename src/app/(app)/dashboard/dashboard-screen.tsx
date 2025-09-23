@@ -25,6 +25,7 @@ import {
   User,
   Send,
   Loader2,
+  Users,
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
 import { generateReport } from '@/ai/flows/generate-report-flow';
@@ -40,10 +41,6 @@ const ChiffreAffaireCard: React.FC = () => {
                 <DollarSign className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-green-100">Chiffre d'Affaire</p>
                 <p className="text-3xl font-bold">{totalRevenue.toFixed(3)} DT</p>
-                <div className="flex items-center text-xs text-green-100 mt-1">
-                    <ArrowDown className="h-3 w-3 mr-1"/>
-                    <span>-100.0% par rapport à hier</span>
-                </div>
              </CardContent>
         </Card>
     )
@@ -59,14 +56,27 @@ const NombreVentesCard: React.FC = () => {
                 <ShoppingCart className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-blue-100">Nombre de Ventes</p>
                 <p className="text-3xl font-bold">{totalSales}</p>
-                <div className="flex items-center text-xs text-blue-100 mt-1">
-                    <ArrowDown className="h-3 w-3 mr-1"/>
-                    <span>-100.0% par rapport à hier</span>
-                </div>
              </CardContent>
         </Card>
     )
 }
+
+const NombreClientsCard: React.FC = () => {
+    const { orders } = useApp();
+    // This is a simplification. A real implementation would need to count unique clients.
+    const clientCount = new Set(orders.map(o => o.clientName)).size;
+
+    return (
+        <Card className="bg-purple-600/90 border-purple-500 text-white relative overflow-hidden">
+             <CardContent className="p-6">
+                <Users className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
+                <p className="text-sm text-purple-100">Nombre de Clients</p>
+                <p className="text-3xl font-bold">{clientCount}</p>
+             </CardContent>
+        </Card>
+    )
+}
+
 
 const TotalCreditCard: React.FC = () => {
     const { clients } = useApp();
@@ -78,10 +88,6 @@ const TotalCreditCard: React.FC = () => {
                 <CreditCard className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-orange-100">Total Crédit</p>
                 <p className="text-3xl font-bold">{totalCredit.toFixed(3)} DT</p>
-                <div className="flex items-center text-xs text-orange-100 mt-1">
-                    <ArrowDown className="h-3 w-3 mr-1"/>
-                    <span>-100.0% par rapport à hier</span>
-                </div>
              </CardContent>
         </Card>
     )
@@ -259,6 +265,7 @@ const DataManagementCard: React.FC = () => {
 export const DashboardScreen: React.FC = () => {
   const { user, orders, clients } = useApp();
   const [isGenerating, setIsGenerating] = useState(false);
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   const handleSendReport = async () => {
     setIsGenerating(true);
@@ -284,12 +291,12 @@ export const DashboardScreen: React.FC = () => {
             client: order.clientName,
             time: new Date(order.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             total: order.total.toFixed(3) + ' DT',
-            items: order.items.map(item => `${item.quantity} x ${item.name} @ ${item.price.toFixed(3)} DT`),
+            items: order.items.map(item => `${item.quantity} x ${item.name} @ {item.price.toFixed(3)} DT`),
         })),
       });
 
       const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-      const mailtoLink = `mailto:${user?.ownerEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
+      const mailtoLink = `mailto:${user?.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
       window.location.href = mailtoLink;
 
     } catch (error) {
@@ -303,7 +310,10 @@ export const DashboardScreen: React.FC = () => {
   return (
     <div className="p-4 md:p-6 space-y-6 bg-gray-900 min-h-full">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <div>
+            <h1 className="text-2xl font-bold text-white">Bilan de la Journée</h1>
+            <p className="text-gray-400">{today}</p>
+        </div>
         <div className="flex items-center gap-4">
           <Button onClick={handleSendReport} className="bg-orange-500 hover:bg-orange-600" disabled={isGenerating}>
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
@@ -316,12 +326,15 @@ export const DashboardScreen: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <ChiffreAffaireCard />
         <NombreVentesCard />
+        <NombreClientsCard />
         <TotalCreditCard />
-        <PeakHourCard/>
         <div className="lg:col-span-2">
             <TopProductsCard />
         </div>
         <div className="lg:col-span-2">
+            <PeakHourCard/>
+        </div>
+        <div className="lg:col-span-4">
             <SalesHistoryCard />
         </div>
         <div className="md:col-span-2 lg:col-span-4">
@@ -332,3 +345,5 @@ export const DashboardScreen: React.FC = () => {
     </div>
   );
 };
+
+    
