@@ -99,8 +99,8 @@ export const SuperAdminScreen: React.FC = () => {
         .from('commerces')
         .update({
           name: commerceData.name,
-          ownerName: commerceData.ownerName,
-          ownerEmail: commerceData.ownerEmail,
+          ownername: commerceData.ownername,
+          owneremail: commerceData.owneremail,
           subscription: commerceData.subscription,
           address: commerceData.address
         })
@@ -115,14 +115,14 @@ export const SuperAdminScreen: React.FC = () => {
 
       // Update user table if email or password changed
       const userUpdate: {email?: string, password?: string, name?: string} = {};
-      if (commerceData.ownerEmail && commerceData.ownerEmail !== editingCommerce.ownerEmail) {
-        userUpdate.email = commerceData.ownerEmail;
+      if (commerceData.owneremail && commerceData.owneremail !== editingCommerce.owneremail) {
+        userUpdate.email = commerceData.owneremail;
       }
       if (ownerPassword) {
         userUpdate.password = ownerPassword;
       }
-      if (commerceData.ownerName && commerceData.ownerName !== editingCommerce.ownerName) {
-        userUpdate.name = commerceData.ownerName;
+      if (commerceData.ownername && commerceData.ownername !== editingCommerce.ownername) {
+        userUpdate.name = commerceData.ownername;
       }
       
       if (Object.keys(userUpdate).length > 0 && editingCommerce.owner_id) {
@@ -142,7 +142,7 @@ export const SuperAdminScreen: React.FC = () => {
 
     } else {
         // --- CREATE ---
-        if (!commerceData.ownerEmail || !commerceData.ownerName || !commerceData.name) {
+        if (!commerceData.owneremail || !commerceData.ownername || !commerceData.name) {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Nom du commerce, nom du propriétaire et email sont requis.' });
             return;
         }
@@ -154,7 +154,7 @@ export const SuperAdminScreen: React.FC = () => {
         const { data: existingUser } = await supabase
             .from('users')
             .select('*')
-            .eq('email', commerceData.ownerEmail)
+            .eq('email', commerceData.owneremail)
             .single();
 
         if (existingUser) {
@@ -174,8 +174,8 @@ export const SuperAdminScreen: React.FC = () => {
             const { data: newUserData, error: newUserError } = await supabase
                 .from('users')
                 .insert({
-                    name: commerceData.ownerName,
-                    email: commerceData.ownerEmail,
+                    name: commerceData.ownername,
+                    email: commerceData.owneremail,
                     password: ownerPassword,
                     role: 'Owner',
                 })
@@ -195,8 +195,8 @@ export const SuperAdminScreen: React.FC = () => {
             .from('commerces')
             .insert({
                 name: commerceData.name,
-                ownerName: commerceData.ownerName,
-                ownerEmail: commerceData.ownerEmail,
+                ownername: commerceData.ownername,
+                owneremail: commerceData.owneremail,
                 subscription: commerceData.subscription || 'Trial',
                 creationdate: commerceData.creationdate || new Date().toLocaleDateString('fr-CA'),
                 address: commerceData.address,
@@ -238,11 +238,6 @@ export const SuperAdminScreen: React.FC = () => {
 
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    if (!commerce.owner_id) {
-        toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de trouver le propriétaire associé.'});
-        return;
-    }
-
     // 1. Delete the commerce first
     const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
     if(commerceError) { 
@@ -251,11 +246,12 @@ export const SuperAdminScreen: React.FC = () => {
     }
     
     // 2. Unlink user from commerce (or delete them)
-    // For now we just unlink, but you could delete
-    const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
-     if (userError) {
-        console.error("Could not delete owner, but commerce was deleted.", userError)
-        toast({variant: 'destructive', title: 'Attention', description: 'Le commerce a été supprimé, mais son propriétaire n\'a pas pu être supprimé.'});
+    if (commerce.owner_id) {
+        const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
+        if (userError) {
+            console.error("Could not delete owner, but commerce was deleted.", userError)
+            toast({variant: 'destructive', title: 'Attention', description: 'Le commerce a été supprimé, mais son propriétaire n\'a pas pu être supprimé.'});
+        }
     }
     
     setCommerces(commerces.filter(c => c.id !== commerce.id));
@@ -426,7 +422,7 @@ export const SuperAdminScreen: React.FC = () => {
                                 {commerces.map((commerce) => (
                                     <TableRow key={commerce.id} className="border-gray-700 hover:bg-gray-700/50">
                                         <TableCell className="font-medium text-white">{commerce.name}</TableCell>
-                                        <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.ownerName}</TableCell>
+                                        <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.ownername}</TableCell>
                                         <TableCell className="text-gray-300 hidden md:table-cell">{commerce.address}</TableCell>
                                         <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{new Date(commerce.creationdate).toLocaleDateString('fr-FR')}</TableCell>

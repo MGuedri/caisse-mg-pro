@@ -352,7 +352,7 @@ export const DashboardScreen: React.FC = () => {
       });
       
       setReportHtml(generatedHtml);
-      setRecipientEmail(user.ownerEmail || '');
+      setRecipientEmail(user.owneremail || '');
 
     } catch (error) {
       console.error("Failed to generate report", error);

@@ -28,8 +28,8 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
     } else {
       setFormData({ 
         name: '', 
-        ownerName: '', 
-        ownerEmail: '',
+        ownername: '', 
+        owneremail: '',
         subscription: 'Trial', 
         creationdate: new Date().toLocaleDateString('fr-CA'), // YYYY-MM-DD
         address: '',
@@ -50,9 +50,9 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
         </DialogHeader>
         <div className="space-y-4 py-4">
           <Input placeholder="Nom du Commerce" value={formData.name || ''} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} className="bg-gray-700 border-gray-600"/>
-          <Input placeholder="Nom du Propriétaire" value={formData.ownerName || ''} onChange={(e) => setFormData(p => ({...p, ownerName: e.target.value}))} className="bg-gray-700 border-gray-600"/>
+          <Input placeholder="Nom du Propriétaire" value={formData.ownername || ''} onChange={(e) => setFormData(p => ({...p, ownername: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input placeholder="Adresse" value={formData.address || ''} onChange={(e) => setFormData(p => ({...p, address: e.target.value}))} className="bg-gray-700 border-gray-600"/>
-          <Input placeholder="Email du Propriétaire" type="email" value={formData.ownerEmail || ''} onChange={(e) => setFormData(p => ({...p, ownerEmail: e.target.value}))} className="bg-gray-700 border-gray-600"/>
+          <Input placeholder="Email du Propriétaire" type="email" value={formData.owneremail || ''} onChange={(e) => setFormData(p => ({...p, owneremail: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input 
             placeholder={commerce ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe du propriétaire"}
             type="password" 
