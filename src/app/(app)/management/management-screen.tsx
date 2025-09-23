@@ -85,14 +85,21 @@ export const ManagementScreen: React.FC = () => {
   }
   const handleSaveEmployee = (employeeData: Partial<Employee>) => {
     if (editingEmployee) {
-      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeData } as Employee : e));
+      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeData, balance: (employeeData.salary || e.salary) - (employeeData.advance || e.advance) } as Employee : e));
     } else {
-      setEmployees([...employees, { ...employeeData, id: Date.now().toString() } as Employee]);
+      const newEmployee = { ...employeeData, id: Date.now().toString() } as Employee;
+      newEmployee.balance = (newEmployee.salary || 0) - (newEmployee.advance || 0);
+      setEmployees([...employees, newEmployee]);
     }
     setIsEmployeeModalOpen(false);
   }
   const handleDeleteEmployee = (employeeId: string) => {
     setEmployees(employees.filter(e => e.id !== employeeId));
+  }
+
+  const handlePaySalary = (employeeId: string) => {
+    setEmployees(employees.map(e => e.id === employeeId ? { ...e, advance: 0, balance: 0 } : e));
+    // In a real app you'd probably want to mark it as paid for the month, not just zero out balance.
   }
 
   // --- Expense Actions ---
@@ -324,7 +331,10 @@ export const ManagementScreen: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="salaries">
-          <SalariesTabContent/>
+          <SalariesTabContent 
+            onPay={handlePaySalary}
+            onDetails={handleOpenEmployeeModal}
+          />
         </TabsContent>
 
         <TabsContent value="expenses">

@@ -21,28 +21,29 @@ const getInitials = (name: string) => {
     return name.substring(0, 2).toUpperCase();
 };
 
+interface SalariesTabContentProps {
+    onPay: (employeeId: string) => void;
+    onDetails: (employee: Employee) => void;
+}
 
-export const SalariesTabContent: React.FC = () => {
-    const { employees } = useApp();
+export const SalariesTabContent: React.FC<SalariesTabContentProps> = ({ onPay, onDetails }) => {
+    const { employees, setEmployees } = useApp();
   
     const totalBrut = employees.reduce((acc, emp) => acc + emp.salary, 0);
     const totalAdvance = employees.reduce((acc, emp) => acc + emp.advance, 0);
     const totalToPay = totalBrut - totalAdvance;
   
-    const handlePay = (employeeId: string) => {
-        // Logic to handle payment, for now we can just log it
-        console.log(`Paying employee ${employeeId}`);
-    };
-
     const handleNewMonth = () => {
-        // Logic to reset for a new month
+        // This is a simulation. A real implementation would be more robust.
+        // It should probably reset advances and log payments for the previous month.
+        setEmployees(employees.map(e => ({...e, balance: e.salary - e.advance})));
         console.log("Starting a new month for salaries");
     }
 
     type SalaryStatus = 'paid' | 'pending' | 'partial';
 
     const getEmployeeSalaryStatus = (employee: Employee): SalaryStatus => {
-        if (employee.balance === 0) return 'paid';
+        if (employee.balance <= 0) return 'paid';
         if (employee.advance > 0 && employee.balance > 0) return 'partial';
         return 'pending';
     }
@@ -136,8 +137,8 @@ export const SalariesTabContent: React.FC = () => {
                                 </div>
                             </div>
                              <div className="mt-4 flex justify-end gap-2">
-                                <Button size="sm" variant="outline" className="border-gray-600">Détails</Button>
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handlePay(employee.id)} disabled={employee.balance === 0}>
+                                <Button size="sm" variant="outline" className="border-gray-600" onClick={() => onDetails(employee)}>Détails</Button>
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onPay(employee.id)} disabled={employee.balance <= 0}>
                                     <DollarSign className="mr-1 h-4 w-4"/> Payer
                                 </Button>
                             </div>
