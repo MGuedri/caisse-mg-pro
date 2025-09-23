@@ -17,7 +17,7 @@ export interface Product {
   category: string;
   stock: number;
   icon: string;
-  commerce_id?: string;
+  commerce_id: string;
 }
 
 export interface CartItem extends Product {
@@ -31,7 +31,7 @@ export interface Client {
   phone: string;
   isVip: boolean;
   credit: number;
-  commerce_id?: string;
+  commerce_id: string;
   avatar?: string;
 }
 
@@ -48,7 +48,7 @@ export interface Employee {
   balance: number;
   isTopEmployee: boolean;
   avatar: string;
-  commerce_id?: string;
+  commerce_id: string;
 }
 
 export interface Order {
@@ -58,7 +58,7 @@ export interface Order {
   clientName: string;
   timestamp: string;
   cashierId: string;
-  commerce_id?: string;
+  commerce_id: string;
 }
 
 export interface Expense {
@@ -67,7 +67,7 @@ export interface Expense {
   amount: number;
   category: string;
   date: string;
-  commerce_id?: string;
+  commerce_id: string;
 }
 
 export interface AppUser {
@@ -77,6 +77,7 @@ export interface AppUser {
   role: 'SuperAdmin' | 'Owner' | 'Caissier';
   isSuperAdmin: boolean;
   commerceId: string;
+  commerceName: string;
   ownerEmail?: string;
 }
 
@@ -133,39 +134,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : false);
 
-  // Charger depuis localStorage ou les données initiales au démarrage
+  const getLocalStorageKey = (commerceId: string) => `caisse_mp_data_${commerceId}`;
+
+  // Load data when user logs in
   useEffect(() => {
-    // Forcer le chargement des données initiales pour le test
-    const forceReload = true; 
-    const saved = localStorage.getItem('caisse_mp_data');
+    if (!user) {
+      setProducts([]);
+      setClients([]);
+      setEmployees([]);
+      setOrders([]);
+      setExpenses([]);
+      return;
+    };
     
-    if (saved && !forceReload) {
+    const commerceId = user.commerceId;
+    const storageKey = getLocalStorageKey(commerceId);
+    const saved = localStorage.getItem(storageKey);
+
+    const filterByCommerce = <T extends { commerce_id: string }>(data: T[]) => data.filter(item => item.commerce_id === commerceId);
+    
+    if (saved) {
       try {
         const data = JSON.parse(saved);
-        setProducts(data.products || initialProducts);
-        setClients(data.clients || initialClients);
-        setEmployees(data.employees || initialEmployees);
-        setOrders(data.orders || initialOrders);
-        setExpenses(data.expenses || initialExpenses);
+        setProducts(data.products || filterByCommerce(initialProducts));
+        setClients(data.clients || filterByCommerce(initialClients));
+        setEmployees(data.employees || filterByCommerce(initialEmployees));
+        setOrders(data.orders || filterByCommerce(initialOrders));
+        setExpenses(data.expenses || filterByCommerce(initialExpenses));
       } catch (e) {
         console.error("Erreur chargement localStorage", e);
-        setProducts(initialProducts);
-        setClients(initialClients);
-        setEmployees(initialEmployees);
-        setOrders(initialOrders);
-        setExpenses(initialExpenses);
+        setProducts(filterByCommerce(initialProducts));
+        setClients(filterByCommerce(initialClients));
+        setEmployees(filterByCommerce(initialEmployees));
+        setOrders(filterByCommerce(initialOrders));
+        setExpenses(filterByCommerce(initialExpenses));
       }
     } else {
-      setProducts(initialProducts);
-      setClients(initialClients);
-      setEmployees(initialEmployees);
-      setOrders(initialOrders);
-      setExpenses(initialExpenses);
+      setProducts(filterByCommerce(initialProducts));
+      setClients(filterByCommerce(initialClients));
+      setEmployees(filterByCommerce(initialEmployees));
+      setOrders(filterByCommerce(initialOrders));
+      setExpenses(filterByCommerce(initialExpenses));
     }
-  }, []);
+  }, [user]);
 
-  // Sauvegarde auto dans localStorage
+  // Sauvegarde auto dans localStorage quand les données changent
   useEffect(() => {
+    if (!user) return;
+    const storageKey = getLocalStorageKey(user.commerceId);
     const data = {
       products,
       clients,
@@ -174,8 +190,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       expenses,
       timestamp: new Date().toISOString()
     };
-    localStorage.setItem('caisse_mp_data', JSON.stringify(data));
-  }, [products, clients, employees, orders, expenses]);
+    // Only save if there's data to save, to avoid overwriting on logout
+    if (products.length > 0 || clients.length > 0 || employees.length > 0 || orders.length > 0 || expenses.length > 0) {
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+  }, [products, clients, employees, orders, expenses, user]);
 
   // Détecter état réseau
   useEffect(() => {
@@ -189,17 +208,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
-  // Synchroniser avec Supabase
+  // Synchroniser avec service externe (simulation)
   const syncNow = useCallback(async () => {
-    if (!isOnline) return;
+    if (!isOnline || !user) return;
 
     setSyncStatus('syncing');
 
     try {
-      // NOTE: This is a simulation.
-      console.log("Simulating Sync... Products:", products.length, "Orders:", orders.length);
+      console.log(`Simulating Sync for ${user.commerceName}... Products:`, products.length, "Orders:", orders.length);
       
-      // Fake delay
       await new Promise(res => setTimeout(res, 1500));
 
       setSyncStatus('synced');
@@ -208,9 +225,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.error('Erreur sync:', error);
       setSyncStatus('error');
     }
-  }, [products, orders, isOnline]);
+  }, [products, orders, isOnline, user]);
 
-  // Auto-sync quand online
+  // Auto-sync
   useEffect(() => {
     if (isOnline && user) {
       syncNow();

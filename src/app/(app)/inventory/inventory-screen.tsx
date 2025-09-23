@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -21,7 +22,7 @@ import {
 
 
 export const InventoryScreen: React.FC = () => {
-  const { products, setProducts } = useApp();
+  const { products, setProducts, user } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -45,7 +46,7 @@ export const InventoryScreen: React.FC = () => {
   };
   
   const handleSave = () => {
-    if (!formData.name || !formData.price) return;
+    if (!formData.name || !formData.price || !user) return;
   
     if (editingProduct) {
       // Update
@@ -57,12 +58,13 @@ export const InventoryScreen: React.FC = () => {
     } else {
       // Add
       const newProduct: Product = {
-        id: Date.now().toString(),
+        id: `${user.commerceId}_${Date.now()}`,
         name: formData.name,
         price: Number(formData.price),
         category: formData.category || 'Café',
         stock: Number(formData.stock) || 0,
-        icon: formData.icon || '📦'
+        icon: formData.icon || '📦',
+        commerce_id: user.commerceId,
       };
       setProducts(prev => [...prev, newProduct]);
     }

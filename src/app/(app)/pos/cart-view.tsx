@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useCallback } from 'react';
@@ -18,7 +19,7 @@ import {
 // import { TicketPDF } from './ticket-pdf'; // Temporarily disabled
 
 export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
-  const { cart, setCart, clients, includeVAT, setIncludeVAT, orders, setOrders } = useApp();
+  const { cart, setCart, clients, includeVAT, setIncludeVAT, orders, setOrders, user } = useApp();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [selectedClient, setSelectedClient] = useState('Client invité');
@@ -43,15 +44,16 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
   const change = paymentAmount ? Math.max(0, parseFloat(paymentAmount) - total) : 0;
 
   const handlePayment = () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !user) return;
     
     const newOrder: Order = {
-      id: Date.now().toString(),
+      id: `${user.commerceId}_o_${Date.now()}`,
       items: [...cart],
       total,
       clientName: selectedClient,
       timestamp: new Date().toLocaleString('fr-FR'),
-      cashierId: 'user1'
+      cashierId: user.id,
+      commerce_id: user.commerceId,
     };
     
     setOrders(prev => [newOrder, ...prev]);
@@ -238,7 +240,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
                 </div>
                 <DialogFooter className="!justify-between">
                    <div className="flex-1">
-                      <PrintTicketButton order={{ id: Date.now().toString(), items: cart, total, clientName: selectedClient, timestamp: new Date().toLocaleString('fr-FR'), cashierId: 'user1'}} />
+                      <PrintTicketButton order={{ id: Date.now().toString(), items: cart, total, clientName: selectedClient, timestamp: new Date().toLocaleString('fr-FR'), cashierId: user?.id || 'N/A', commerce_id: user?.commerceId || 'N/A'}} />
                    </div>
                     <Button 
                       variant="outline"

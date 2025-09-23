@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppProvider, useApp } from '@/app/(app)/app-provider';
@@ -82,7 +83,7 @@ const MainApp: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt={user.name} />
+                    <AvatarImage src={`https://i.pravatar.cc/150?u=${user.email}`} alt={user.name} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -96,7 +97,7 @@ const MainApp: React.FC = () => {
                     </div>
                      <div className="flex items-center gap-2">
                        <Building className="h-4 w-4 text-gray-400"/>
-                       <p className="text-xs leading-none text-gray-400">Café Mon Plaisir</p>
+                       <p className="text-xs leading-none text-gray-400">{user.commerceName}</p>
                     </div>
                      <div className="flex items-center gap-2">
                        <p className="text-xs leading-none text-gray-400">{user.email}</p>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
@@ -7,7 +8,7 @@ import type { Order } from '@/app/(app)/app-provider';
 // has issues with the Next.js App Router.
 // It's kept here for future reference if client-side PDF generation is needed.
 
-export const TicketPDF: React.FC<{ order: Order, commerceName?: string }> = ({ order, commerceName = "Café Mon Plaisir" }) => {
+export const TicketPDF: React.FC<{ order: Order, commerceName?: string }> = ({ order, commerceName = "Mon Commerce" }) => {
   const styles = StyleSheet.create({
     page: { padding: 20, fontFamily: 'Helvetica', fontSize: 10 },
     centerText: { textAlign: 'center' },
@@ -43,7 +44,6 @@ export const TicketPDF: React.FC<{ order: Order, commerceName?: string }> = ({ o
           </View>
 
           <Text style={[styles.centerText, styles.footer]}>Merci de votre visite !</Text>
-          <Text style={[styles.centerText, {fontSize: 8, color: '#666'}]}>www.monplaisir.com</Text>
         </View>
       </Page>
     </Document>

@@ -32,7 +32,7 @@ const getInitials = (name: string) => {
 
 
 export const ManagementScreen: React.FC = () => {
-  const { clients, setClients, employees, setEmployees, expenses, setExpenses } = useApp();
+  const { clients, setClients, employees, setEmployees, expenses, setExpenses, user } = useApp();
   const [activeTab, setActiveTab] = useState('clients');
 
   // State for modals
@@ -70,10 +70,12 @@ export const ManagementScreen: React.FC = () => {
     setIsClientModalOpen(true);
   };
   const handleSaveClient = (clientData: Partial<Client>) => {
+    if (!user) return;
     if (editingClient) {
       setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...clientData } as Client : c));
     } else {
-      setClients([...clients, { ...clientData, id: Date.now().toString(), credit: clientData.credit || 0, isVip: clientData.isVip || false, avatar: clientData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}` } as Client]);
+      const newId = `${user.commerceId}_c_${Date.now()}`;
+      setClients([...clients, { ...clientData, id: newId, credit: clientData.credit || 0, isVip: clientData.isVip || false, avatar: `https://i.pravatar.cc/150?u=${newId}`, commerce_id: user.commerceId } as Client]);
     }
     setIsClientModalOpen(false);
   };
@@ -87,10 +89,12 @@ export const ManagementScreen: React.FC = () => {
     setIsEmployeeModalOpen(true);
   }
   const handleSaveEmployee = (employeeData: Partial<Employee>) => {
+    if (!user) return;
     if (editingEmployee) {
       setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeData, balance: (employeeData.salary || e.salary) - (employeeData.advance || e.advance) } as Employee : e));
     } else {
-      const newEmployee = { ...employeeData, id: Date.now().toString(), avatar: `https://i.pravatar.cc/150?u=${Date.now()}` } as Employee;
+      const newId = `${user.commerceId}_e_${Date.now()}`;
+      const newEmployee = { ...employeeData, id: newId, avatar: `https://i.pravatar.cc/150?u=${newId}`, commerce_id: user.commerceId } as Employee;
       newEmployee.balance = (newEmployee.salary || 0) - (newEmployee.advance || 0);
       setEmployees([...employees, newEmployee]);
     }
@@ -101,16 +105,17 @@ export const ManagementScreen: React.FC = () => {
   }
 
   const handlePaySalary = (employeeId: string) => {
+    if (!user) return;
     const employee = employees.find(e => e.id === employeeId);
-    if (!employee) return;
+    if (!employee || employee.balance <= 0) return;
 
-    // Create a new expense for the salary payment
     const newExpense: Expense = {
-      id: `exp_sal_${Date.now()}`,
+      id: `exp_sal_${user.commerceId}_${Date.now()}`,
       description: `Paiement salaire: ${employee.name}`,
-      amount: employee.balance,
+      amount: employee.balance, // Pay the remaining balance
       category: 'Charges Salaires',
-      date: new Date().toLocaleDateString('fr-CA')
+      date: new Date().toLocaleDateString('fr-CA'),
+      commerce_id: user.commerceId,
     };
     setExpenses(prevExpenses => [...prevExpenses, newExpense]);
 
@@ -124,10 +129,11 @@ export const ManagementScreen: React.FC = () => {
     setIsExpenseModalOpen(true);
   }
   const handleSaveExpense = (expenseData: Partial<Expense>) => {
+    if(!user) return;
     if (editingExpense) {
       setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...e, ...expenseData } as Expense : e));
     } else {
-      setExpenses([...expenses, { ...expenseData, id: Date.now().toString(), date: new Date().toLocaleDateString('fr-CA') } as Expense]);
+      setExpenses([...expenses, { ...expenseData, id: `${user.commerceId}_exp_${Date.now()}`, date: new Date().toLocaleDateString('fr-CA'), commerce_id: user.commerceId } as Expense]);
     }
     setIsExpenseModalOpen(false);
   }

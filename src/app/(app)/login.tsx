@@ -23,12 +23,25 @@ export const LoginScreen: React.FC = () => {
         email, 
         role: 'SuperAdmin',
         isSuperAdmin: true,
-        commerceId: 'default',
-        ownerEmail: 'owner@example.com',
+        commerceId: 'mon_plaisir',
+        commerceName: 'Café Mon Plaisir',
+        ownerEmail: 'mg.06sbz@gmail.com',
       });
       setCurrentView('pos');
     }
-    // You can add more users here, e.g. for Mourad
+    else if (email === 'chichkhan@email.com' && password === 'chichkhan') {
+      setUser({ 
+        id: '2', 
+        name: 'Ali', 
+        email, 
+        role: 'Owner',
+        isSuperAdmin: false,
+        commerceId: 'chichkhan',
+        commerceName: 'Café Chichkhan',
+        ownerEmail: 'chichkhan@email.com',
+      });
+      setCurrentView('pos');
+    }
     else {
       alert('Email ou mot de passe incorrect');
     }
