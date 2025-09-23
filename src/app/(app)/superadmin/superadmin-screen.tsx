@@ -52,7 +52,7 @@ import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
-import { signOut } from '@/app/actions/auth';
+import { serverSignOut } from '@/app/actions/auth';
 import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
 
 export const SuperAdminScreen: React.FC = () => {
@@ -77,12 +77,6 @@ export const SuperAdminScreen: React.FC = () => {
       refreshData();
     }
   }, [user, refreshData]);
-
-  const handleLogout = async () => {
-    await signOut();
-    setUser(null);
-    setCurrentView('login');
-  };
 
   const platformStats = useMemo(() => {
     return {
@@ -219,7 +213,7 @@ export const SuperAdminScreen: React.FC = () => {
                    </div>
                  </DropdownMenuLabel>
                  <DropdownMenuSeparator className="bg-gray-700" />
-                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:!bg-red-600/80">
+                 <DropdownMenuItem onClick={async () => await serverSignOut()} className="cursor-pointer hover:!bg-red-600/80">
                    <LogOut className="mr-2 h-4 w-4" />
                    <span>Déconnexion</span>
                  </DropdownMenuItem>
@@ -336,7 +330,7 @@ export const SuperAdminScreen: React.FC = () => {
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-400 focus:text-red-400 focus:!bg-red-900/50">
-                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        <Trash2 className="mr-2h-4 w-4" />
                                                         Supprimer
                                                     </DropdownMenuItem>
                                                     </AlertDialogTrigger>
@@ -438,7 +432,7 @@ export const SuperAdminScreen: React.FC = () => {
                                     className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto"
                                     disabled={isPending || !commerceToInvoiceId}
                                 >
-                                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
+                                    {isPending ? <Loader2 className="mr-2h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
                                      Générer
                                 </Button>
                             </div>
@@ -459,3 +453,5 @@ export const SuperAdminScreen: React.FC = () => {
       />
     </div>
   );
+
+    

@@ -2,7 +2,6 @@
 'use client';
 
 import { AppProvider, useApp } from '@/app/(app)/app-provider';
-import { LoginScreen } from '@/app/(app)/login';
 import { POSScreen } from '@/app/(app)/pos/pos-screen';
 import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
@@ -23,7 +22,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
 import { SyncStatusItem } from '@/components/sync-status-item';
-import { signOut } from '@/app/actions/auth';
+import { serverSignOut } from '@/app/actions/auth';
 
 
 // --- NAVIGATION PRINCIPALE ---
@@ -37,39 +36,9 @@ const MainApp: React.FC = () => {
     { id: 'management', label: 'Gestion', icon: Users, allowedRoles: ['Owner'] },
   ];
 
-  const handleLogout = async () => {
-    await signOut();
-    setUser(null);
-    setCurrentView('login');
-  };
-
-  useEffect(() => {
-    if (!user) {
-      setCurrentView('login');
-    } else {
-      if (user.isSuperAdmin) {
-        if (currentView !== 'superadmin' && currentView !== 'dashboard') {
-            setCurrentView('dashboard');
-        }
-      } else {
-        if (currentView === 'login' || currentView === 'superadmin') {
-           setCurrentView('pos');
-        }
-      }
-    }
-  }, [user, currentView, setCurrentView]);
-  
-  // Auto-refresh periodically
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(() => {
-      refreshData();
-    }, 5 * 60 * 1000); // every 5 minutes
-    return () => clearInterval(interval);
-  }, [user, refreshData]);
-
-  if (currentView === 'login' || !user) {
-    return <LoginScreen />;
+  if (!user) {
+    // This should theoretically not be reached if the layout handles redirection
+    return null;
   }
   
   if (user.isSuperAdmin) {
@@ -133,7 +102,10 @@ const MainApp: React.FC = () => {
                 <DropdownMenuSeparator className="bg-gray-700"/>
                 <SyncStatusItem />
                 <DropdownMenuSeparator className="bg-gray-700"/>
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:!bg-orange-500/80">
+                <DropdownMenuItem 
+                  onClick={async () => await serverSignOut()} 
+                  className="cursor-pointer hover:!bg-orange-500/80"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Déconnexion</span>
                 </DropdownMenuItem>
@@ -155,13 +127,8 @@ const MainApp: React.FC = () => {
   );
 };
 
-// ======================
-// EXPORT FINAL
-// ======================
 export default function HomePage() {
-  return (
-    <AppProvider>
-      <MainApp />
-    </AppProvider>
-  );
+  return <MainApp />;
 }
+
+    

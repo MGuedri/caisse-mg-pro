@@ -151,24 +151,24 @@ export const useApp = () => {
 // ======================
 // APP PROVIDER
 // ======================
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AppUser | null>(null);
+export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, initialData?: any }> = ({ user: initialUser, children, initialData }) => {
+  const [user, setUser] = useState<AppUser | null>(initialUser);
   
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(initialData?.products || []);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [commerces, setCommerces] = useState<Commerce[]>([]);
+  const [clients, setClients] = useState<Client[]>(initialData?.clients || []);
+  const [employees, setEmployees] = useState<Employee[]>(initialData?.employees || []);
+  const [orders, setOrders] = useState<Order[]>(initialData?.orders || []);
+  const [expenses, setExpenses] = useState<Expense[]>(initialData?.expenses || []);
+  const [invoices, setInvoices] = useState<Invoice[]>(initialData?.invoices || []);
+  const [commerces, setCommerces] = useState<Commerce[]>(initialData?.commerces || []);
 
-  const [currentView, setCurrentView] = useState<string>('login');
+  const [currentView, setCurrentView] = useState<string>(initialUser?.isSuperAdmin ? 'dashboard' : 'pos');
   const [includeVAT, setIncludeVAT] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'synced' | 'error'>('synced');
-  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [lastSync, setLastSync] = useState<Date | null>(new Date());
   const [isOnline, setIsOnline] = useState(true);
-  const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(null);
+  const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(initialData?.commerces?.[0]?.id || null);
 
   const clearData = useCallback(() => {
       setProducts([]);
@@ -241,12 +241,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [user, viewedCommerceId]);
 
   useEffect(() => {
-    if (user) {
-        refreshData();
-    } else {
-        clearData();
+    if (initialUser) {
+        setUser(initialUser);
     }
-  }, [user, refreshData, clearData]);
+  }, [initialUser]);
 
   // Refetch data when viewed commerce changes for superadmin
   useEffect(() => {
@@ -278,3 +276,5 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     </AppContext.Provider>
   );
 };
+
+    

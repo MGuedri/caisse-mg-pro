@@ -3,77 +3,41 @@
 
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
-export async function signIn(email: string, password_): Promise<{ user?: any, error?: string }> {
-  const supabase = createServerActionClient({ cookies });
+export async function serverSignIn(formData: FormData): Promise<never> {
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const supabase = createServerActionClient({ cookies });
+
+    if (!email || !password) {
+        return redirect('/login?error=missing-credentials');
+    }
   
-  try {
-    const { data: { user: authUser }, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password: password_,
+    const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
     });
 
-    if (authError) {
-        return { error: authError.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : authError.message };
-    }
-
-    if (!authUser) {
-        return { error: 'Utilisateur non trouvé.' };
+    if (error) {
+        console.error('Sign in error:', error.message);
+        const errorMessage = error.message === 'Invalid login credentials' 
+            ? 'Email ou mot de passe incorrect.'
+            : 'Une erreur est survenue.';
+        return redirect(`/login?error=${encodeURIComponent(errorMessage)}`);
     }
     
     revalidatePath('/', 'layout');
-    
-    // Check if user is SuperAdmin first
-    if (email.toLowerCase() === 'onz@live.fr') {
-        const superAdminProfile = {
-            id: authUser.id,
-            name: 'Super Admin',
-            email: authUser.email!,
-            role: 'SuperAdmin',
-            isSuperAdmin: true
-        };
-        return { user: superAdminProfile };
-    }
-    
-    // If not superadmin, find their commerce profile
-    const { data: commerce, error: commerceError } = await supabase
-        .from('commerces')
-        .select('*')
-        .eq('owneremail', email)
-        .single();
-    
-    if (commerceError || !commerce) {
-        await supabase.auth.signOut(); // Sign out if no profile found
-        return { error: 'Profil de commerce non trouvé pour cet utilisateur.' };
-    }
-
-    const ownerProfile = {
-        id: authUser.id,
-        name: commerce.ownername,
-        email: commerce.owneremail,
-        role: 'Owner',
-        isSuperAdmin: false,
-        commerceId: commerce.id,
-        commerceName: commerce.name
-    };
-
-    return { user: ownerProfile };
-  } catch (e: any) {
-    return { error: e.message };
-  }
+    return redirect('/');
 }
 
 
-export async function signOut() {
-  try {
-    const supabase = createServerActionClient({ cookies });
-    await supabase.auth.signOut();
-    revalidatePath('/', 'layout');
-    redirect('/login'); // Redirecting might be handled client-side, but this is a good server-side practice
-  } catch (e: any) {
-    // We don't return an error here, client will handle the UI change regardless
-    console.error('Sign out error:', e.message);
-  }
+export async function serverSignOut(): Promise<void> {
+  const supabase = createServerActionClient({ cookies });
+  await supabase.auth.signOut();
+  revalidatePath('/', 'layout');
+  redirect('/login');
 }
+
+    

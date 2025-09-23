@@ -1,88 +1,79 @@
 
-'use client';
-
-import { useState, useTransition } from 'react';
-import { useApp, AppUser } from '@/app/(app)/app-provider';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+'use client'
+import { useSearchParams } from 'next/navigation';
+import { serverSignIn } from '@/app/actions/auth';
+import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/app/(app)/logo';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import { signIn } from '@/app/actions/auth';
+import { Input } from '@/components/ui/input';
 
-export const LoginScreen: React.FC = () => {
-  const { setUser, setCurrentView } = useApp();
-  const [email, setEmail] = useState('onz@live.fr');
-  const [password, setPassword] = useState('06034434mg');
-  const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
+export const LoginScreen = () => {
+    const searchParams = useSearchParams();
+    const error = searchParams.get('error');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+    let errorMessage = '';
+    if (error) {
+        switch (error) {
+            case 'missing-credentials':
+                errorMessage = 'Email et mot de passe requis.';
+                break;
+            case 'no-user-found':
+                errorMessage = 'Aucun utilisateur trouvé.';
+                break;
+            case 'server-error':
+                errorMessage = 'Erreur du serveur de connexion.';
+                break;
+            default:
+                errorMessage = decodeURIComponent(error);
+        }
+    }
 
-    startTransition(async () => {
-      const result = await signIn(email, password);
+    return (
+        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+          <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-transparent rounded-full flex items-center justify-center mx-auto mb-4">
+                <Logo />
+              </div>
+              <h1 className="text-2xl font-bold text-white">Caisse MG Pro</h1>
+            </div>
+    
+            {errorMessage && (
+              <div className="bg-red-600/20 border border-red-600 text-red-300 px-4 py-3 rounded mb-6 text-sm">
+                {errorMessage}
+              </div>
+            )}
+    
+            <form action={serverSignIn} className="space-y-6">
+              <div>
+                <Input
+                  type="email"
+                  name="email"
+                  placeholder="onz@live.fr"
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+    
+              <div>
+                <Input
+                  type="password"
+                  name="password"
+                  placeholder="••••••••••"
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+    
+              <Button
+                type="submit"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+              >
+                Se connecter
+              </Button>
+            </form>
+          </div>
+        </div>
+      );
+}
 
-      if (result.error || !result.user) {
-        toast({
-          variant: "destructive",
-          title: "Erreur de connexion",
-          description: result.error,
-        });
-        return;
-      }
-
-      if (result.user) {
-        const appUser: AppUser = {
-          id: result.user.id,
-          name: result.user.name,
-          email: result.user.email,
-          role: result.user.role as 'SuperAdmin' | 'Owner',
-          isSuperAdmin: result.user.isSuperAdmin,
-          commerceId: result.user.commerceId,
-          commerceName: result.user.commerceName,
-          owneremail: result.user.email,
-        };
-        
-        setUser(appUser);
-        setCurrentView(appUser.isSuperAdmin ? 'superadmin' : 'pos');
-      }
-    });
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm bg-gray-800 border-gray-700">
-        <CardHeader className="text-center flex flex-col items-center gap-6 pt-10">
-            <Logo />
-        </CardHeader>
-        <CardContent className="pt-8">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-gray-700 border-gray-600 text-white"
-              disabled={isPending}
-              autoComplete="email"
-            />
-            <Input
-              type="password"
-              placeholder="Mot de passe"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-gray-700 border-gray-600 text-white"
-              disabled={isPending}
-              autoComplete="current-password"
-            />
-            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isPending}>
-              {isPending ? <Loader2 className="animate-spin" /> : 'Se connecter'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+    
