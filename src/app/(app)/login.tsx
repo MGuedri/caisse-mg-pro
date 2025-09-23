@@ -22,11 +22,47 @@ export const LoginScreen: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Manual user lookup for debugging
+    const trimmedEmail = email.trim();
+
+    // =======================================================
+    // HARDCODED SUPERADMIN LOGIN (FOR DEBUGGING)
+    // =======================================================
+    if (trimmedEmail === 'onz@live.fr') {
+        const { data: users, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', trimmedEmail)
+            .single();
+
+        if (userError || !users) {
+            toast({
+                variant: "destructive",
+                title: "Erreur SuperAdmin",
+                description: "Impossible de trouver le profil SuperAdmin.",
+            });
+            setIsLoading(false);
+            return;
+        }
+        
+        setUser({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            role: 'SuperAdmin',
+            isSuperAdmin: true,
+        });
+        setCurrentView('superadmin');
+        setIsLoading(false);
+        return;
+    }
+    
+    // =======================================================
+    // Standard Owner Login
+    // =======================================================
     const { data: users, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email.trim());
+      .eq('email', trimmedEmail);
 
     if (userError || !users || users.length === 0) {
       toast({
@@ -40,6 +76,7 @@ export const LoginScreen: React.FC = () => {
 
     const userData = users[0];
 
+    // Direct password comparison (insecure, for prototyping only)
     if (userData.password !== password) {
        toast({
             variant: "destructive",
@@ -51,19 +88,6 @@ export const LoginScreen: React.FC = () => {
     }
 
     // --- User authenticated, proceed with role check ---
-
-    if (userData.role === 'SuperAdmin') {
-        setUser({
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: 'SuperAdmin',
-            isSuperAdmin: true,
-        });
-        setCurrentView('superadmin');
-        setIsLoading(false);
-        return;
-    }
 
     if (userData.role === 'Owner') {
         if (!userData.commerce_id) {
@@ -120,7 +144,7 @@ export const LoginScreen: React.FC = () => {
     toast({
         variant: "destructive",
         title: "Erreur de rôle",
-        description: "Le rôle de cet utilisateur n'est pas reconnu.",
+        description: "Seuls les propriétaires de commerces peuvent se connecter ici.",
     });
     setIsLoading(false);
   };

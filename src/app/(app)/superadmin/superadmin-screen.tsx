@@ -122,28 +122,24 @@ export const SuperAdminScreen: React.FC = () => {
         return; 
       }
       
-      // Update Auth user if email or password changed
-      const userUpdate: {email?: string; password?: string; data?: {[key: string]: any}} = {};
-       if (commerceData.owneremail && commerceData.owneremail !== editingCommerce.owneremail) {
-        userUpdate.email = commerceData.owneremail;
-      }
+      const userUpdate: any = {
+          data: { name: commerceData.ownername }
+      };
       if (ownerPassword) {
-        userUpdate.password = ownerPassword;
+          userUpdate.password = ownerPassword
       }
-      if (commerceData.ownername && commerceData.ownername !== editingCommerce.ownername) {
-        userUpdate.data = { name: commerceData.ownername };
-      }
-      
-      if (Object.keys(userUpdate).length > 0 && editingCommerce.owner_id) {
-         const { error: authUserError } = await supabaseAdmin.auth.admin.updateUserById(
-             editingCommerce.owner_id,
-             userUpdate
-         );
-        
-         if (authUserError) {
-           toast({variant: 'destructive', title: 'Erreur Auth', description: `Impossible de mettre à jour l'utilisateur associé: ${authUserError.message}`});
-           return;
-         }
+
+      if (editingCommerce.owner_id) {
+          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+              editingCommerce.owner_id,
+              userUpdate,
+          );
+          if (authError) {
+              toast({ variant: 'destructive', title: 'Erreur Auth', description: `Impossible de mettre à jour l'utilisateur: ${authError.message}` });
+          } else if (ownerPassword) {
+              // Also update the plaintext password in our users table for manual login
+              await supabase.from('users').update({ password: ownerPassword }).eq('id', editingCommerce.owner_id);
+          }
       }
 
       setCommerces(commerces.map(c => c.id === updatedCommerce.id ? updatedCommerce : c));
@@ -156,11 +152,11 @@ export const SuperAdminScreen: React.FC = () => {
             return;
         }
 
-        // Step 1: Create the Auth user.
+        // Step 1: Create the Auth user for password management.
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email: commerceData.owneremail,
             password: ownerPassword,
-            email_confirm: true, // Auto-confirm email
+            email_confirm: true,
             user_metadata: {
                 name: commerceData.ownername,
                 role: 'Owner'
@@ -172,7 +168,6 @@ export const SuperAdminScreen: React.FC = () => {
             return;
         }
         const ownerUser = authData.user;
-
 
         // Step 2: Create the commerce and link the owner.
         const { data: newCommerceData, error: newCommerceError } = await supabase.from('commerces').insert({
@@ -189,20 +184,18 @@ export const SuperAdminScreen: React.FC = () => {
         
         if (newCommerceError || !newCommerceData) {
             toast({ variant: 'destructive', title: 'Erreur Création Commerce', description: `Impossible de créer le commerce: ${newCommerceError?.message}` });
-            // Rollback: delete the newly created auth user
             await supabaseAdmin.auth.admin.deleteUser(ownerUser.id);
             return;
         }
 
-        // Step 3: Update the user's public profile in `users` table with the commerce_id
+        // Step 3: Update the user's public profile in `users` table with commerce_id AND plaintext password
         const { error: userProfileError } = await supabase
             .from('users')
-            .update({ commerce_id: newCommerceData.id })
+            .update({ commerce_id: newCommerceData.id, password: ownerPassword })
             .eq('id', ownerUser.id);
 
         if (userProfileError) {
             toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer au profil: ${userProfileError.message}` });
-            // Rollback commerce and user creation
             await supabase.from('commerces').delete().eq('id', newCommerceData.id);
             await supabaseAdmin.auth.admin.deleteUser(ownerUser.id);
             return;
@@ -228,18 +221,14 @@ export const SuperAdminScreen: React.FC = () => {
   };
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    // First, delete from auth.users
     if (commerce.owner_id) {
         const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(commerce.owner_id);
         if (userError) {
-            // Log the error but proceed, as the public user entry will be deleted by cascade
             console.error("Could not delete auth user, but proceeding.", userError);
             toast({variant: 'destructive', title: 'Attention', description: `Le commerce a été supprimé, mais son propriétaire (auth) n'a pas pu être supprimé: ${userError.message}`});
         }
     }
 
-    // Deleting from 'commerces' should cascade and delete related data if set up in DB.
-    // If not, we would need to delete from all related tables manually.
     const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
     if(commerceError) { 
         toast({variant: 'destructive', title: 'Erreur', description: `Impossible de supprimer le commerce: ${commerceError.message}`});
@@ -613,6 +602,7 @@ export const SuperAdminScreen: React.FC = () => {
     
 
     
+
 
 
 
