@@ -20,7 +20,6 @@ import {
 import { SalariesTabContent } from './salaries-tab';
 import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 const getInitials = (name: string) => {
@@ -78,20 +77,26 @@ export const ManagementScreen: React.FC = () => {
     if (!commerceId) return;
 
     if (editingClient) {
-      const { data, error } = await supabase.from('clients').update(clientData).eq('id', editingClient.id).select().single();
-      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le client.' }); return; }
-      setClients(clients.map(c => c.id === editingClient.id ? data : c));
+      setClients(clients.map(c => c.id === editingClient.id ? {...editingClient, ...clientData} as Client : c));
+      toast({variant: 'success', title: 'Client mis à jour' });
     } else {
-      const { data, error } = await supabase.from('clients').insert({ ...clientData, commerce_id: commerceId }).select().single();
-      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter le client.' }); return; }
-      setClients([...clients, data]);
+      const newClient: Client = {
+          id: self.crypto.randomUUID(),
+          commerce_id: commerceId,
+          name: clientData.name || 'N/A',
+          email: clientData.email || '',
+          phone: clientData.phone || '',
+          isVip: clientData.isVip || false,
+          credit: clientData.credit || 0
+      };
+      setClients([...clients, newClient]);
+      toast({variant: 'success', title: 'Client ajouté' });
     }
     setIsClientModalOpen(false);
   };
   const handleDeleteClient = async (clientId: string) => {
-    const { error } = await supabase.from('clients').delete().eq('id', clientId);
-    if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le client.' }); return; }
     setClients(clients.filter(c => c.id !== clientId));
+    toast({variant: 'success', title: 'Client supprimé' });
   };
 
   // --- Employee Actions ---
@@ -104,20 +109,32 @@ export const ManagementScreen: React.FC = () => {
     const balance = (employeeData.salary || 0) - (employeeData.advance || 0);
 
     if (editingEmployee) {
-      const { data, error } = await supabase.from('employees').update({ ...employeeData, balance }).eq('id', editingEmployee.id).select().single();
-      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour l\'employé.' }); return; }
-      setEmployees(employees.map(e => e.id === editingEmployee.id ? data : e));
+      setEmployees(employees.map(e => e.id === editingEmployee.id ? {...editingEmployee, ...employeeData, balance} as Employee : e));
+       toast({ variant: 'success', title: 'Employé mis à jour' });
     } else {
-      const { data, error } = await supabase.from('employees').insert({ ...employeeData, balance, commerce_id: commerceId }).select().single();
-      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter l\'employé.' }); return; }
-      setEmployees([...employees, data]);
+        const newEmployee: Employee = {
+            id: self.crypto.randomUUID(),
+            commerce_id: commerceId,
+            name: employeeData.name || 'N/A',
+            role: employeeData.role || 'Caissier',
+            salary: employeeData.salary || 0,
+            evaluation: employeeData.evaluation || 0,
+            schedule: employeeData.schedule || '',
+            workingDays: employeeData.workingDays || [],
+            joinDate: employeeData.joinDate || new Date().toISOString(),
+            advance: employeeData.advance || 0,
+            balance: balance,
+            isTopEmployee: false,
+            avatar: `https://i.pravatar.cc/150?u=${self.crypto.randomUUID()}`
+        };
+      setEmployees([...employees, newEmployee]);
+      toast({ variant: 'success', title: 'Employé ajouté' });
     }
     setIsEmployeeModalOpen(false);
   }
   const handleDeleteEmployee = async (employeeId: string) => {
-    const { error } = await supabase.from('employees').delete().eq('id', employeeId);
-    if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'employé.' }); return; }
     setEmployees(employees.filter(e => e.id !== employeeId));
+    toast({ variant: 'success', title: 'Employé supprimé' });
   }
 
   const handlePaySalary = async (employeeId: string) => {
@@ -125,25 +142,17 @@ export const ManagementScreen: React.FC = () => {
     const employee = employees.find(e => e.id === employeeId);
     if (!employee || employee.balance <= 0) return;
 
-    const newExpense = {
+    const newExpense: Expense = {
+      id: self.crypto.randomUUID(),
       description: `Paiement salaire: ${employee.name}`,
       amount: employee.salary,
       category: 'Charges Salaires',
       date: new Date().toLocaleDateString('fr-CA'),
       commerce_id: commerceId,
     };
+    setExpenses(prevExpenses => [...prevExpenses, newExpense]);
     
-    const { data: expenseData, error: expenseError } = await supabase.from('expenses').insert(newExpense).select().single();
-    if(expenseError || !expenseData) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de créer la dépense de salaire.' }); return;
-    }
-    setExpenses(prevExpenses => [...prevExpenses, expenseData]);
-
-    const { data: employeeData, error: employeeError } = await supabase.from('employees').update({ advance: 0, balance: 0 }).eq('id', employeeId).select().single();
-    if(employeeError || !employeeData) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le solde de l\'employé.' }); return;
-    }
-    setEmployees(employees.map(e => e.id === employeeId ? employeeData : e));
+    setEmployees(employees.map(e => e.id === employeeId ? { ...e, advance: 0, balance: 0 } : e));
     toast({variant: 'success', title: 'Paiement effectué', description: `Le salaire de ${employee.name} a été payé.`});
   }
 
@@ -155,21 +164,25 @@ export const ManagementScreen: React.FC = () => {
   const handleSaveExpense = async (expenseData: Partial<Expense>) => {
     if(!commerceId) return;
     if (editingExpense) {
-      const { data, error } = await supabase.from('expenses').update(expenseData).eq('id', editingExpense.id).select().single();
-      if(error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la dépense.' }); return; }
-      setExpenses(expenses.map(e => e.id === editingExpense.id ? data : e));
+      setExpenses(expenses.map(e => e.id === editingExpense.id ? {...editingExpense, ...expenseData} as Expense : e));
+      toast({ variant: 'success', title: 'Dépense mise à jour'});
     } else {
-      const newExpense = { ...expenseData, date: new Date().toLocaleDateString('fr-CA'), commerce_id: commerceId };
-      const { data, error } = await supabase.from('expenses').insert(newExpense).select().single();
-      if(error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter la dépense.' }); return; }
-      setExpenses([...expenses, data]);
+      const newExpense: Expense = {
+          id: self.crypto.randomUUID(),
+          description: expenseData.description || 'N/A',
+          amount: expenseData.amount || 0,
+          category: expenseData.category || 'Divers',
+          date: new Date().toLocaleDateString('fr-CA'),
+          commerce_id: commerceId
+      };
+      setExpenses([...expenses, newExpense]);
+      toast({ variant: 'success', title: 'Dépense ajoutée'});
     }
     setIsExpenseModalOpen(false);
   }
   const handleDeleteExpense = async (expenseId: string) => {
-    const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
-    if(error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la dépense.' }); return; }
     setExpenses(expenses.filter(e => e.id !== expenseId));
+    toast({ variant: 'success', title: 'Dépense supprimée' });
   }
 
   return (

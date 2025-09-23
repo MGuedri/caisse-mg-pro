@@ -15,7 +15,6 @@ import {
 import {
   Plus, Minus, Trash2, CreditCard, ShoppingCart
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
@@ -49,7 +48,9 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
   const handlePayment = async () => {
     if (cart.length === 0 || !user || !commerceId) return;
     
-    const newOrder: Omit<Order, 'id' | 'timestamp'> = {
+    const newOrder: Order = {
+      id: self.crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
       items: [...cart],
       total,
       clientName: selectedClient,
@@ -57,14 +58,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
       commerce_id: commerceId,
     };
 
-    const { data, error } = await supabase.from('orders').insert(newOrder).select().single();
-    
-    if (error || !data) {
-        toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de finaliser la commande.'});
-        return;
-    }
-
-    setOrders(prev => [data, ...prev]);
+    setOrders(prev => [newOrder, ...prev]);
     setCart([]);
     setIsPaymentOpen(false);
     setPaymentAmount('');

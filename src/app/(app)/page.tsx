@@ -23,6 +23,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
 import { SyncStatusItem } from '@/components/sync-status-item';
+import { signOut } from '@/app/actions/auth';
 
 
 // --- NAVIGATION PRINCIPALE ---
@@ -36,13 +37,13 @@ const MainApp: React.FC = () => {
     { id: 'management', label: 'Gestion', icon: Users, allowedRoles: ['Owner'] },
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     setUser(null);
     setCurrentView('login');
   };
 
   useEffect(() => {
-    // This effect ensures the view is correctly set based on user state
     if (!user) {
       setCurrentView('login');
     } else {
@@ -50,7 +51,7 @@ const MainApp: React.FC = () => {
         if (currentView !== 'superadmin') {
             setCurrentView('superadmin');
         }
-      } else { // Is an Owner/Caissier
+      } else {
         if (currentView === 'login' || currentView === 'superadmin') {
            setCurrentView('pos');
         }

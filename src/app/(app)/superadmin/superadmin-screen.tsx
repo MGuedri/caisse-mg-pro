@@ -41,31 +41,28 @@ import {
   Trash2,
   Settings,
   Building,
-  RefreshCw,
-  Loader2,
   FileText,
   CheckCircle
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CommerceForm } from './superadmin-forms';
 import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { add } from 'date-fns';
 import { Label } from '@/components/ui/label';
-import { defaultProducts } from '@/lib/initial-data';
-
+import { signOut } from '@/app/actions/auth';
+import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
 
 export const SuperAdminScreen: React.FC = () => {
   const { 
     user, setUser, setCurrentView,
-    commerces, setCommerces,
-    clients, orders, products, setProducts, employees, expenses,
-    invoices, setInvoices,
+    commerces,
+    clients, orders,
+    invoices,
     viewedCommerceId, setViewedCommerceId,
-    fetchAllData,
+    fetchData,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -76,21 +73,21 @@ export const SuperAdminScreen: React.FC = () => {
 
   useEffect(() => {
     if (user?.isSuperAdmin) {
-      fetchAllData();
+      fetchData();
     }
-  }, [user, fetchAllData]);
+  }, [user, fetchData]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     setUser(null);
     setCurrentView('login');
   };
 
   const platformStats = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
     return {
       commerceCount: commerces.length,
       clientCount: clients.length,
-      totalRevenue: totalRevenue,
+      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
     }
   }, [commerces, clients, orders]);
 
@@ -100,146 +97,43 @@ export const SuperAdminScreen: React.FC = () => {
   };
 
   const handleSaveCommerce = async (commerceData: Partial<Commerce>, ownerPassword?: string) => {
+    let result;
     if (editingCommerce) {
-      // --- UPDATE ---
-      const { data: updatedCommerce, error: commerceError } = await supabase
-        .from('commerces')
-        .update({
-          name: commerceData.name,
-          ownername: commerceData.ownername,
-          owneremail: commerceData.owneremail,
-          subscription: commerceData.subscription,
-          address: commerceData.address,
-          subscription_price: commerceData.subscription_price,
-          subscription_period: commerceData.subscription_period,
-        })
-        .eq('id', editingCommerce.id)
-        .select()
-        .single();
-      
-      if(commerceError || !updatedCommerce) { 
-        toast({variant: 'destructive', title: 'Erreur', description: `Impossible de mettre à jour le commerce: ${commerceError?.message}`}); 
-        return; 
+      result = await updateCommerce(editingCommerce.id, commerceData);
+      if (!result.error) {
+        toast({variant: 'success', title: 'Succès', description: 'Commerce mis à jour.'});
       }
-      
-      const userUpdate: any = {
-          data: { name: commerceData.ownername }
-      };
-      if (ownerPassword) {
-          userUpdate.password = ownerPassword
-      }
-
-      if (editingCommerce.owner_id) {
-          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
-              editingCommerce.owner_id,
-              userUpdate,
-          );
-          if (authError) {
-              toast({ variant: 'destructive', title: 'Erreur Auth', description: `Impossible de mettre à jour l'utilisateur: ${authError.message}` });
-          } else if (ownerPassword) {
-              // Also update the plaintext password in our users table for manual login
-              await supabase.from('users').update({ password: ownerPassword }).eq('id', editingCommerce.owner_id);
-          }
-      }
-
-      setCommerces(commerces.map(c => c.id === updatedCommerce.id ? updatedCommerce : c));
-      toast({variant: 'success', title: 'Succès', description: 'Commerce mis à jour.'});
-
     } else {
-        // --- CREATE ---
-        if (!commerceData.owneremail || !commerceData.ownername || !commerceData.name || !ownerPassword) {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Tous les champs sont requis, y compris le mot de passe.' });
-            return;
-        }
-
-        // Step 1: Create the Auth user for password management.
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email: commerceData.owneremail,
-            password: ownerPassword,
-            email_confirm: true,
-            user_metadata: {
-                name: commerceData.ownername,
-                role: 'Owner'
-            },
-        });
-
-        if (authError || !authData.user) {
-            toast({ variant: 'destructive', title: 'Erreur Création Utilisateur', description: `Impossible de créer l'utilisateur: ${authError?.message}` });
-            return;
-        }
-        const ownerUser = authData.user;
-
-        // Step 2: Create the commerce and link the owner.
-        const { data: newCommerceData, error: newCommerceError } = await supabase.from('commerces').insert({
-            name: commerceData.name,
-            ownername: commerceData.ownername,
-            owneremail: commerceData.owneremail,
-            subscription: commerceData.subscription || 'Trial',
-            creationdate: new Date().toLocaleDateString('fr-CA'),
-            address: commerceData.address,
-            subscription_price: commerceData.subscription_price,
-            subscription_period: commerceData.subscription_period,
-            owner_id: ownerUser.id,
-        }).select().single();
-        
-        if (newCommerceError || !newCommerceData) {
-            toast({ variant: 'destructive', title: 'Erreur Création Commerce', description: `Impossible de créer le commerce: ${newCommerceError?.message}` });
-            await supabaseAdmin.auth.admin.deleteUser(ownerUser.id);
-            return;
-        }
-
-        // Step 3: Update the user's public profile in `users` table with commerce_id AND plaintext password
-        const { error: userProfileError } = await supabase
-            .from('users')
-            .update({ commerce_id: newCommerceData.id, password: ownerPassword })
-            .eq('id', ownerUser.id);
-
-        if (userProfileError) {
-            toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer au profil: ${userProfileError.message}` });
-            await supabase.from('commerces').delete().eq('id', newCommerceData.id);
-            await supabaseAdmin.auth.admin.deleteUser(ownerUser.id);
-            return;
-        }
-        
-        // Step 4. Populate default products for the new commerce
-        const productsToInsert = defaultProducts.map(product => ({
-            ...product,
-            commerce_id: newCommerceData.id,
-        }));
-        
-        const { error: productsError } = await supabase.from('products').insert(productsToInsert);
-
-        if (productsError) {
-            toast({variant: 'destructive', title: 'Attention', description: `Le commerce a été créé, mais l'inventaire par défaut n'a pas pu être ajouté: ${productsError.message}`});
-        }
-        
-        await fetchAllData();
-        setViewedCommerceId(newCommerceData.id);
-        toast({ variant: 'success', title: 'Succès', description: 'Commerce et inventaire par défaut ajoutés.' });
+      if (!commerceData.owneremail || !commerceData.ownername || !commerceData.name || !ownerPassword) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Tous les champs sont requis, y compris le mot de passe.' });
+        return;
+      }
+      result = await createCommerce(commerceData as Commerce, ownerPassword);
+      if (!result.error) {
+        toast({ variant: 'success', title: 'Succès', description: 'Commerce ajouté.' });
+      }
     }
+
+    if (result.error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+        await fetchData(); // Refresh all data
+    }
+    
     setIsModalOpen(false);
   };
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    if (commerce.owner_id) {
-        const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(commerce.owner_id);
-        if (userError) {
-            console.error("Could not delete auth user, but proceeding.", userError);
-            toast({variant: 'destructive', title: 'Attention', description: `Le commerce a été supprimé, mais son propriétaire (auth) n'a pas pu être supprimé: ${userError.message}`});
+    const result = await deleteCommerce(commerce.id);
+    if(result.error) {
+        toast({variant: 'destructive', title: 'Erreur', description: result.error});
+    } else {
+        toast({variant: 'success', title: 'Commerce Supprimé'});
+        await fetchData();
+        if (viewedCommerceId === commerce.id) {
+          setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerce.id)!.id : null);
         }
     }
-
-    const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
-    if(commerceError) { 
-        toast({variant: 'destructive', title: 'Erreur', description: `Impossible de supprimer le commerce: ${commerceError.message}`});
-        return; 
-    }
-    
-    setCommerces(commerces.filter(c => c.id !== commerce.id));
-    if (viewedCommerceId === commerce.id) {
-      setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerce.id)!.id : null);
-    }
-    toast({variant: 'success', title: 'Commerce Supprimé'});
   };
 
   const handleGenerateInvoice = async (commerceId: string) => {
@@ -248,42 +142,23 @@ export const SuperAdminScreen: React.FC = () => {
         toast({variant: 'destructive', title: 'Erreur', description: 'Commerce non trouvé ou prix non défini.'});
         return;
     }
-
-    const dueDate = add(new Date(), { months: 1 });
-
-    const newInvoice = {
-        commerce_id: commerce.id,
-        amount: commerce.subscription_price,
-        due_date: dueDate.toLocaleDateString('fr-CA'),
-        status: 'pending' as 'pending',
-    };
-
-    const {data, error} = await supabase.from('invoices').insert(newInvoice).select().single();
-    if (error || !data) {
-        toast({variant: 'destructive', title: 'Erreur', description: `Impossible de générer la facture: ${error?.message}`});
-        return;
+    const result = await createInvoice(commerceId, commerce.subscription_price, commerce.name);
+    if (result.error) {
+        toast({variant: 'destructive', title: 'Erreur', description: result.error});
+    } else {
+        toast({variant: 'success', title: 'Facture Générée'});
+        await fetchData();
     }
-
-    const newInvoiceWithCommerceName = {...data, commerceName: commerce.name};
-    setInvoices([newInvoiceWithCommerceName, ...invoices]);
-    toast({variant: 'success', title: 'Facture Générée'});
   };
 
   const handleMarkAsPaid = async (invoiceId: string) => {
-    const {data, error} = await supabase
-        .from('invoices')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
-        .eq('id', invoiceId)
-        .select()
-        .single();
-    
-    if(error || !data) {
-        toast({variant: 'destructive', title: 'Erreur', description: `Impossible de mettre à jour la facture: ${error?.message}`});
-        return;
+    const result = await markInvoiceAsPaid(invoiceId);
+     if (result.error) {
+        toast({variant: 'destructive', title: 'Erreur', description: result.error});
+    } else {
+        toast({variant: 'success', title: 'Facture Payée'});
+        await fetchData();
     }
-
-    setInvoices(invoices.map(inv => inv.id === invoiceId ? {...inv, ...data} : inv));
-    toast({variant: 'success', title: 'Facture Payée'});
   };
 
 
@@ -297,21 +172,6 @@ export const SuperAdminScreen: React.FC = () => {
   };
   
   if (!user || !user.isSuperAdmin) return null;
-
-  const currentCommerceData = useMemo(() => {
-    if (!viewedCommerceId) return null;
-    const commerce = commerces.find(c => c.id === viewedCommerceId);
-    if (!commerce) return null;
-
-    return {
-        commerce,
-        products: products.filter(p => p.commerce_id === viewedCommerceId),
-        clients: clients.filter(c => c.commerce_id === viewedCommerceId),
-        employees: employees.filter(e => e.commerce_id === viewedCommerceId),
-        orders: orders.filter(o => o.commerce_id === viewedCommerceId),
-        expenses: expenses.filter(ex => ex.commerce_id === viewedCommerceId),
-    }
-  }, [viewedCommerceId, commerces, products, clients, employees, orders, expenses]);
   
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -379,7 +239,7 @@ export const SuperAdminScreen: React.FC = () => {
             </TabsList>
             
             <TabsContent value="dashboard">
-              {viewedCommerceId && currentCommerceData ? (
+              {viewedCommerceId ? (
                 <DashboardScreen />
               ) : (
                 <div className="text-center py-20 text-gray-500">
@@ -480,7 +340,7 @@ export const SuperAdminScreen: React.FC = () => {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
                                                             <AlertDialogDescription className="text-gray-400">
-                                                                Cette action est irréversible. Toutes les données associées à ce commerce (et son utilisateur) seront perdues.
+                                                                Cette action est irréversible.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
@@ -592,18 +452,3 @@ export const SuperAdminScreen: React.FC = () => {
       />
     </div>
   );
-
-    
-
-
-
-    
-
-    
-
-    
-
-
-
-
-

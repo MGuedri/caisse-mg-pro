@@ -1,3 +1,4 @@
+
 'use client';
 import { useApp } from "@/app/(app)/app-provider";
 import { RefreshCw, Wifi, WifiOff, AlertCircle } from 'lucide-react';
@@ -26,7 +27,7 @@ export const SyncStatus: React.FC = () => {
 
   return (
     <div 
-      className="flex items-center gap-2"
+      className="flex items-center gap-2 cursor-pointer"
       onClick={(e) => { e.stopPropagation(); syncNow(); }}
       title={`Sync status: ${getStatusText()}`}
     >

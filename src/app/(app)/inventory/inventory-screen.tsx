@@ -19,7 +19,6 @@ import {
 import {
   Plus, Trash2, Edit
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -54,30 +53,14 @@ export const InventoryScreen: React.FC = () => {
     if (!formData.name || !formData.price || !commerceId) return;
   
     if (editingProduct) {
-      // Update
-      const { data, error } = await supabase
-        .from('products')
-        .update({ 
-            name: formData.name, 
-            price: Number(formData.price), 
-            category: formData.category, 
-            stock: Number(formData.stock), 
-            icon: formData.icon 
-        })
-        .eq('id', editingProduct.id)
-        .select()
-        .single();
-      
-      if (error || !data) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le produit.' });
-        return;
-      }
-      
-      setProducts(prev => prev.map(p => p.id === data.id ? data : p));
-
+      // Update locally
+      const updatedProduct = { ...editingProduct, ...formData };
+      setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+      toast({ variant: 'success', title: 'Produit mis à jour' });
     } else {
-      // Add
-      const newProduct = {
+      // Add locally
+      const newProduct: Product = {
+        id: self.crypto.randomUUID(),
         name: formData.name,
         price: Number(formData.price),
         category: formData.category || 'Café',
@@ -85,18 +68,8 @@ export const InventoryScreen: React.FC = () => {
         icon: formData.icon || '📦',
         commerce_id: commerceId,
       };
-      const { data, error } = await supabase
-        .from('products')
-        .insert(newProduct)
-        .select()
-        .single();
-
-      if (error || !data) {
-        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'ajouter le produit." });
-        return;
-      }
-
-      setProducts(prev => [...prev, data]);
+      setProducts(prev => [...prev, newProduct]);
+      toast({ variant: 'success', title: 'Produit ajouté' });
     }
   
     setIsModalOpen(false);
@@ -105,12 +78,8 @@ export const InventoryScreen: React.FC = () => {
   
 
   const handleDeleteProduct = async (id: string) => {
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le produit.' });
-      return;
-    }
     setProducts(prev => prev.filter(p => p.id !== id));
+    toast({ variant: 'success', title: 'Produit supprimé' });
   };
 
   return (

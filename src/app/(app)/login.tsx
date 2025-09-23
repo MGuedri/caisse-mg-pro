@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/app/(app)/logo';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { signIn } from '@/app/actions/auth';
 
 export const LoginScreen: React.FC = () => {
   const { setUser, setCurrentView } = useApp();
@@ -22,80 +22,33 @@ export const LoginScreen: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const trimmedEmail = email.trim();
-    
-    // Hardcoded SuperAdmin login to bypass network issues in this environment
-    if (trimmedEmail === 'onz@live.fr') {
-        setUser({
-            id: 'superadmin-local-id',
-            name: 'Super Admin',
-            email: 'onz@live.fr',
-            role: 'SuperAdmin',
-            isSuperAdmin: true,
-        });
-        setCurrentView('superadmin');
-        setIsLoading(false);
-        return;
-    }
-    
-    // Step 1: Sign in using Supabase Auth for Owners
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
+    const result = await signIn(email, password);
 
-    if (authError || !authData.user) {
-        toast({
-            variant: "destructive",
-            title: "Erreur de connexion",
-            description: authError?.message || "Email ou mot de passe incorrect.",
-        });
-        setIsLoading(false);
-        return;
-    }
-    
-    const user = authData.user;
-    
-    // Step 2: Fetch the commerce details for the Owner
-    const { data: commerceData, error: commerceError } = await supabase
-        .from('commerces')
-        .select('*')
-        .eq('owner_id', user.id)
-        .single();
-        
-    if (commerceError || !commerceData) {
-        toast({
-            variant: "destructive",
-            title: "Erreur de Commerce",
-            description: "Le commerce associé à ce compte est introuvable.",
-        });
-        setIsLoading(false);
-        return;
+    if (result.error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur de connexion",
+        description: result.error,
+      });
+      setIsLoading(false);
+      return;
     }
 
-    // Step 3: Check subscription status
-    if (commerceData.subscription === 'Inactive') {
-        toast({
-            variant: "destructive",
-            title: "Accès refusé",
-            description: "Votre abonnement est inactif. Veuillez contacter l'administrateur.",
-        });
-        setIsLoading(false);
-        return;
+    if (result.user) {
+      const appUser: AppUser = {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        role: result.user.role as 'SuperAdmin' | 'Owner',
+        isSuperAdmin: result.user.isSuperAdmin,
+        commerceId: result.user.commerceId,
+        commerceName: result.user.commerceName,
+        owneremail: result.user.email,
+      };
+      
+      setUser(appUser);
+      setCurrentView(appUser.isSuperAdmin ? 'superadmin' : 'pos');
     }
-    
-    // Step 4: Set user context and change view
-    setUser({
-        id: user.id,
-        name: user.user_metadata?.name || commerceData.ownername,
-        email: user.email!,
-        role: 'Owner',
-        isSuperAdmin: false,
-        commerceId: commerceData.id,
-        commerceName: commerceData.name,
-        owneremail: commerceData.owneremail,
-    });
-    setCurrentView('pos');
 
     setIsLoading(false);
   };
@@ -115,6 +68,7 @@ export const LoginScreen: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               className="bg-gray-700 border-gray-600 text-white"
               disabled={isLoading}
+              autoComplete="email"
             />
             <Input
               type="password"
@@ -123,6 +77,7 @@ export const LoginScreen: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="bg-gray-700 border-gray-600 text-white"
               disabled={isLoading}
+              autoComplete="current-password"
             />
             <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
               {isLoading ? <Loader2 className="animate-spin" /> : 'Se connecter'}
