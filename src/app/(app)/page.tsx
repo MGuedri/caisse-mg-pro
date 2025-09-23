@@ -78,15 +78,16 @@ const MainApp: React.FC = () => {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <SyncStatus />
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt={user.name} />
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <SyncStatus />
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64 bg-gray-800 border-gray-700 text-white" align="end" forceMount>
