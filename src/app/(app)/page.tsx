@@ -56,9 +56,14 @@ const MainApp: React.FC = () => {
       <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-900">
-                <span className="text-xl font-bold text-orange-500">M</span>
-                <span className="text-xl font-light text-gray-400">G</span>
+            <div className="h-10 w-10 overflow-hidden rounded-full bg-gray-900 flex items-center justify-center">
+              <div className="relative h-full w-full">
+                <div className="absolute left-0 top-0 h-full w-1/2 bg-orange-500" />
+                <div className="absolute right-0 top-0 h-full w-1/2 bg-gray-700" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="font-bold text-xl text-white mix-blend-overlay">MG</span>
+                </div>
+              </div>
             </div>
             <nav className="flex gap-1">
               {visibleNav.map(item => (
@@ -86,7 +91,7 @@ const MainApp: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src="https://i.pravatar.cc/150?img=60" alt={user.name} />
+                    <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt={user.name} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </Button>
