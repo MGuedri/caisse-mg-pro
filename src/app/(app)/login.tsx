@@ -28,6 +28,7 @@ export const LoginScreen: React.FC = () => {
         .eq('email', email)
         .single();
     
+    // This is a plaintext password check, which is insecure but matches the app's current logic.
     if (userError || !userData || userData.password !== password) {
         toast({
             variant: "destructive",
@@ -52,13 +53,7 @@ export const LoginScreen: React.FC = () => {
     }
 
     if (userData.role === 'Owner') {
-        const { data: commerceData, error: commerceError } = await supabase
-            .from('commerces')
-            .select('*')
-            .eq('id', userData.commerce_id)
-            .single();
-        
-        if (commerceError || !commerceData) {
+        if (!userData.commerce_id) {
              toast({
                 variant: "destructive",
                 title: "Erreur de connexion",
@@ -68,11 +63,27 @@ export const LoginScreen: React.FC = () => {
             return;
         }
 
+        const { data: commerceData, error: commerceError } = await supabase
+            .from('commerces')
+            .select('*')
+            .eq('id', userData.commerce_id)
+            .single();
+        
+        if (commerceError || !commerceData) {
+             toast({
+                variant: "destructive",
+                title: "Erreur de Commerce",
+                description: "Le commerce associé à ce compte est introuvable.",
+            });
+            setIsLoading(false);
+            return;
+        }
+
         if (commerceData.subscription === 'Inactive') {
             toast({
                 variant: "destructive",
                 title: "Accès refusé",
-                description: "Votre compte est inactif. Veuillez contacter l'administrateur de la plateforme.",
+                description: "Votre abonnement est inactif. Veuillez contacter l'administrateur.",
             });
             setIsLoading(false);
             return;
@@ -86,6 +97,7 @@ export const LoginScreen: React.FC = () => {
             isSuperAdmin: false,
             commerceId: commerceData.id,
             commerceName: commerceData.name,
+            owneremail: commerceData.owneremail,
         });
         setCurrentView('pos');
         setIsLoading(false);

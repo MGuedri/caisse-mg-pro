@@ -157,20 +157,32 @@ export const SuperAdminScreen: React.FC = () => {
             return;
         }
 
-        // 1. Create Owner User
-        const { data: newUserData, error: newUserError } = await supabase.from('users').insert({
-            name: commerceData.ownername,
-            email: commerceData.owneremail,
-            password: ownerPassword,
-            role: 'Owner',
-        }).select().single();
+        // Step 1: Find or Create the user.
+        let ownerUser;
+        const { data: existingUser } = await supabase.from('users').select('*').eq('email', commerceData.owneremail).single();
 
-        if (newUserError || !newUserData) {
-            toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire: ${newUserError?.message}` });
-            return;
+        if (existingUser) {
+            if (existingUser.commerce_id) {
+                toast({ variant: 'destructive', title: 'Erreur', description: 'Cet utilisateur est déjà propriétaire d\'un autre commerce.' });
+                return;
+            }
+            ownerUser = existingUser;
+        } else {
+            const { data: newUserData, error: newUserError } = await supabase.from('users').insert({
+                name: commerceData.ownername,
+                email: commerceData.owneremail,
+                password: ownerPassword,
+                role: 'Owner',
+            }).select().single();
+
+            if (newUserError || !newUserData) {
+                toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire: ${newUserError?.message}` });
+                return;
+            }
+            ownerUser = newUserData;
         }
 
-        // 2. Create Commerce, linking owner_id
+        // Step 2: Create the commerce and link the owner.
         const { data: newCommerceData, error: newCommerceError } = await supabase.from('commerces').insert({
             name: commerceData.name,
             ownername: commerceData.ownername,
@@ -180,31 +192,35 @@ export const SuperAdminScreen: React.FC = () => {
             address: commerceData.address,
             subscription_price: commerceData.subscription_price,
             subscription_period: commerceData.subscription_period,
-            owner_id: newUserData.id,
+            owner_id: ownerUser.id,
         }).select().single();
-
+        
         if (newCommerceError || !newCommerceData) {
             toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer le commerce: ${newCommerceError?.message}` });
-            // Rollback user creation
-            await supabase.from('users').delete().eq('id', newUserData.id);
+            // If we created a new user, roll it back.
+            if (!existingUser) {
+              await supabase.from('users').delete().eq('id', ownerUser.id);
+            }
             return;
         }
-        
-        // 3. Update user with the new commerce_id
+
+        // Step 3: Update the user with the new commerce_id. THIS IS THE CRUCIAL STEP.
         const { error: userUpdateError } = await supabase
             .from('users')
             .update({ commerce_id: newCommerceData.id })
-            .eq('id', newUserData.id);
+            .eq('id', ownerUser.id);
 
         if (userUpdateError) {
             toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer à l'utilisateur: ${userUpdateError.message}` });
             // Rollback commerce and user creation
             await supabase.from('commerces').delete().eq('id', newCommerceData.id);
-            await supabase.from('users').delete().eq('id', newUserData.id);
+            if (!existingUser) {
+              await supabase.from('users').delete().eq('id', ownerUser.id);
+            }
             return;
         }
         
-        // 4. Populate default products for the new commerce
+        // Step 4. Populate default products for the new commerce
         const productsToInsert = defaultProducts.map(product => ({
             ...product,
             commerce_id: newCommerceData.id,
@@ -605,5 +621,6 @@ export const SuperAdminScreen: React.FC = () => {
     
 
     
+
 
 
