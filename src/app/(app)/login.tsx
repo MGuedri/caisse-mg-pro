@@ -22,14 +22,26 @@ export const LoginScreen: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Step 1: Sign in using Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
+    // Manual user lookup for debugging
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email.trim());
 
-    if (authError || !authData.user) {
-        toast({
+    if (userError || !users || users.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Erreur de connexion",
+        description: "Utilisateur non trouvé ou erreur réseau.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    const userData = users[0];
+
+    if (userData.password !== password) {
+       toast({
             variant: "destructive",
             title: "Erreur de connexion",
             description: "Email ou mot de passe incorrect.",
@@ -38,23 +50,7 @@ export const LoginScreen: React.FC = () => {
         return;
     }
 
-    // Step 2: Get the user's profile from the 'users' table
-    const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
-    
-    if (userError || !userData) {
-        toast({
-            variant: "destructive",
-            title: "Erreur de profil",
-            description: "Profil utilisateur introuvable après la connexion.",
-        });
-        setIsLoading(false);
-        return;
-    }
-
+    // --- User authenticated, proceed with role check ---
 
     if (userData.role === 'SuperAdmin') {
         setUser({
