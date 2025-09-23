@@ -191,22 +191,24 @@ export const SuperAdminScreen: React.FC = () => {
 
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    // 1. Delete associated user first
-    if (commerce.owner_id) {
-      const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
-      if (userError) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'utilisateur associé.' });
-        console.error("Error deleting user: ", userError);
-        return;
-      }
-    }
-
-    // 2. Delete the commerce (should cascade delete related products, clients etc via DB schema)
+    // 1. Delete the commerce (should cascade delete related products, clients etc via DB schema)
     const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
     if(commerceError) { 
         toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le commerce.'});
         console.error("Error deleting commerce: ", commerceError);
         return; 
+    }
+    
+    // 2. Delete associated user
+    if (commerce.owner_id) {
+      const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
+      if (userError) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'utilisateur associé.' });
+        console.error("Error deleting user: ", userError);
+        // Note: The commerce is already deleted. This might leave an orphan user if deletion fails here.
+        // For a more robust system, a transaction would be better.
+        return;
+      }
     }
     
     setCommerces(commerces.filter(c => c.id !== commerce.id));
@@ -244,7 +246,7 @@ export const SuperAdminScreen: React.FC = () => {
                 ownerName: ownerUser.name,
                 ownerEmail: ownerUser.email,
                 subscription: 'Active',
-                creationDate: new Date().toISOString().split('T')[0],
+                creationdate: new Date().toISOString().split('T')[0],
                 address: '123 Rue du Café, Tunis',
                 owner_id: ownerUser.id
             }).select().single();
@@ -458,7 +460,7 @@ export const SuperAdminScreen: React.FC = () => {
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.ownerName}</TableCell>
                                         <TableCell className="text-gray-300 hidden md:table-cell">{commerce.address}</TableCell>
                                         <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
-                                        <TableCell className="text-gray-300 hidden lg:table-cell">{new Date(commerce.creationDate).toLocaleDateString('fr-FR')}</TableCell>
+                                        <TableCell className="text-gray-300 hidden lg:table-cell">{new Date(commerce.creationdate).toLocaleDateString('fr-FR')}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -519,5 +521,8 @@ export const SuperAdminScreen: React.FC = () => {
   );
 
     
+
+    
+
 
     

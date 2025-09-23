@@ -75,6 +75,7 @@ export interface AppUser {
   isSuperAdmin: boolean;
   commerceId?: string;
   commerceName?: string;
+  ownerEmail?: string; // Ajout pour le rapport
 }
 
 export interface Commerce {
@@ -83,7 +84,7 @@ export interface Commerce {
   ownerName: string;
   ownerEmail: string;
   subscription: 'Active' | 'Inactive' | 'Trial';
-  creationDate: string;
+  creationdate: string;
   address?: string;
   owner_id?: string;
 }
@@ -366,5 +367,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     </AppContext.Provider>
   );
 };
+
+    
 
     
