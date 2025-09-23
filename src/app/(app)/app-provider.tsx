@@ -87,6 +87,20 @@ export interface Commerce {
   creationdate: string;
   address?: string;
   owner_id?: string;
+  subscription_price?: number;
+  subscription_period?: 'monthly' | 'yearly';
+}
+
+export interface Invoice {
+    id: string;
+    commerce_id: string;
+    amount: number;
+    due_date: string;
+    status: 'pending' | 'paid' | 'overdue';
+    created_at: string;
+    paid_at?: string;
+    // For UI display
+    commerceName?: string; 
 }
 
 
@@ -112,6 +126,8 @@ type AppContextType = {
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   commerces: Commerce[];
   setCommerces: React.Dispatch<React.SetStateAction<Commerce[]>>;
+  invoices: Invoice[];
+  setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
   
   viewedCommerceId: string | null;
   setViewedCommerceId: (id: string | null) => void;
@@ -150,6 +166,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
   
   // Scoped data states - for single commerce view
   const [products, setProducts] = useState<Product[]>([]);
@@ -158,6 +175,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   
   const [commerces, setCommerces] = useState<Commerce[]>([]);
 
@@ -205,6 +223,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setEmployees([]);
       setOrders([]);
       setExpenses([]);
+      setInvoices([]);
   };
 
   // Fetch all data for SuperAdmin
@@ -215,7 +234,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const commercesRes = await supabase.from('commerces').select('*');
       if (commercesRes.error) { console.error("Error fetching commerces:", String(commercesRes.error)); throw commercesRes.error; }
-      setCommerces(commercesRes.data || []);
+      const commercesData = commercesRes.data || [];
+      setCommerces(commercesData);
       
       const productsRes = await supabase.from('products').select('*');
       if (productsRes.error) { console.error("Error fetching products:", String(productsRes.error)); throw productsRes.error; }
@@ -236,6 +256,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const expensesRes = await supabase.from('expenses').select('*');
       if (expensesRes.error) { console.error("Error fetching expenses:", String(expensesRes.error)); throw expensesRes.error; }
       setAllExpenses(expensesRes.data || []);
+      
+      const invoicesRes = await supabase.from('invoices').select('*');
+      if (invoicesRes.error) { console.error("Error fetching invoices:", String(invoicesRes.error)); throw invoicesRes.error; }
+      const commerceMap = new Map(commercesData.map(c => [c.id, c.name]));
+      const invoicesData = (invoicesRes.data || []).map(inv => ({...inv, commerceName: commerceMap.get(inv.commerce_id)}));
+      setAllInvoices(invoicesData);
       
       setSyncStatus('synced');
       setLastSync(new Date());
@@ -309,8 +335,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setEmployees(filter(allEmployees));
         setOrders(filter(allOrders));
         setExpenses(filter(allExpenses));
+        setInvoices(filter(allInvoices));
       }
-  }, [user?.isSuperAdmin, viewedCommerceId, commerces, allProducts, allClients, allEmployees, allOrders, allExpenses]);
+  }, [user?.isSuperAdmin, viewedCommerceId, commerces, allProducts, allClients, allEmployees, allOrders, allExpenses, allInvoices]);
 
 
   // Network status detection
@@ -353,6 +380,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     orders, setOrders,
     expenses, setExpenses,
     commerces, setCommerces,
+    invoices, setInvoices,
     viewedCommerceId, setViewedCommerceId,
     currentView, setCurrentView,
     includeVAT, setIncludeVAT,

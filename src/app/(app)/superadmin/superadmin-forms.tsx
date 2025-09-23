@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 interface CommerceFormProps {
   isOpen: boolean;
@@ -33,6 +34,8 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
         subscription: 'Trial', 
         creationdate: new Date().toLocaleDateString('fr-CA'), // YYYY-MM-DD
         address: '',
+        subscription_price: 0,
+        subscription_period: 'monthly'
       });
       setOwnerPassword('');
     }
@@ -44,32 +47,54 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white">
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-lg">
         <DialogHeader>
           <DialogTitle>{commerce ? 'Modifier le Commerce' : 'Ajouter un Commerce'}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <Input placeholder="Nom du Commerce" value={formData.name || ''} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} className="bg-gray-700 border-gray-600"/>
-          <Input placeholder="Nom du Propriétaire" value={formData.ownername || ''} onChange={(e) => setFormData(p => ({...p, ownername: e.target.value}))} className="bg-gray-700 border-gray-600"/>
-          <Input placeholder="Adresse" value={formData.address || ''} onChange={(e) => setFormData(p => ({...p, address: e.target.value}))} className="bg-gray-700 border-gray-600"/>
-          <Input placeholder="Email du Propriétaire" type="email" value={formData.owneremail || ''} onChange={(e) => setFormData(p => ({...p, owneremail: e.target.value}))} className="bg-gray-700 border-gray-600"/>
-          <Input 
-            placeholder={commerce ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe du propriétaire"}
-            type="password" 
-            value={ownerPassword} 
-            onChange={(e) => setOwnerPassword(e.target.value)} 
-            className="bg-gray-700 border-gray-600"
-          />
-          <Select value={formData.subscription} onValueChange={(value: Commerce['subscription']) => setFormData(p => ({...p, subscription: value}))}>
-            <SelectTrigger className="bg-gray-700 border-gray-600">
-                <SelectValue placeholder="Abonnement" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-700 border-gray-600 text-white">
-                <SelectItem value="Active">Actif</SelectItem>
-                <SelectItem value="Inactive">Inactif</SelectItem>
-                <SelectItem value="Trial">Essai</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-4 py-4">
+          <div className="col-span-2">
+            <Label>Nom du Commerce</Label>
+            <Input placeholder="Nom du Commerce" value={formData.name || ''} onChange={(e) => setFormData(p => ({...p, name: e.target.value}))} className="bg-gray-700 border-gray-600 mt-1"/>
+          </div>
+          <div>
+            <Label>Nom du Propriétaire</Label>
+            <Input placeholder="Nom du Propriétaire" value={formData.ownername || ''} onChange={(e) => setFormData(p => ({...p, ownername: e.target.value}))} className="bg-gray-700 border-gray-600 mt-1"/>
+          </div>
+          <div>
+            <Label>Email du Propriétaire</Label>
+            <Input placeholder="Email du Propriétaire" type="email" value={formData.owneremail || ''} onChange={(e) => setFormData(p => ({...p, owneremail: e.target.value}))} className="bg-gray-700 border-gray-600 mt-1"/>
+          </div>
+          <div className="col-span-2">
+            <Label>Adresse</Label>
+            <Input placeholder="Adresse" value={formData.address || ''} onChange={(e) => setFormData(p => ({...p, address: e.target.value}))} className="bg-gray-700 border-gray-600 mt-1"/>
+          </div>
+          <div className="col-span-2">
+             <Label>Mot de passe</Label>
+            <Input 
+                placeholder={commerce ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe du propriétaire"}
+                type="password" 
+                value={ownerPassword} 
+                onChange={(e) => setOwnerPassword(e.target.value)} 
+                className="bg-gray-700 border-gray-600 mt-1"
+            />
+          </div>
+          <div>
+            <Label>Abonnement</Label>
+            <Select value={formData.subscription} onValueChange={(value: Commerce['subscription']) => setFormData(p => ({...p, subscription: value}))}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 mt-1">
+                    <SelectValue placeholder="Abonnement" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-700 border-gray-600 text-white">
+                    <SelectItem value="Active">Actif</SelectItem>
+                    <SelectItem value="Inactive">Inactif</SelectItem>
+                    <SelectItem value="Trial">Essai</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Prix de l'abonnement (DT)</Label>
+            <Input type="number" placeholder="Prix" value={formData.subscription_price || 0} onChange={(e) => setFormData(p => ({ ...p, subscription_price: parseFloat(e.target.value) || 0 }))} className="bg-gray-700 border-gray-600 mt-1" />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="border-gray-600">Annuler</Button>

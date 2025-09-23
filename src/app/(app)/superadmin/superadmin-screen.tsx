@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useApp } from '@/app/(app)/app-provider';
-import type { Commerce } from '@/app/(app)/app-provider';
+import type { Commerce, Invoice } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card"
@@ -42,7 +42,9 @@ import {
   Settings,
   Building,
   RefreshCw,
-  Loader2
+  Loader2,
+  FileText,
+  CheckCircle
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -51,6 +53,7 @@ import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { add } from 'date-fns';
 
 
 export const SuperAdminScreen: React.FC = () => {
@@ -58,6 +61,7 @@ export const SuperAdminScreen: React.FC = () => {
     user, setUser, setCurrentView,
     commerces, setCommerces,
     clients, orders, products, employees, expenses,
+    invoices, setInvoices,
     viewedCommerceId, setViewedCommerceId,
     fetchAllData,
   } = useApp();
@@ -102,7 +106,9 @@ export const SuperAdminScreen: React.FC = () => {
           ownername: commerceData.ownername,
           owneremail: commerceData.owneremail,
           subscription: commerceData.subscription,
-          address: commerceData.address
+          address: commerceData.address,
+          subscription_price: commerceData.subscription_price,
+          subscription_period: commerceData.subscription_period,
         })
         .eq('id', editingCommerce.id)
         .select()
@@ -150,15 +156,9 @@ export const SuperAdminScreen: React.FC = () => {
         let ownerId: string;
         let ownerUser;
 
-        // 1. Check if user already exists
-        const { data: existingUser } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', commerceData.owneremail)
-            .single();
+        const { data: existingUser } = await supabase.from('users').select('*').eq('email', commerceData.owneremail).single();
 
         if (existingUser) {
-            // User exists, check if they already own a commerce
             if(existingUser.commerce_id) {
                 toast({ variant: 'destructive', title: 'Erreur', description: 'Cet utilisateur est déjà propriétaire d\'un autre commerce.' });
                 return;
@@ -166,21 +166,16 @@ export const SuperAdminScreen: React.FC = () => {
             ownerUser = existingUser;
             ownerId = existingUser.id;
         } else {
-            // User does not exist, create them
             if (!ownerPassword) {
                 toast({ variant: 'destructive', title: 'Erreur', description: 'Le mot de passe est requis pour un nouveau propriétaire.' });
                 return;
             }
-            const { data: newUserData, error: newUserError } = await supabase
-                .from('users')
-                .insert({
-                    name: commerceData.ownername,
-                    email: commerceData.owneremail,
-                    password: ownerPassword,
-                    role: 'Owner',
-                })
-                .select()
-                .single();
+            const { data: newUserData, error: newUserError } = await supabase.from('users').insert({
+                name: commerceData.ownername,
+                email: commerceData.owneremail,
+                password: ownerPassword,
+                role: 'Owner',
+            }).select().single();
 
             if (newUserError || !newUserData) {
                 toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire. ${newUserError?.message}` });
@@ -190,43 +185,30 @@ export const SuperAdminScreen: React.FC = () => {
             ownerId = newUserData.id;
         }
 
-        // 2. Create the commerce and link it
-        const { data: newCommerceData, error: newCommerceError } = await supabase
-            .from('commerces')
-            .insert({
-                name: commerceData.name,
-                ownername: commerceData.ownername,
-                owneremail: commerceData.owneremail,
-                subscription: commerceData.subscription || 'Trial',
-                creationdate: commerceData.creationdate || new Date().toLocaleDateString('fr-CA'),
-                address: commerceData.address,
-                owner_id: ownerId,
-            })
-            .select()
-            .single();
+        const { data: newCommerceData, error: newCommerceError } = await supabase.from('commerces').insert({
+            name: commerceData.name,
+            ownername: commerceData.ownername,
+            owneremail: commerceData.owneremail,
+            subscription: commerceData.subscription || 'Trial',
+            creationdate: new Date().toLocaleDateString('fr-CA'),
+            address: commerceData.address,
+            owner_id: ownerId,
+            subscription_price: commerceData.subscription_price,
+            subscription_period: commerceData.subscription_period,
+        }).select().single();
 
         if (newCommerceError || !newCommerceData) {
-            toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer le commerce: ${newCommerceError?.message}` });
-            // If user was newly created, roll back user creation
-            if (!existingUser) {
-                await supabase.from('users').delete().eq('id', ownerId);
-            }
+            toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer le commerce: ${newCommerceError.message}` });
+            if (!existingUser) { await supabase.from('users').delete().eq('id', ownerId); }
             return;
         }
 
-        // 3. Link commerce_id back to user
-        const { error: userUpdateError } = await supabase
-            .from('users')
-            .update({ commerce_id: newCommerceData.id })
-            .eq('id', ownerId);
+        const { error: userUpdateError } = await supabase.from('users').update({ commerce_id: newCommerceData.id }).eq('id', ownerId);
 
         if(userUpdateError) {
              toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de lier le commerce à l'utilisateur: ${userUpdateError.message}` });
-             // Rollback: delete commerce and potentially the user
              await supabase.from('commerces').delete().eq('id', newCommerceData.id);
-             if (!existingUser) {
-                await supabase.from('users').delete().eq('id', ownerId);
-             }
+             if (!existingUser) { await supabase.from('users').delete().eq('id', ownerId); }
              return;
         }
 
@@ -236,16 +218,13 @@ export const SuperAdminScreen: React.FC = () => {
     setIsModalOpen(false);
   };
 
-
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    // 1. Delete the commerce first
     const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
     if(commerceError) { 
         toast({variant: 'destructive', title: 'Erreur', description: `Impossible de supprimer le commerce: ${commerceError.message}`});
         return; 
     }
     
-    // 2. Unlink user from commerce (or delete them)
     if (commerce.owner_id) {
         const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
         if (userError) {
@@ -259,6 +238,50 @@ export const SuperAdminScreen: React.FC = () => {
       setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerce.id)!.id : null);
     }
     toast({variant: 'success', title: 'Commerce Supprimé'});
+  };
+
+  const handleGenerateInvoice = async (commerceId: string) => {
+    const commerce = commerces.find(c => c.id === commerceId);
+    if(!commerce || !commerce.subscription_price) {
+        toast({variant: 'destructive', title: 'Erreur', description: 'Commerce non trouvé ou prix non défini.'});
+        return;
+    }
+
+    const dueDate = add(new Date(), { months: 1 });
+
+    const newInvoice = {
+        commerce_id: commerce.id,
+        amount: commerce.subscription_price,
+        due_date: dueDate.toLocaleDateString('fr-CA'),
+        status: 'pending' as 'pending',
+    };
+
+    const {data, error} = await supabase.from('invoices').insert(newInvoice).select().single();
+    if (error || !data) {
+        toast({variant: 'destructive', title: 'Erreur', description: `Impossible de générer la facture: ${error?.message}`});
+        return;
+    }
+
+    const newInvoiceWithCommerceName = {...data, commerceName: commerce.name};
+    setInvoices([newInvoiceWithCommerceName, ...invoices]);
+    toast({variant: 'success', title: 'Facture Générée'});
+  };
+
+  const handleMarkAsPaid = async (invoiceId: string) => {
+    const {data, error} = await supabase
+        .from('invoices')
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .eq('id', invoiceId)
+        .select()
+        .single();
+    
+    if(error || !data) {
+        toast({variant: 'destructive', title: 'Erreur', description: `Impossible de mettre à jour la facture: ${error?.message}`});
+        return;
+    }
+
+    setInvoices(invoices.map(inv => inv.id === invoiceId ? {...inv, ...data} : inv));
+    toast({variant: 'success', title: 'Facture Payée'});
   };
 
 
@@ -348,6 +371,9 @@ export const SuperAdminScreen: React.FC = () => {
                 <TabsTrigger value="management" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
                     <Settings className="h-4 w-4"/> Gestion Commerces
                 </TabsTrigger>
+                <TabsTrigger value="invoicing" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
+                    <FileText className="h-4 w-4"/> Facturation
+                </TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -412,8 +438,8 @@ export const SuperAdminScreen: React.FC = () => {
                                 <TableRow className="border-gray-700 hover:bg-gray-800">
                                     <TableHead className="text-white">Nom du Commerce</TableHead>
                                     <TableHead className="text-white hidden lg:table-cell">Propriétaire</TableHead>
-                                    <TableHead className="text-white hidden md:table-cell">Adresse</TableHead>
-                                    <TableHead className="text-white">Abonnement</TableHead>
+                                    <TableHead className="text-white hidden md:table-cell">Abonnement</TableHead>
+                                    <TableHead className="text-white">Prix</TableHead>
                                     <TableHead className="text-white hidden lg:table-cell">Date Création</TableHead>
                                     <TableHead className="text-right w-[50px]"></TableHead>
                                 </TableRow>
@@ -423,8 +449,10 @@ export const SuperAdminScreen: React.FC = () => {
                                     <TableRow key={commerce.id} className="border-gray-700 hover:bg-gray-700/50">
                                         <TableCell className="font-medium text-white">{commerce.name}</TableCell>
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.ownername}</TableCell>
-                                        <TableCell className="text-gray-300 hidden md:table-cell">{commerce.address}</TableCell>
-                                        <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
+                                        <TableCell className="hidden md:table-cell">{getSubscriptionBadge(commerce.subscription)}</TableCell>
+                                        <TableCell className="text-white">
+                                            {commerce.subscription_price ? `${commerce.subscription_price.toFixed(3)} DT` : 'N/A'}
+                                        </TableCell>
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{new Date(commerce.creationdate).toLocaleDateString('fr-FR')}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
@@ -473,6 +501,85 @@ export const SuperAdminScreen: React.FC = () => {
                 </Card>
               </div>
             </TabsContent>
+
+            <TabsContent value="invoicing">
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                        <CardTitle className="text-white">Facturation des Abonnements</CardTitle>
+                        <CardDescription className="text-gray-400">Générez et suivez les factures pour chaque commerce.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="border-gray-700 hover:bg-gray-800">
+                                        <TableHead className="text-white">Commerce</TableHead>
+                                        <TableHead className="text-white">Montant</TableHead>
+                                        <TableHead className="text-white">Date d'échéance</TableHead>
+                                        <TableHead className="text-white">Statut</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {invoices.map((invoice) => (
+                                        <TableRow key={invoice.id} className="border-gray-700">
+                                            <TableCell className="font-medium text-white">{invoice.commerceName || invoice.commerce_id}</TableCell>
+                                            <TableCell className="text-gray-300">{invoice.amount.toFixed(3)} DT</TableCell>
+                                            <TableCell className="text-gray-300">{new Date(invoice.due_date).toLocaleDateString('fr-FR')}</TableCell>
+                                            <TableCell>
+                                                {invoice.status === 'paid' && <Badge className="bg-green-600/80 text-white">Payée</Badge>}
+                                                {invoice.status === 'pending' && <Badge variant="secondary" className="bg-yellow-600/80 text-white">En attente</Badge>}
+                                                {invoice.status === 'overdue' && <Badge variant="destructive">En retard</Badge>}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {invoice.status === 'pending' && (
+                                                <Button size="sm" onClick={() => handleMarkAsPaid(invoice.id)} className="bg-green-600 hover:bg-green-700">
+                                                    <CheckCircle className="mr-2 h-4 w-4"/> Marquer Payée
+                                                </Button>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        <div className="mt-6 border-t border-gray-700 pt-6">
+                            <h4 className="text-lg font-semibold text-white mb-4">Générer une Nouvelle Facture</h4>
+                            <div className="flex flex-col sm:flex-row gap-4 items-end">
+                                <div className="w-full sm:w-auto flex-grow">
+                                    <Label className="text-gray-300">Sélectionner un commerce</Label>
+                                    <Select>
+                                        <SelectTrigger className="bg-gray-700 border-gray-600 mt-1">
+                                            <SelectValue placeholder="Choisir un commerce..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-gray-700 border-gray-600 text-white">
+                                            {commerces.filter(c => c.subscription_price && c.subscription_price > 0).map(c => (
+                                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Button 
+                                    onClick={() => {
+                                        const select = document.querySelector('[data-radix-collection-item]') as HTMLElement | null;
+                                        const commerceId = select?.dataset.value;
+                                        if (commerceId) {
+                                            handleGenerateInvoice(commerceId);
+                                        } else {
+                                            toast({variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner un commerce.'})
+                                        }
+                                    }}
+                                    className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" /> Générer
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
         </Tabs>
       </main>
 
