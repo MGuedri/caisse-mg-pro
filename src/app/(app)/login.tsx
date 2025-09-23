@@ -23,75 +23,44 @@ export const LoginScreen: React.FC = () => {
     setIsLoading(true);
 
     const trimmedEmail = email.trim();
+    
+    // Step 1: Sign in using Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
 
-    // =======================================================
-    // HARDCODED SUPERADMIN LOGIN 
-    // =======================================================
-    if (trimmedEmail === 'onz@live.fr') {
-        setUser({
-            id: 'super-admin-id',
-            name: 'Super Admin',
-            email: 'onz@live.fr',
-            role: 'SuperAdmin',
-            isSuperAdmin: true,
+    if (authError || !authData.user) {
+        toast({
+            variant: "destructive",
+            title: "Erreur de connexion",
+            description: authError?.message || "Email ou mot de passe incorrect.",
         });
-        setCurrentView('superadmin');
         setIsLoading(false);
         return;
     }
     
-    // =======================================================
-    // Standard Owner Login
-    // =======================================================
-    const { data: users, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', trimmedEmail);
-
-    if (userError || !users || users.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Erreur de connexion",
-        description: "Utilisateur non trouvé ou erreur réseau.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    const userData = users[0];
-
-    // Direct password comparison (insecure, for prototyping only)
-    if (userData.password !== password) {
-       toast({
-            variant: "destructive",
-            title: "Erreur de connexion",
-            description: "Email ou mot de passe incorrect.",
+    const user = authData.user;
+    const userRole = user.user_metadata?.role;
+    
+    if (userRole === 'SuperAdmin') {
+        setUser({
+            id: user.id,
+            name: user.user_metadata?.name || 'Super Admin',
+            email: user.email!,
+            role: 'SuperAdmin',
+            isSuperAdmin: true,
         });
-        setIsLoading(false);
-        return;
-    }
-
-    // --- User authenticated, proceed with role check ---
-
-    if (userData.role === 'Owner') {
-        if (!userData.commerce_id) {
-             toast({
-                variant: "destructive",
-                title: "Erreur de connexion",
-                description: "Aucun commerce n'est associé à ce compte.",
-            });
-            setIsLoading(false);
-            return;
-        }
-
+        setCurrentView('superadmin');
+    } else if (userRole === 'Owner') {
         const { data: commerceData, error: commerceError } = await supabase
             .from('commerces')
             .select('*')
-            .eq('id', userData.commerce_id)
+            .eq('owner_id', user.id)
             .single();
-        
+            
         if (commerceError || !commerceData) {
-             toast({
+            toast({
                 variant: "destructive",
                 title: "Erreur de Commerce",
                 description: "Le commerce associé à ce compte est introuvable.",
@@ -109,11 +78,11 @@ export const LoginScreen: React.FC = () => {
             setIsLoading(false);
             return;
         }
-
+        
         setUser({
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
+            id: user.id,
+            name: user.user_metadata?.name,
+            email: user.email!,
             role: 'Owner',
             isSuperAdmin: false,
             commerceId: commerceData.id,
@@ -121,15 +90,16 @@ export const LoginScreen: React.FC = () => {
             owneremail: commerceData.owneremail,
         });
         setCurrentView('pos');
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Erreur de rôle",
+            description: "Votre rôle n'est pas reconnu par le système.",
+        });
         setIsLoading(false);
         return;
     }
-    
-    toast({
-        variant: "destructive",
-        title: "Erreur de rôle",
-        description: "Seuls les propriétaires de commerces peuvent se connecter ici.",
-    });
+
     setIsLoading(false);
   };
 
