@@ -31,7 +31,7 @@ export const LoginScreen: React.FC = () => {
 
     if (commerceUser) {
       if (commerceUser.subscription === 'Inactive') {
-        alert('Votre compte est inactif. Veuillez contacter le support.');
+        alert("Votre compte est inactif. Veuillez contacter l'administrateur de la plateforme.");
         return;
       }
 
