@@ -232,10 +232,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('syncing');
 
     try {
-      // NOTE: For SuperAdmin, we use the `supabaseAdmin` client which has service_role privileges.
-      // This is necessary because RLS policies might restrict a normal user from reading all data.
-      // This function should ONLY be called when a SuperAdmin is verified.
-      const db = supabaseAdmin;
+      const db = supabase;
       const commercesRes = await db.from('commerces').select('*');
       if (commercesRes.error) { console.error("Error fetching commerces:", commercesRes.error.message); throw commercesRes.error; }
       const commercesData = commercesRes.data || [];
