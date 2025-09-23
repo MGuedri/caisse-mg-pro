@@ -10,7 +10,7 @@ export const Logo = ({ size = 'lg', className }: { size?: 'sm' | 'lg', className
       className
     )}>
       <div className={cn(
-        "relative flex items-center justify-center",
+        "relative flex items-center justify-center bg-white rounded-full",
         isLarge ? 'w-24 h-24' : 'w-10 h-10'
       )}>
         <span className={cn(
