@@ -20,10 +20,11 @@ import {
   Plus, Trash2, Edit
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { addProduct, updateProduct, deleteProduct } from '@/app/actions/mutations';
 
 
 export const InventoryScreen: React.FC = () => {
-  const { products, setProducts, user, viewedCommerceId } = useApp();
+  const { products, setProducts, user, viewedCommerceId, fetchData } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -52,15 +53,14 @@ export const InventoryScreen: React.FC = () => {
   const handleSave = async () => {
     if (!formData.name || !formData.price || !commerceId) return;
   
+    let result;
     if (editingProduct) {
-      // Update locally
-      const updatedProduct = { ...editingProduct, ...formData };
-      setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-      toast({ variant: 'success', title: 'Produit mis à jour' });
+      result = await updateProduct(editingProduct.id, formData);
+      if (!result.error) {
+        toast({ variant: 'success', title: 'Produit mis à jour' });
+      }
     } else {
-      // Add locally
-      const newProduct: Product = {
-        id: self.crypto.randomUUID(),
+      const newProductData: Omit<Product, 'id'> = {
         name: formData.name,
         price: Number(formData.price),
         category: formData.category || 'Café',
@@ -68,8 +68,16 @@ export const InventoryScreen: React.FC = () => {
         icon: formData.icon || '📦',
         commerce_id: commerceId,
       };
-      setProducts(prev => [...prev, newProduct]);
-      toast({ variant: 'success', title: 'Produit ajouté' });
+      result = await addProduct(newProductData);
+      if (!result.error) {
+        toast({ variant: 'success', title: 'Produit ajouté' });
+      }
+    }
+
+    if (result.error) {
+      toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+      await fetchData();
     }
   
     setIsModalOpen(false);
@@ -78,8 +86,13 @@ export const InventoryScreen: React.FC = () => {
   
 
   const handleDeleteProduct = async (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-    toast({ variant: 'success', title: 'Produit supprimé' });
+    const result = await deleteProduct(id);
+    if (result.error) {
+      toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+      toast({ variant: 'success', title: 'Produit supprimé' });
+      await fetchData();
+    }
   };
 
   return (

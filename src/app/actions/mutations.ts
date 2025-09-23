@@ -167,6 +167,6 @@ export async function deleteExpense(id: string) {
 
 export async function addOrder(orderData: Omit<Order, 'id'>) {
     // The items in an order are JSON, so we need to stringify them if they are not already
-    const payload = { ...orderData, items: JSON.stringify(orderData.items) };
+    const payload = { ...orderData, items: orderData.items };
     return handleMutation(supabase => supabase.from('orders').insert(payload));
 }

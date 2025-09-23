@@ -16,9 +16,10 @@ import {
   Plus, Minus, Trash2, CreditCard, ShoppingCart
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { addOrder } from '@/app/actions/mutations';
 
 export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
-  const { cart, setCart, clients, includeVAT, setIncludeVAT, setOrders, user, viewedCommerceId } = useApp();
+  const { cart, setCart, clients, includeVAT, setIncludeVAT, user, viewedCommerceId, fetchData } = useApp();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [selectedClient, setSelectedClient] = useState('Client invité');
@@ -48,8 +49,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
   const handlePayment = async () => {
     if (cart.length === 0 || !user || !commerceId) return;
     
-    const newOrder: Order = {
-      id: self.crypto.randomUUID(),
+    const newOrderData: Omit<Order, 'id'> = {
       timestamp: new Date().toISOString(),
       items: [...cart],
       total,
@@ -58,13 +58,19 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
       commerce_id: commerceId,
     };
 
-    setOrders(prev => [newOrder, ...prev]);
-    setCart([]);
-    setIsPaymentOpen(false);
-    setPaymentAmount('');
-    setSelectedClient('Client invité');
-    toast({variant: 'success', title: 'Commande enregistrée'});
-    if (onClose) onClose();
+    const result = await addOrder(newOrderData);
+    
+    if (result.error) {
+      toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+      toast({variant: 'success', title: 'Commande enregistrée'});
+      await fetchData(); // Refresh data to show new order
+      setCart([]);
+      setIsPaymentOpen(false);
+      setPaymentAmount('');
+      setSelectedClient('Client invité');
+      if (onClose) onClose();
+    }
   };
 
   return (

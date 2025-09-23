@@ -210,6 +210,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 setEmployees(data.employees?.filter(e => e.commerce_id === currentId) || []);
                 setOrders(data.orders?.filter(o => o.commerce_id === currentId) || []);
                 setExpenses(data.expenses?.filter(e => e.commerce_id === currentId) || []);
+             } else {
+                // If no commerce is viewed, clear the data
+                setProducts([]);
+                setClients([]);
+                setEmployees([]);
+                setOrders([]);
+                setExpenses([]);
              }
         } else {
              setProducts(data?.products || []);

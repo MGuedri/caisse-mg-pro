@@ -21,6 +21,7 @@ import { SalariesTabContent } from './salaries-tab';
 import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { addClient, updateClient, deleteClient, addEmployee, updateEmployee, deleteEmployee, addExpense, updateExpense, deleteExpense } from '@/app/actions/mutations';
 
 const getInitials = (name: string) => {
     if (!name) return '';
@@ -33,7 +34,7 @@ const getInitials = (name: string) => {
 
 
 export const ManagementScreen: React.FC = () => {
-  const { clients, setClients, employees, setEmployees, expenses, setExpenses, user, viewedCommerceId } = useApp();
+  const { clients, employees, expenses, user, viewedCommerceId, fetchData } = useApp();
   const [activeTab, setActiveTab] = useState('clients');
   const { toast } = useToast();
 
@@ -76,12 +77,12 @@ export const ManagementScreen: React.FC = () => {
   const handleSaveClient = async (clientData: Partial<Client>) => {
     if (!commerceId) return;
 
+    let result;
     if (editingClient) {
-      setClients(clients.map(c => c.id === editingClient.id ? {...editingClient, ...clientData} as Client : c));
-      toast({variant: 'success', title: 'Client mis à jour' });
+      result = await updateClient(editingClient.id, clientData);
+      if (!result.error) toast({variant: 'success', title: 'Client mis à jour' });
     } else {
-      const newClient: Client = {
-          id: self.crypto.randomUUID(),
+      const newClientData: Omit<Client, 'id'> = {
           commerce_id: commerceId,
           name: clientData.name || 'N/A',
           email: clientData.email || '',
@@ -89,14 +90,25 @@ export const ManagementScreen: React.FC = () => {
           isVip: clientData.isVip || false,
           credit: clientData.credit || 0
       };
-      setClients([...clients, newClient]);
-      toast({variant: 'success', title: 'Client ajouté' });
+      result = await addClient(newClientData);
+      if (!result.error) toast({variant: 'success', title: 'Client ajouté' });
+    }
+
+    if (result.error) {
+        toast({variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+        await fetchData();
     }
     setIsClientModalOpen(false);
   };
   const handleDeleteClient = async (clientId: string) => {
-    setClients(clients.filter(c => c.id !== clientId));
-    toast({variant: 'success', title: 'Client supprimé' });
+    const result = await deleteClient(clientId);
+    if(result.error) {
+        toast({variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+        toast({variant: 'success', title: 'Client supprimé' });
+        await fetchData();
+    }
   };
 
   // --- Employee Actions ---
@@ -108,12 +120,12 @@ export const ManagementScreen: React.FC = () => {
     if (!commerceId) return;
     const balance = (employeeData.salary || 0) - (employeeData.advance || 0);
 
+    let result;
     if (editingEmployee) {
-      setEmployees(employees.map(e => e.id === editingEmployee.id ? {...editingEmployee, ...employeeData, balance} as Employee : e));
-       toast({ variant: 'success', title: 'Employé mis à jour' });
+      result = await updateEmployee(editingEmployee.id, {...employeeData, balance});
+      if (!result.error) toast({ variant: 'success', title: 'Employé mis à jour' });
     } else {
-        const newEmployee: Employee = {
-            id: self.crypto.randomUUID(),
+        const newEmployeeData: Omit<Employee, 'id'> = {
             commerce_id: commerceId,
             name: employeeData.name || 'N/A',
             role: employeeData.role || 'Caissier',
@@ -125,16 +137,27 @@ export const ManagementScreen: React.FC = () => {
             advance: employeeData.advance || 0,
             balance: balance,
             isTopEmployee: false,
-            avatar: `https://i.pravatar.cc/150?u=${self.crypto.randomUUID()}`
+            avatar: '' // Will be set on the server
         };
-      setEmployees([...employees, newEmployee]);
-      toast({ variant: 'success', title: 'Employé ajouté' });
+      result = await addEmployee(newEmployeeData);
+      if (!result.error) toast({ variant: 'success', title: 'Employé ajouté' });
+    }
+    
+    if (result.error) {
+        toast({variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+        await fetchData();
     }
     setIsEmployeeModalOpen(false);
   }
   const handleDeleteEmployee = async (employeeId: string) => {
-    setEmployees(employees.filter(e => e.id !== employeeId));
-    toast({ variant: 'success', title: 'Employé supprimé' });
+    const result = await deleteEmployee(employeeId);
+    if (result.error) {
+        toast({variant: 'destructive', title: 'Erreur', description: result.error });
+    } else {
+        toast({ variant: 'success', title: 'Employé supprimé' });
+        await fetchData();
+    }
   }
 
   const handlePaySalary = async (employeeId: string) => {
@@ -142,18 +165,28 @@ export const ManagementScreen: React.FC = () => {
     const employee = employees.find(e => e.id === employeeId);
     if (!employee || employee.balance <= 0) return;
 
-    const newExpense: Expense = {
-      id: self.crypto.randomUUID(),
+    const newExpenseData: Omit<Expense, 'id'> = {
       description: `Paiement salaire: ${employee.name}`,
       amount: employee.salary,
       category: 'Charges Salaires',
       date: new Date().toLocaleDateString('fr-CA'),
       commerce_id: commerceId,
     };
-    setExpenses(prevExpenses => [...prevExpenses, newExpense]);
     
-    setEmployees(employees.map(e => e.id === employeeId ? { ...e, advance: 0, balance: 0 } : e));
-    toast({variant: 'success', title: 'Paiement effectué', description: `Le salaire de ${employee.name} a été payé.`});
+    const expenseResult = await addExpense(newExpenseData);
+    if (expenseResult.error) {
+        toast({variant: 'destructive', title: 'Erreur Dépense', description: expenseResult.error});
+        return;
+    }
+    
+    const employeeResult = await updateEmployee(employeeId, { advance: 0, balance: 0 });
+     if (employeeResult.error) {
+        toast({variant: 'destructive', title: 'Erreur Employé', description: employeeResult.error});
+        // Here you might want to handle the fact that the expense was added but employee update failed (e.g. manual correction needed)
+    } else {
+        toast({variant: 'success', title: 'Paiement effectué', description: `Le salaire de ${employee.name} a été payé.`});
+        await fetchData();
+    }
   }
 
   // --- Expense Actions ---
@@ -163,26 +196,38 @@ export const ManagementScreen: React.FC = () => {
   }
   const handleSaveExpense = async (expenseData: Partial<Expense>) => {
     if(!commerceId) return;
+
+    let result;
     if (editingExpense) {
-      setExpenses(expenses.map(e => e.id === editingExpense.id ? {...editingExpense, ...expenseData} as Expense : e));
-      toast({ variant: 'success', title: 'Dépense mise à jour'});
+      result = await updateExpense(editingExpense.id, expenseData);
+      if (!result.error) toast({ variant: 'success', title: 'Dépense mise à jour'});
     } else {
-      const newExpense: Expense = {
-          id: self.crypto.randomUUID(),
+      const newExpenseData: Omit<Expense, 'id'> = {
           description: expenseData.description || 'N/A',
           amount: expenseData.amount || 0,
           category: expenseData.category || 'Divers',
           date: new Date().toLocaleDateString('fr-CA'),
           commerce_id: commerceId
       };
-      setExpenses([...expenses, newExpense]);
-      toast({ variant: 'success', title: 'Dépense ajoutée'});
+      result = await addExpense(newExpenseData);
+      if (!result.error) toast({ variant: 'success', title: 'Dépense ajoutée'});
+    }
+
+    if(result.error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: result.error});
+    } else {
+        await fetchData();
     }
     setIsExpenseModalOpen(false);
   }
   const handleDeleteExpense = async (expenseId: string) => {
-    setExpenses(expenses.filter(e => e.id !== expenseId));
-    toast({ variant: 'success', title: 'Dépense supprimée' });
+    const result = await deleteExpense(expenseId);
+    if(result.error) {
+      toast({ variant: 'destructive', title: 'Erreur', description: result.error});
+    } else {
+      toast({ variant: 'success', title: 'Dépense supprimée' });
+      await fetchData();
+    }
   }
 
   return (
