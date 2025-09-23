@@ -16,12 +16,12 @@ import {
   Building,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SyncStatus } from '@/components/sync-status';
 import { useEffect } from 'react';
 import Image from 'next/image'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
+import { SyncStatusItem } from '@/components/sync-status-item';
 
 
 // --- NAVIGATION PRINCIPALE ---
@@ -81,13 +81,10 @@ const MainApp: React.FC = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-                  <div className="relative">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <SyncStatus />
-                  </div>
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt={user.name} />
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64 bg-gray-800 border-gray-700 text-white" align="end" forceMount>
@@ -106,6 +103,8 @@ const MainApp: React.FC = () => {
                     </div>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-700"/>
+                <SyncStatusItem />
                 <DropdownMenuSeparator className="bg-gray-700"/>
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:!bg-orange-500/80">
                   <LogOut className="mr-2 h-4 w-4" />

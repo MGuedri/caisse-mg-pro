@@ -7,28 +7,38 @@ export const SyncStatus: React.FC = () => {
   const { syncStatus, lastSync, syncNow, isOnline } = useApp();
 
   const getIcon = () => {
-    if(!isOnline) return <WifiOff className="h-3 w-3 text-red-500" />;
+    if(!isOnline) return <WifiOff className="h-4 w-4 text-red-500" />;
     switch (syncStatus) {
-      case 'syncing': return <RefreshCw className="h-3 w-3 text-orange-500 animate-spin" />;
-      case 'synced': return <Wifi className="h-3 w-3 text-green-500" />;
-      case 'error': return <AlertCircle className="h-3 w-3 text-red-500" />;
-      default: return <WifiOff className="h-3 w-3 text-red-500" />;
+      case 'syncing': return <RefreshCw className="h-4 w-4 text-orange-500 animate-spin" />;
+      case 'synced': return <Wifi className="h-4 w-4 text-green-500" />;
+      case 'error': return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default: return <WifiOff className="h-4 w-4 text-red-500" />;
     }
   };
 
   const getStatusText = () => {
-    if (!isOnline) return 'Offline';
-    if (syncStatus === 'synced' && lastSync) return `Synced: ${lastSync.toLocaleTimeString()}`;
-    return syncStatus.charAt(0).toUpperCase() + syncStatus.slice(1);
+    if (!isOnline) return 'Hors ligne';
+    if (syncStatus === 'synced') return `Synchronisé`;
+    if (syncStatus === 'syncing') return 'Synchronisation...';
+    if (syncStatus === 'error') return 'Erreur';
+    return 'Hors ligne';
   }
 
   return (
     <div 
-      className="absolute bottom-0 right-0 flex items-center justify-center h-5 w-5 rounded-full bg-gray-800 cursor-pointer border-2 border-gray-800"
+      className="flex items-center gap-2"
       onClick={(e) => { e.stopPropagation(); syncNow(); }}
       title={`Sync status: ${getStatusText()}`}
     >
       {getIcon()}
+      <div className="flex flex-col">
+        <span className="text-sm">{getStatusText()}</span>
+        {isOnline && lastSync && syncStatus === 'synced' && (
+           <span className="text-xs text-gray-400">
+             Dernière: {lastSync.toLocaleTimeString()}
+           </span>
+        )}
+      </div>
     </div>
   );
 };
