@@ -15,13 +15,13 @@ async function handleMutation(callback: (supabase: any) => Promise<any>) {
         const { data, error } = await callback(supabase);
         if (error) {
             console.error('Supabase mutation error:', error.message);
-            return { error: error.message };
+            return { data: null, error: error.message };
         }
         revalidatePath('/'); // Revalidate all paths for simplicity
-        return { data };
+        return { data, error: null };
     } catch (e: any) {
         console.error('Server action error:', e.message);
-        return { error: e.message };
+        return { data: null, error: e.message };
     }
 }
 
@@ -35,26 +35,30 @@ export async function createCommerce(commerceData: Commerce, ownerPassword?: str
         supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     });
 
-    // 1. Create the user in Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.createUser({
-        email: commerceData.owneremail,
-        password: ownerPassword!,
-        email_confirm: true, // Auto-confirm user
-    });
+    try {
+        // 1. Create the user in Supabase Auth
+        const { data: authData, error: authError } = await supabaseAdmin.auth.createUser({
+            email: commerceData.owneremail,
+            password: ownerPassword!,
+            email_confirm: true, // Auto-confirm user
+        });
 
-    if (authError) {
-        return { error: `Erreur Auth: ${authError.message}` };
+        if (authError) {
+            return { error: `Erreur Auth: ${authError.message}` };
+        }
+        const owner_id = authData.user!.id;
+        
+        // 2. Create the commerce profile
+        return handleMutation(supabase => 
+            supabase.from('commerces').insert({
+                ...commerceData,
+                id: undefined, // Let Supabase generate it
+                owner_id,
+            })
+        );
+    } catch (e: any) {
+        return { data: null, error: e.message };
     }
-    const owner_id = authData.user!.id;
-    
-    // 2. Create the commerce profile
-    return handleMutation(supabase => 
-        supabase.from('commerces').insert({
-            ...commerceData,
-            id: undefined, // Let Supabase generate it
-            owner_id,
-        })
-    );
 }
 
 export async function updateCommerce(id: string, commerceData: Partial<Commerce>) {
@@ -69,28 +73,32 @@ export async function deleteCommerce(id: string) {
         supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     });
      
-    // We need to get the owner_id before deleting the commerce
-    const { data: commerce, error: fetchError } = await supabaseAdmin.from('commerces').select('owner_id').eq('id', id).single();
-    if (fetchError || !commerce) {
-        return { error: 'Commerce non trouvé.'};
-    }
-    
-    // Delete the commerce record
-    const { error: deleteCommerceError } = await supabaseAdmin.from('commerces').delete().eq('id', id);
-    if(deleteCommerceError) {
-        return { error: `Erreur suppression commerce: ${deleteCommerceError.message}` };
-    }
+    try {
+        // We need to get the owner_id before deleting the commerce
+        const { data: commerce, error: fetchError } = await supabaseAdmin.from('commerces').select('owner_id').eq('id', id).single();
+        if (fetchError || !commerce) {
+            return { error: 'Commerce non trouvé.'};
+        }
+        
+        // Delete the commerce record
+        const { error: deleteCommerceError } = await supabaseAdmin.from('commerces').delete().eq('id', id);
+        if(deleteCommerceError) {
+            return { error: `Erreur suppression commerce: ${deleteCommerceError.message}` };
+        }
 
-    // Delete the auth user
-    const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(commerce.owner_id);
-     if(deleteUserError) {
-        // This is not ideal, but we've already deleted the commerce.
-        // In a real app, this should be a transaction.
-        console.error(`Failed to delete auth user ${commerce.owner_id}: ${deleteUserError.message}`);
-    }
+        // Delete the auth user
+        const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(commerce.owner_id);
+         if(deleteUserError) {
+            // This is not ideal, but we've already deleted the commerce.
+            // In a real app, this should be a transaction.
+            console.error(`Failed to delete auth user ${commerce.owner_id}: ${deleteUserError.message}`);
+        }
 
-    revalidatePath('/');
-    return { data: 'ok' };
+        revalidatePath('/');
+        return { data: 'ok' };
+    } catch (e: any) {
+        return { data: null, error: e.message };
+    }
 }
 
 // ======================

@@ -186,24 +186,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!user) return;
     setSyncStatus('syncing');
     try {
-        let data;
+        let result;
         if (user.isSuperAdmin) {
-            data = await fetchAllDataForAdmin();
+            result = await fetchAllDataForAdmin();
         } else if (user.commerceId) {
-            data = await fetchDataForCommerce(user.commerceId);
+            result = await fetchDataForCommerce(user.commerceId);
+        } else {
+          result = { data: null, error: "No commerceId found for user" };
         }
 
-        if (data?.commerces) {
+        if (result.error || !result.data) {
+          throw new Error(result.error || 'Failed to fetch data');
+        }
+
+        const data = result.data;
+
+        if (data.commerces) {
             setCommerces(data.commerces);
             if (!viewedCommerceId && data.commerces.length > 0) {
               setViewedCommerceId(data.commerces[0].id);
             }
         }
-        if (data?.invoices) setInvoices(data.invoices);
+        if (data.invoices) setInvoices(data.invoices);
 
         // For owner, data is already filtered. For admin, we filter client-side.
         if (user.isSuperAdmin) {
-            const currentId = viewedCommerceId || (data?.commerces && data.commerces.length > 0 ? data.commerces[0].id : null);
+            const currentId = viewedCommerceId || (data.commerces && data.commerces.length > 0 ? data.commerces[0].id : null);
              if (currentId) {
                 setProducts(data.products?.filter(p => p.commerce_id === currentId) || []);
                 setClients(data.clients?.filter(c => c.commerce_id === currentId) || []);
@@ -219,17 +227,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 setExpenses([]);
              }
         } else {
-             setProducts(data?.products || []);
-             setClients(data?.clients || []);
-             setEmployees(data?.employees || []);
-             setOrders(data?.orders || []);
-             setExpenses(data?.expenses || []);
+             setProducts(data.products || []);
+             setClients(data.clients || []);
+             setEmployees(data.employees || []);
+             setOrders(data.orders || []);
+             setExpenses(data.expenses || []);
         }
         
         setSyncStatus('synced');
         setLastSync(new Date());
-    } catch (error) {
-        console.error("Failed to fetch data:", error);
+    } catch (error: any) {
+        console.error("Failed to fetch data:", error.message);
         setSyncStatus('error');
     }
   }, [user, viewedCommerceId]);

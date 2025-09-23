@@ -6,8 +6,9 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 export async function signIn(email: string, password_): Promise<{ user?: any, error?: string }> {
-    const supabase = createServerActionClient({ cookies });
-    
+  const supabase = createServerActionClient({ cookies });
+  
+  try {
     const { data: { user: authUser }, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: password_,
@@ -56,11 +57,19 @@ export async function signIn(email: string, password_): Promise<{ user?: any, er
     };
 
     return { user: ownerProfile };
+  } catch (e: any) {
+    return { error: e.message };
+  }
 }
 
 
 export async function signOut() {
-  const supabase = createServerActionClient({ cookies });
-  await supabase.auth.signOut();
-  revalidatePath('/');
+  try {
+    const supabase = createServerActionClient({ cookies });
+    await supabase.auth.signOut();
+    revalidatePath('/');
+    return { success: true };
+  } catch (e: any) {
+    return { error: e.message };
+  }
 }
