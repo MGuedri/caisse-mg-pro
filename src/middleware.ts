@@ -6,11 +6,18 @@ import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
-  await supabase.auth.getSession()
-  return res
+  
+  try {
+    const supabase = createMiddlewareClient({ req, res });
+    await supabase.auth.getSession();
+    
+    return res;
+  } catch (error) {
+    console.error('Middleware error:', error);
+    return res;
+  }
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/auth).*)']
 }
