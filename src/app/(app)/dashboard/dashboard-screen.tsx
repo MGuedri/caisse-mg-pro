@@ -38,6 +38,7 @@ import {
   Loader2,
   Users,
   Mail,
+  FileText,
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
 import { generateReport } from '@/ai/flows/generate-report-flow';
@@ -318,17 +319,17 @@ export const DashboardScreen: React.FC = () => {
   const { user, orders, clients } = useApp();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isReportDialogVisible, setIsReportDialogVisible] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState(user?.ownerEmail || '');
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [reportHtml, setReportHtml] = useState('');
 
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  const handleOpenReportDialog = () => {
-    setRecipientEmail(user?.ownerEmail || '');
-    setIsReportDialogVisible(true);
-  }
-
-  const handleSendReport = async () => {
+  const handleGenerateAndShowReport = async () => {
+    if (!user) return;
     setIsGenerating(true);
+    setReportHtml('');
+    setIsReportDialogVisible(true);
+
     try {
       const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
       const totalSales = orders.length;
@@ -349,7 +350,7 @@ export const DashboardScreen: React.FC = () => {
         .map(([name, sold]) => ({ name, sold }));
 
 
-      const reportHtml = await generateReport({
+      const generatedHtml = await generateReport({
         totalRevenue: totalRevenue.toFixed(3) + ' DT',
         totalSales: totalSales.toString(),
         totalCredit: totalCredit.toFixed(3) + ' DT',
@@ -363,18 +364,27 @@ export const DashboardScreen: React.FC = () => {
             items: order.items.map(item => `${item.quantity} x ${item.name} @ ${item.price.toFixed(3)} DT`),
         })),
       });
-
-      const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-      const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
-      window.location.href = mailtoLink;
+      
+      setReportHtml(generatedHtml);
+      setRecipientEmail(user.ownerEmail || '');
 
     } catch (error) {
       console.error("Failed to generate report", error);
       alert("Erreur lors de la génération du rapport.");
+      setIsReportDialogVisible(false);
     } finally {
       setIsGenerating(false);
-      setIsReportDialogVisible(false);
     }
+  };
+
+  const handleSendEmail = () => {
+    if (!reportHtml || !recipientEmail) return;
+
+    const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
+    const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
+    window.location.href = mailtoLink;
+    
+    setIsReportDialogVisible(false);
   };
 
   return (
@@ -385,8 +395,8 @@ export const DashboardScreen: React.FC = () => {
             <p className="text-gray-400">{today}</p>
         </div>
         <div className="flex items-center gap-4">
-          <Button onClick={handleOpenReportDialog} className="bg-orange-500 hover:bg-orange-600" disabled={isGenerating}>
-            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+          <Button onClick={handleGenerateAndShowReport} className="bg-orange-500 hover:bg-orange-600">
+            <Send className="mr-2 h-4 w-4" />
             Envoyer le Bilan
           </Button>
           <SyncStatus />
@@ -394,33 +404,51 @@ export const DashboardScreen: React.FC = () => {
       </div>
 
       <AlertDialog open={isReportDialogVisible} onOpenChange={setIsReportDialogVisible}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
+        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl">
             <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-orange-400"/>
-                    Confirmer l'envoi du bilan
+                    <FileText className="h-5 w-5 text-orange-400"/>
+                    Aperçu et Envoi du Bilan
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-gray-400 pt-2">
-                    Le rapport de la journée sera envoyé à l'adresse e-mail ci-dessous. Vous pouvez la modifier si nécessaire.
+                    Vérifiez l'aperçu du rapport ci-dessous avant de l'envoyer.
                 </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="py-4">
+            
+            <div className="my-4">
+                {isGenerating ? (
+                    <div className="h-64 flex items-center justify-center bg-gray-900 rounded-lg">
+                        <Loader2 className="h-8 w-8 animate-spin text-orange-500"/>
+                    </div>
+                ) : (
+                    <div className="h-96 overflow-y-auto p-4 bg-gray-900 rounded-lg border border-gray-700">
+                        <iframe
+                            srcDoc={reportHtml}
+                            className="w-full h-full border-0"
+                            title="Report Preview"
+                        />
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-2">
                 <Label htmlFor="recipient-email" className="text-gray-400">Destinataire</Label>
                 <Input
                     id="recipient-email"
                     type="email"
                     value={recipientEmail}
                     onChange={(e) => setRecipientEmail(e.target.value)}
-                    className="bg-gray-700 border-gray-600 mt-2"
+                    className="bg-gray-700 border-gray-600"
                     placeholder="Adresse e-mail du destinataire"
+                    disabled={isGenerating || !reportHtml}
                 />
             </div>
-            <AlertDialogFooter>
+            <AlertDialogFooter className="mt-4">
                 <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700">
                   Annuler
                 </AlertDialogCancel>
-                <AlertDialogAction onClick={handleSendReport} className="bg-orange-500 hover:bg-orange-600" disabled={isGenerating || !recipientEmail}>
-                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                <AlertDialogAction onClick={handleSendEmail} className="bg-orange-500 hover:bg-orange-600" disabled={isGenerating || !reportHtml || !recipientEmail}>
+                    <Send className="mr-2 h-4 w-4" />
                     Confirmer et Envoyer
                 </AlertDialogAction>
             </AlertDialogFooter>

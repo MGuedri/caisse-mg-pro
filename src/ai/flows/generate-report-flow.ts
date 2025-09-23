@@ -10,10 +10,10 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GenerateReportInputSchema = z.object({
-    totalRevenue: z.string().describe('The total revenue for the day.'),
-    totalSales: z.string().describe('The total number of sales for the day.'),
-    totalCredit: z.string().describe('The total outstanding credit from clients.'),
-    peakHour: z.string().describe('The peak business hour of the day.'),
+    totalRevenue: z.string().describe("The total revenue for the day."),
+    totalSales: z.string().describe("The total number of sales for the day."),
+    totalCredit: z.string().describe("The total outstanding credit from clients."),
+    peakHour: z.string().describe("The peak business hour of the day."),
     topProducts: z.array(z.string()).describe('A list of the top-selling products for the day.'),
     salesHistory: z.array(z.object({
         id: z.string(),
@@ -37,42 +37,67 @@ const prompt = ai.definePrompt({
   You are an assistant responsible for generating a daily report for a coffee shop owner.
   Generate an HTML email body summarizing the day's business.
   The report should be clean, professional, and easy to read.
-  Use basic HTML tags like <h1>, <h2>, <p>, <ul>, <li>, <strong>. Do not include <head>, <body>, or any CSS.
+  Use inline CSS for styling to ensure compatibility with email clients. Do not include <head> or <body> tags.
+  The design should be modern, using a dark theme with orange accents.
 
   Here is the data for the report:
 
-  <h1>Bilan de la Journée - {{currentDate}}</h1>
+  <div style="font-family: Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; max-width: 600px; margin: auto; border-radius: 8px;">
+    <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #444;">
+        <h1 style="color: #f97316; margin: 0;">Bilan de la Journée</h1>
+        <p style="color: #aaa; margin: 5px 0 0;">{{currentDate}}</p>
+    </div>
 
-  <h2>Statistiques Clés</h2>
-  <ul>
-    <li><strong>Chiffre d'Affaire :</strong> {{{totalRevenue}}}</li>
-    <li><strong>Nombre de Ventes :</strong> {{{totalSales}}}</li>
-    <li><strong>Total Crédit :</strong> {{{totalCredit}}}</li>
-    <li><strong>Heure de Pointe :</strong> {{{peakHour}}}</li>
-  </ul>
+    <div style="padding: 20px 0; border-bottom: 1px solid #444;">
+        <h2 style="color: #f97316; margin-top: 0;">Statistiques Clés</h2>
+        <table style="width: 100%; color: #f0f0f0;">
+            <tr style="border-bottom: 1px solid #333;">
+                <td style="padding: 8px 0;"><strong>Chiffre d'Affaire :</strong></td>
+                <td style="text-align: right; font-weight: bold;">{{{totalRevenue}}}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #333;">
+                <td style="padding: 8px 0;"><strong>Nombre de Ventes :</strong></td>
+                <td style="text-align: right;">{{{totalSales}}}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #333;">
+                <td style="padding: 8px 0;"><strong>Total Crédit :</strong></td>
+                <td style="text-align: right;">{{{totalCredit}}}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0;"><strong>Heure de Pointe :</strong></td>
+                <td style="text-align: right;">{{{peakHour}}}</td>
+            </tr>
+        </table>
+    </div>
 
-  <h2>Top Produits du Jour</h2>
-  <ul>
-    {{#each topProducts}}
-    <li>{{this}}</li>
-    {{/each}}
-  </ul>
+    <div style="padding: 20px 0; border-bottom: 1px solid #444;">
+        <h2 style="color: #f97316;">Top Produits du Jour</h2>
+        <ul style="list-style: none; padding: 0;">
+            {{#each topProducts}}
+            <li style="background-color: #2c2c2c; padding: 10px; border-radius: 4px; margin-bottom: 5px;">{{this}}</li>
+            {{/each}}
+        </ul>
+    </div>
 
-  <h2>Historique Détaillé des Ventes</h2>
-  {{#each salesHistory}}
-  <div>
-    <p><strong>Commande #{{id}}</strong> - {{client}} ({{time}})</p>
-    <p><strong>Total :</strong> {{total}}</p>
-    <ul>
-      {{#each items}}
-      <li>{{this}}</li>
-      {{/each}}
-    </ul>
-    <hr />
+    <div style="padding: 20px 0;">
+        <h2 style="color: #f97316;">Historique Détaillé des Ventes</h2>
+        {{#each salesHistory}}
+        <div style="background-color: #2c2c2c; padding: 15px; border-radius: 4px; margin-bottom: 10px;">
+            <p style="margin: 0; font-weight: bold;">Commande #{{id}} - {{client}} ({{time}})</p>
+            <p style="margin: 5px 0; color: #f97316; font-size: 1.1em;">Total : {{total}}</p>
+            <ul style="margin: 10px 0 0 20px; padding: 0; color: #ccc;">
+              {{#each items}}
+              <li>{{this}}</li>
+              {{/each}}
+            </ul>
+        </div>
+        {{/each}}
+    </div>
+
+    <div style="text-align: center; padding-top: 20px; border-top: 1px solid #444;">
+        <p style="color: #aaa; font-size: 0.8em; margin: 0;"><em>Rapport généré automatiquement.</em></p>
+    </div>
   </div>
-  {{/each}}
-
-  <p><em>Rapport généré automatiquement.</em></p>
   `,
 });
 
