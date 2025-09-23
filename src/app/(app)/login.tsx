@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -22,7 +23,8 @@ export const LoginScreen: React.FC = () => {
         email, 
         role: 'SuperAdmin',
         isSuperAdmin: true,
-        commerceId: 'default'
+        commerceId: 'default',
+        ownerEmail: 'owner@example.com',
       });
       setCurrentView('pos');
     }

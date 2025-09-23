@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -256,7 +257,7 @@ const DataManagementCard: React.FC = () => {
 
 
 export const DashboardScreen: React.FC = () => {
-  const { orders, clients } = useApp();
+  const { user, orders, clients } = useApp();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleSendReport = async () => {
@@ -288,7 +289,7 @@ export const DashboardScreen: React.FC = () => {
       });
 
       const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-      const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
+      const mailtoLink = `mailto:${user?.ownerEmail || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
       window.location.href = mailtoLink;
 
     } catch (error) {

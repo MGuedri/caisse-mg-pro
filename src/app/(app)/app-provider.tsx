@@ -77,6 +77,7 @@ export interface AppUser {
   role: 'SuperAdmin' | 'Owner' | 'Caissier';
   isSuperAdmin: boolean;
   commerceId: string;
+  ownerEmail?: string;
 }
 
 // ======================
