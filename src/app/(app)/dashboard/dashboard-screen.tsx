@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
@@ -22,8 +22,11 @@ import {
   ShoppingCart,
   ArrowDown,
   User,
+  Send,
+  Loader2,
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
+import { generateReport } from '@/ai/flows/generate-report-flow';
 
 
 const ChiffreAffaireCard: React.FC = () => {
@@ -253,12 +256,60 @@ const DataManagementCard: React.FC = () => {
 
 
 export const DashboardScreen: React.FC = () => {
+  const { orders, clients } = useApp();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleSendReport = async () => {
+    setIsGenerating(true);
+    try {
+      const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+      const totalSales = orders.length;
+      const totalCredit = clients.reduce((sum, client) => sum + client.credit, 0);
+      const peakHour = "Soir (18-05h)"; // Placeholder
+      const topProducts = [ // Placeholder
+          { name: 'Café express', sold: 2 },
+          { name: 'Capucin', sold: 2 },
+          { name: 'Thé au menthe', sold: 2 }
+      ];
+
+      const reportHtml = await generateReport({
+        totalRevenue: totalRevenue.toFixed(3) + ' DT',
+        totalSales: totalSales.toString(),
+        totalCredit: totalCredit.toFixed(3) + ' DT',
+        peakHour: peakHour,
+        topProducts: topProducts.map(p => `${p.name} (x${p.sold})`),
+        salesHistory: orders.map(order => ({
+            id: order.id.slice(-6),
+            client: order.clientName,
+            time: new Date(order.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            total: order.total.toFixed(3) + ' DT',
+            items: order.items.map(item => `${item.quantity} x ${item.name} @ ${item.price.toFixed(3)} DT`),
+        })),
+      });
+
+      const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
+      const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
+      window.location.href = mailtoLink;
+
+    } catch (error) {
+      console.error("Failed to generate report", error);
+      alert("Erreur lors de la génération du rapport.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-gray-900 min-h-full">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <SyncStatus />
+        <div className="flex items-center gap-4">
+          <Button onClick={handleSendReport} className="bg-orange-500 hover:bg-orange-600" disabled={isGenerating}>
+            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            Envoyer le Bilan
+          </Button>
+          <SyncStatus />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
