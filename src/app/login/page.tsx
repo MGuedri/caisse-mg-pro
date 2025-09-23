@@ -75,7 +75,7 @@ export default function LoginPage() {
       if (!response.ok) {
         throw new Error(result.error || `HTTP error! status: ${response.status}`);
       }
-
+      
       if (result.success && result.user) {
         setSuccess(true);
         setError(null);
