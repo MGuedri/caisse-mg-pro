@@ -4,6 +4,7 @@
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export async function signIn(email: string, password_): Promise<{ user?: any, error?: string }> {
   const supabase = createServerActionClient({ cookies });
@@ -15,12 +16,14 @@ export async function signIn(email: string, password_): Promise<{ user?: any, er
     });
 
     if (authError) {
-        return { error: authError.message };
+        return { error: authError.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : authError.message };
     }
 
     if (!authUser) {
         return { error: 'Utilisateur non trouvé.' };
     }
+    
+    revalidatePath('/', 'layout');
     
     // Check if user is SuperAdmin first
     if (email.toLowerCase() === 'onz@live.fr') {
@@ -67,9 +70,10 @@ export async function signOut() {
   try {
     const supabase = createServerActionClient({ cookies });
     await supabase.auth.signOut();
-    revalidatePath('/');
-    return { success: true };
+    revalidatePath('/', 'layout');
+    redirect('/login'); // Redirecting might be handled client-side, but this is a good server-side practice
   } catch (e: any) {
-    return { error: e.message };
+    // We don't return an error here, client will handle the UI change regardless
+    console.error('Sign out error:', e.message);
   }
 }

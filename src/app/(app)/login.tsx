@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useApp, AppUser } from '@/app/(app)/app-provider';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,42 +15,40 @@ export const LoginScreen: React.FC = () => {
   const { setUser, setCurrentView } = useApp();
   const [email, setEmail] = useState('onz@live.fr');
   const [password, setPassword] = useState('06034434mg');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    const result = await signIn(email, password);
+    startTransition(async () => {
+      const result = await signIn(email, password);
 
-    if (result.error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur de connexion",
-        description: result.error,
-      });
-      setIsLoading(false);
-      return;
-    }
+      if (result.error || !result.user) {
+        toast({
+          variant: "destructive",
+          title: "Erreur de connexion",
+          description: result.error,
+        });
+        return;
+      }
 
-    if (result.user) {
-      const appUser: AppUser = {
-        id: result.user.id,
-        name: result.user.name,
-        email: result.user.email,
-        role: result.user.role as 'SuperAdmin' | 'Owner',
-        isSuperAdmin: result.user.isSuperAdmin,
-        commerceId: result.user.commerceId,
-        commerceName: result.user.commerceName,
-        owneremail: result.user.email,
-      };
-      
-      setUser(appUser);
-      setCurrentView(appUser.isSuperAdmin ? 'superadmin' : 'pos');
-    }
-
-    setIsLoading(false);
+      if (result.user) {
+        const appUser: AppUser = {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          role: result.user.role as 'SuperAdmin' | 'Owner',
+          isSuperAdmin: result.user.isSuperAdmin,
+          commerceId: result.user.commerceId,
+          commerceName: result.user.commerceName,
+          owneremail: result.user.email,
+        };
+        
+        setUser(appUser);
+        setCurrentView(appUser.isSuperAdmin ? 'superadmin' : 'pos');
+      }
+    });
   };
 
   return (
@@ -67,7 +65,7 @@ export const LoginScreen: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-gray-700 border-gray-600 text-white"
-              disabled={isLoading}
+              disabled={isPending}
               autoComplete="email"
             />
             <Input
@@ -76,11 +74,11 @@ export const LoginScreen: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-gray-700 border-gray-600 text-white"
-              disabled={isLoading}
+              disabled={isPending}
               autoComplete="current-password"
             />
-            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Se connecter'}
+            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+              {isPending ? <Loader2 className="animate-spin" /> : 'Se connecter'}
             </Button>
           </form>
         </CardContent>
