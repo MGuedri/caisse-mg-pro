@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -239,7 +240,7 @@ const SalesHistoryCard: React.FC = () => {
 
 
 const DataManagementCard: React.FC = () => {
-    const { products, clients, employees, orders, expenses } = useApp();
+    const { products, clients, employees, orders, expenses, viewedCommerceId } = useApp();
 
     const handleBackup = () => {
         const data = {
@@ -254,19 +255,19 @@ const DataManagementCard: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `caisse-mp-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `caisse-mp-backup-${viewedCommerceId}-${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
     };
 
     const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file) {
+        if (file && viewedCommerceId) {
           const reader = new FileReader();
           reader.onload = (e) => {
             try {
               const data = JSON.parse(e.target?.result as string);
-              localStorage.setItem('caisse_mp_data', JSON.stringify(data));
+              localStorage.setItem(`caisse_mp_data_${viewedCommerceId}`, JSON.stringify(data));
               window.location.reload();
             } catch (error) {
               alert('Erreur lors de la restauration');
@@ -366,28 +367,7 @@ export const DashboardScreen: React.FC = () => {
     if (!reportHtml || !recipientEmail) return;
 
     const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-    // The body is HTML, so we need to encode it properly for a mailto link.
-    // However, many clients have limits on URL length. A server-side email service would be more robust.
-    // For this client-side implementation, we'll try to make it work.
-    const body = `
-        <html>
-        <head>
-        <style>
-          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; }
-          .content { padding: 20px; }
-        </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="content">
-              ${reportHtml}
-            </div>
-          </div>
-        </body>
-        </html>
-    `;
-    const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
     
     try {
         window.location.href = mailtoLink;
@@ -401,22 +381,22 @@ export const DashboardScreen: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-gray-900 min-h-full">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
             <h1 className="text-2xl font-bold text-white">Bilan de la Journée</h1>
             <p className="text-gray-400">{today}</p>
         </div>
         <div className="flex items-center gap-4">
           <Button onClick={handleGenerateAndShowReport} className="bg-orange-500 hover:bg-orange-600">
-            <Send className="mr-2 h-4 w-4" />
-            Envoyer le Bilan
+            <Send className="mr-0 sm:mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Envoyer le Bilan</span>
           </Button>
           <SyncStatus />
         </div>
       </div>
 
       <AlertDialog open={isReportDialogVisible} onOpenChange={setIsReportDialogVisible}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl">
+        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl w-[95%] sm:w-full">
             <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-orange-400"/>
@@ -433,7 +413,7 @@ export const DashboardScreen: React.FC = () => {
                         <Loader2 className="h-8 w-8 animate-spin text-orange-500"/>
                     </div>
                 ) : (
-                    <div className="h-96 overflow-y-auto p-4 bg-gray-900 rounded-lg border border-gray-700">
+                    <div className="h-96 overflow-y-auto p-0 sm:p-4 bg-gray-900 rounded-lg border border-gray-700">
                         <iframe
                             srcDoc={reportHtml}
                             className="w-full h-full border-0"
@@ -455,13 +435,13 @@ export const DashboardScreen: React.FC = () => {
                     disabled={isGenerating || !reportHtml}
                 />
             </div>
-            <AlertDialogFooter className="mt-4">
-                <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700">
+            <AlertDialogFooter className="mt-4 flex-row sm:flex-row justify-end gap-2">
+                <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700 mt-0">
                   Annuler
                 </AlertDialogCancel>
                 <AlertDialogAction onClick={handleSendEmail} className="bg-orange-500 hover:bg-orange-600" disabled={isGenerating || !reportHtml || !recipientEmail}>
                     <Send className="mr-2 h-4 w-4" />
-                    Confirmer et Envoyer
+                    Envoyer
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

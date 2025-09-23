@@ -67,7 +67,7 @@ const MainApp: React.FC = () => {
     <div className="min-h-screen bg-gray-900 flex flex-col text-white">
       <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Logo size="sm" />
             <nav className="flex gap-1">
               {visibleNav.map(item => (
@@ -75,6 +75,7 @@ const MainApp: React.FC = () => {
                   key={item.id}
                   variant={currentView === item.id ? "default" : "ghost"}
                   onClick={() => setCurrentView(item.id)}
+                  size="sm"
                   className={`
                     ${currentView === item.id 
                       ? "bg-orange-500 hover:bg-orange-600 text-white" 

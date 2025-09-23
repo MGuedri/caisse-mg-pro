@@ -89,6 +89,7 @@ export const SuperAdminScreen: React.FC = () => {
         name: commerceData.name || "Nouveau Commerce",
         ownerName: commerceData.ownerName || "N/A",
         ownerEmail: commerceData.ownerEmail || "N/A",
+        password: commerceData.password || "",
         subscription: commerceData.subscription || 'Trial',
         creationDate: new Date().toISOString().split('T')[0]
       };
@@ -119,21 +120,21 @@ export const SuperAdminScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Logo size="sm" />
-          <div className="flex items-center gap-2 text-orange-400">
+          <div className="hidden sm:flex items-center gap-2 text-orange-400">
             <Shield className="h-5 w-5" />
             <h1 className="text-xl font-bold hidden md:block">Super Admin</h1>
           </div>
           
-          <div className="w-px h-6 bg-gray-600 mx-4"></div>
+          <div className="w-px h-6 bg-gray-600 mx-2 sm:mx-4"></div>
 
           <div className="flex items-center gap-2">
             <Building className="h-5 w-5 text-gray-400" />
             <Select value={viewedCommerceId || ''} onValueChange={(id) => setViewedCommerceId(id)}>
-              <SelectTrigger className="w-[200px] bg-gray-700 border-gray-600">
-                <SelectValue placeholder="Sélectionner un commerce..." />
+              <SelectTrigger className="w-[150px] sm:w-[200px] bg-gray-700 border-gray-600">
+                <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
               <SelectContent className="bg-gray-700 border-gray-600 text-white">
                 {commerces.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -168,7 +169,7 @@ export const SuperAdminScreen: React.FC = () => {
         </div>
       </header>
 
-      <main className="p-6">
+      <main className="p-4 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-gray-800 p-1 mb-6">
                 <TabsTrigger value="dashboard" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
@@ -222,25 +223,26 @@ export const SuperAdminScreen: React.FC = () => {
                 </div>
                 
                 <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
                             <CardTitle className="text-white">Gestion des Commerces</CardTitle>
                             <CardDescription className="text-gray-400">Ajouter, modifier ou supprimer des commerces.</CardDescription>
                         </div>
-                        <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600">
+                        <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
                             <Plus className="mr-2 h-4 w-4"/>
                             Ajouter Commerce
                         </Button>
                     </CardHeader>
                     <CardContent>
+                       <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-gray-700 hover:bg-gray-800">
                                     <TableHead className="text-white">Nom du Commerce</TableHead>
-                                    <TableHead className="text-white">Propriétaire</TableHead>
-                                    <TableHead className="text-white">Email</TableHead>
+                                    <TableHead className="text-white hidden lg:table-cell">Propriétaire</TableHead>
+                                    <TableHead className="text-white hidden md:table-cell">Email</TableHead>
                                     <TableHead className="text-white">Abonnement</TableHead>
-                                    <TableHead className="text-white">Date Création</TableHead>
+                                    <TableHead className="text-white hidden lg:table-cell">Date Création</TableHead>
                                     <TableHead className="text-right w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -248,10 +250,10 @@ export const SuperAdminScreen: React.FC = () => {
                                 {commerces.map((commerce) => (
                                     <TableRow key={commerce.id} className="border-gray-700 hover:bg-gray-700/50">
                                         <TableCell className="font-medium text-white">{commerce.name}</TableCell>
-                                        <TableCell className="text-gray-300">{commerce.ownerName}</TableCell>
-                                        <TableCell className="text-gray-300">{commerce.ownerEmail}</TableCell>
+                                        <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.ownerName}</TableCell>
+                                        <TableCell className="text-gray-300 hidden md:table-cell">{commerce.ownerEmail}</TableCell>
                                         <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
-                                        <TableCell className="text-gray-300">{commerce.creationDate}</TableCell>
+                                        <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.creationDate}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -294,6 +296,7 @@ export const SuperAdminScreen: React.FC = () => {
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     </CardContent>
                 </Card>
               </div>

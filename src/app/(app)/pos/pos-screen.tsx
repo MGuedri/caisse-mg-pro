@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useCallback } from 'react';
@@ -55,7 +56,7 @@ export const POSScreen: React.FC = () => {
 
   return (
     <div className="md:flex h-[calc(100vh-65px)] bg-gray-900 text-white relative">
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="relative flex-1">
@@ -69,7 +70,7 @@ export const POSScreen: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 sm:-mx-6 px-4 sm:px-6">
             {categories.map(category => (
               <Button
                 key={category}
@@ -85,18 +86,18 @@ export const POSScreen: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredProducts.map(product => (
             <Card 
               key={product.id} 
               className="cursor-pointer bg-gray-800 border-gray-700 transition-transform transform hover:scale-105"
               onClick={() => addToCart(product)}
             >
-              <CardContent className="p-4 text-center">
-                <div className="text-4xl mb-2">{product.icon}</div>
-                <h3 className="font-semibold text-white mb-1 truncate">{product.name}</h3>
-                <p className="text-orange-500 font-bold text-lg">{product.price.toFixed(3)} DT</p>
-                <p className="text-gray-400 text-sm">Stock: {product.stock}</p>
+              <CardContent className="p-3 sm:p-4 text-center">
+                <div className="text-3xl sm:text-4xl mb-2">{product.icon}</div>
+                <h3 className="font-semibold text-white text-sm sm:text-base mb-1 truncate">{product.name}</h3>
+                <p className="text-orange-500 font-bold text-base sm:text-lg">{product.price.toFixed(3)} DT</p>
+                <p className="text-gray-400 text-xs sm:text-sm">Stock: {product.stock}</p>
               </CardContent>
             </Card>
           ))}

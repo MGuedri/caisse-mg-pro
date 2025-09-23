@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -141,10 +142,10 @@ export const ManagementScreen: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <h1 className="text-3xl font-bold text-white mb-4">Gestion</h1>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-800 p-1 mb-6 h-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-gray-800 p-1 mb-6 h-auto">
           {managementTabs.map(tab => (
             <TabsTrigger 
               key={tab.value}
@@ -309,7 +310,7 @@ export const ManagementScreen: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
                            <div className="flex items-center gap-2">
                               <p className="text-gray-400">Membre depuis: <span className="text-white font-medium">{employee.joinDate}</span></p>
                            </div>
@@ -320,7 +321,7 @@ export const ManagementScreen: React.FC = () => {
                         
                         <div>
                            <p className="text-gray-400 mb-2">Planning</p>
-                           <div className="flex gap-1">
+                           <div className="flex gap-1 flex-wrap">
                             {['L', 'M', 'J', 'V', 'S', 'D'].map((day, i) => (
                               <span key={i} className={`w-8 h-8 flex items-center justify-center text-xs rounded-full ${employee.workingDays.includes(day as any) ? 'bg-orange-500 text-white font-bold' : 'bg-gray-700 text-gray-400'}`}>
                                 {day}
@@ -395,13 +396,13 @@ export const ManagementScreen: React.FC = () => {
             {expenses.map(expense => (
               <Card key={expense.id} className="bg-gray-800 border-gray-700">
                 <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-4">
                     <div>
                       <h3 className="font-semibold text-white">{expense.description}</h3>
                       <Badge variant="secondary" className="mt-1 mb-2 bg-gray-700 text-gray-300">{expense.category}</Badge>
                       <p className="text-gray-400 text-sm">{expense.date}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <p className="text-red-400 font-bold text-lg">- {expense.amount.toFixed(3)} DT</p>
                       <div className="flex gap-2 mt-2">
                         <Button size="sm" variant="outline" className="border-gray-600" onClick={() => handleOpenExpenseModal(expense)}><Edit className="h-3 w-3" /></Button>
