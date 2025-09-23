@@ -2,21 +2,27 @@
 'use client';
 
 import { useState } from 'react';
-import { useApp } from '@/app/(app)/app-provider';
+import { useApp, AppUser, Commerce } from '@/app/(app)/app-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/app/(app)/logo';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { Loader2 } from 'lucide-react';
 
 export const LoginScreen: React.FC = () => {
-  const { setUser, setCurrentView, commerces } = useApp();
+  const { setUser, setCurrentView } = useApp();
   const [email, setEmail] = useState('onz@live.fr');
   const [password, setPassword] = useState('06034434mg');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
+    // SuperAdmin check first (local)
     if (email === 'onz@live.fr' && password === '06034434mg') {
       setUser({ 
         id: 'sa1', 
@@ -26,22 +32,40 @@ export const LoginScreen: React.FC = () => {
         isSuperAdmin: true,
       });
       setCurrentView('superadmin');
+      setIsLoading(false);
       return;
     }
 
-    const commerceUser = commerces.find(c => c.ownerEmail === email && c.password === password);
+    // Attempt to log in with Supabase Auth (or check against commerces table)
+    // For simplicity, we'll check the commerces table directly.
+    // A more robust solution would use Supabase Auth.
+    const { data: commerceUser, error } = await supabase
+      .from('commerces')
+      .select('*')
+      .eq('ownerEmail', email)
+      .single();
 
-    if (commerceUser) {
-      if (commerceUser.subscription === 'Inactive') {
+    if (error || !commerceUser || commerceUser.password !== password) {
+        toast({
+            variant: "destructive",
+            title: "Erreur de connexion",
+            description: "Email ou mot de passe incorrect.",
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    if (commerceUser.subscription === 'Inactive') {
         toast({
             variant: "destructive",
             title: "Accès refusé",
             description: "Votre compte est inactif. Veuillez contacter l'administrateur de la plateforme.",
         });
+        setIsLoading(false);
         return;
-      }
+    }
 
-      setUser({
+    setUser({
         id: commerceUser.id,
         name: commerceUser.ownerName,
         email: commerceUser.ownerEmail,
@@ -50,15 +74,9 @@ export const LoginScreen: React.FC = () => {
         commerceId: commerceUser.id,
         commerceName: commerceUser.name,
         ownerEmail: commerceUser.ownerEmail,
-      });
-      setCurrentView('pos');
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Erreur de connexion",
-            description: "Email ou mot de passe incorrect.",
-        });
-    }
+    });
+    setCurrentView('pos');
+    setIsLoading(false);
   };
 
   return (
@@ -75,6 +93,7 @@ export const LoginScreen: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-gray-700 border-gray-600 text-white"
+              disabled={isLoading}
             />
             <Input
               type="password"
@@ -82,9 +101,10 @@ export const LoginScreen: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-gray-700 border-gray-600 text-white"
+              disabled={isLoading}
             />
-            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600">
-              Se connecter
+            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Se connecter'}
             </Button>
           </form>
         </CardContent>

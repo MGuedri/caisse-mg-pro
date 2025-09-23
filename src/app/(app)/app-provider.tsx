@@ -1,13 +1,8 @@
 
 'use client';
 
-// ======================
-// DEPENDENCIES & IMPORTS
-// ======================
 import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode } from 'react';
-import { initialProducts, initialClients, initialEmployees, initialOrders, initialExpenses } from '@/lib/initial-data';
-import { initialCommerces } from '@/lib/commerces';
-import type { Commerce } from '@/lib/commerces';
+import { supabase } from '@/lib/supabase';
 
 // ======================
 // TYPES
@@ -83,21 +78,25 @@ export interface AppUser {
   ownerEmail?: string;
 }
 
+export interface Commerce {
+  id: string;
+  name: string;
+  ownerName: string;
+  ownerEmail: string;
+  password?: string;
+  subscription: 'Active' | 'Inactive' | 'Trial';
+  creationDate: string;
+}
+
+
 // ======================
-// CONTEXTES
+// CONTEXT
 // ======================
 type AppContextType = {
   user: AppUser | null;
   setUser: (user: AppUser | null) => void;
   
-  // All data for SuperAdmin
-  allProducts: Product[];
-  allClients: Client[];
-  allEmployees: Employee[];
-  allOrders: Order[];
-  allExpenses: Expense[];
-
-  // Filtered/scoped data for views
+  // Data filtered/scoped for views
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   cart: CartItem[];
@@ -124,6 +123,10 @@ type AppContextType = {
   lastSync: Date | null;
   syncNow: () => Promise<void>;
   isOnline: boolean;
+  
+  // Data fetch and mutation functions
+  fetchDataForCommerce: (commerceId: string) => Promise<void>;
+  fetchAllData: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -140,111 +143,127 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   
-  // Hold ALL data in memory - loaded once
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [allClients, setAllClients] = useState<Client[]>([]);
-  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
-  const [allOrders, setAllOrders] = useState<Order[]>([]);
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const [commerces, setCommerces] = useState<Commerce[]>([]);
-  
-  // Data scoped to the current commerce view
+  // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [commerces, setCommerces] = useState<Commerce[]>([]);
 
+  // UI and Sync states
   const [currentView, setCurrentView] = useState<string>('login');
   const [includeVAT, setIncludeVAT] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'synced' | 'error'>('offline');
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : false);
-
   const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(null);
 
-  // Load initial data from static files. This runs only once.
-  useEffect(() => {
-    setAllProducts(initialProducts);
-    setAllClients(initialClients);
-    setAllEmployees(initialEmployees);
-    setAllOrders(initialOrders);
-    setAllExpenses(initialExpenses);
-    setCommerces(initialCommerces);
-  }, []);
-  
+  // Clear all data
+  const clearData = () => {
+      setProducts([]);
+      setClients([]);
+      setEmployees([]);
+      setOrders([]);
+      setExpenses([]);
+  };
 
-  // Load data based on user role and selected commerce
+  // Fetch all data for SuperAdmin
+  const fetchAllData = useCallback(async () => {
+    setSyncStatus('syncing');
+    try {
+      const fetchCommerces = supabase.from('commerces').select('*');
+      const fetchProducts = supabase.from('products').select('*');
+      const fetchClients = supabase.from('clients').select('*');
+      const fetchEmployees = supabase.from('employees').select('*');
+      const fetchOrders = supabase.from('orders').select('*');
+      const fetchExpenses = supabase.from('expenses').select('*');
+
+      const [
+          { data: commercesData, error: commercesError },
+          { data: productsData, error: productsError },
+          { data: clientsData, error: clientsError },
+          { data: employeesData, error: employeesError },
+          { data: ordersData, error: ordersError },
+          { data: expensesData, error: expensesError },
+      ] = await Promise.all([fetchCommerces, fetchProducts, fetchClients, fetchEmployees, fetchOrders, fetchExpenses]);
+
+      if (commercesError || productsError || clientsError || employeesError || ordersError || expensesError) {
+          throw new Error('Failed to fetch all data');
+      }
+      
+      setCommerces(commercesData || []);
+      setProducts(productsData || []);
+      setClients(clientsData || []);
+      setEmployees(employeesData || []);
+      setOrders(ordersData || []);
+      setExpenses(expensesData || []);
+      
+      if (commercesData && commercesData.length > 0 && !viewedCommerceId) {
+        setViewedCommerceId(commercesData[0].id);
+      }
+      
+      setSyncStatus('synced');
+      setLastSync(new Date());
+
+    } catch(error) {
+        console.error("Error fetching all data:", error);
+        setSyncStatus('error');
+    }
+  }, [viewedCommerceId]);
+
+  // Fetch data for a specific commerce
+  const fetchDataForCommerce = useCallback(async (commerceId: string) => {
+    setSyncStatus('syncing');
+    clearData();
+    try {
+        const fetchProducts = supabase.from('products').select('*').eq('commerce_id', commerceId);
+        const fetchClients = supabase.from('clients').select('*').eq('commerce_id', commerceId);
+        const fetchEmployees = supabase.from('employees').select('*').eq('commerce_id', commerceId);
+        const fetchOrders = supabase.from('orders').select('*').eq('commerce_id', commerceId);
+        const fetchExpenses = supabase.from('expenses').select('*').eq('commerce_id', commerceId);
+
+        const [
+            { data: productsData, error: productsError },
+            { data: clientsData, error: clientsError },
+            { data: employeesData, error: employeesError },
+            { data: ordersData, error: ordersError },
+            { data: expensesData, error: expensesError },
+        ] = await Promise.all([fetchProducts, fetchClients, fetchEmployees, fetchOrders, fetchExpenses]);
+        
+        if (productsError || clientsError || employeesError || ordersError || expensesError) {
+            throw new Error(`Failed to fetch data for commerce ${commerceId}`);
+        }
+
+        setProducts(productsData || []);
+        setClients(clientsData || []);
+        setEmployees(employeesData || []);
+        setOrders(ordersData || []);
+        setExpenses(expensesData || []);
+
+        setSyncStatus('synced');
+        setLastSync(new Date());
+    } catch(error) {
+        console.error("Error fetching commerce data:", error);
+        setSyncStatus('error');
+    }
+  }, []);
+
+  // Main data loading effect
   useEffect(() => {
     if (!user) {
-      setProducts([]);
-      setClients([]);
-      setEmployees([]);
-      setOrders([]);
-      setExpenses([]);
-      setViewedCommerceId(null);
-      return;
+        clearData();
+        setViewedCommerceId(null);
+        return;
     }
 
-    const commerceId = user.isSuperAdmin ? viewedCommerceId : user.commerceId;
-
-    if (user.isSuperAdmin && !viewedCommerceId && commerces.length > 0) {
-      setViewedCommerceId(commerces[0].id);
-      return; // Data will be re-filtered in the next effect run
+    if (user.isSuperAdmin) {
+        fetchAllData();
+    } else if (user.commerceId) {
+        fetchDataForCommerce(user.commerceId);
     }
-    
-    if (!commerceId) {
-      // Clear data if no commerce is selected (e.g. SuperAdmin with no commerces)
-      setProducts([]);
-      setClients([]);
-      setEmployees([]);
-      setOrders([]);
-      setExpenses([]);
-      return;
-    }
-
-    const storageKey = `caisse_mp_data_${commerceId}`;
-    let dataFromStorage;
-    try {
-        const savedData = localStorage.getItem(storageKey);
-        dataFromStorage = savedData ? JSON.parse(savedData) : null;
-    } catch(e) {
-        console.error("Error parsing localStorage", e);
-        dataFromStorage = null;
-    }
-
-    const filterByCommerce = <T extends { commerce_id: string }>(items: T[]) => items.filter(item => item.commerce_id === commerceId);
-    
-    // Load from localStorage if available, otherwise from initial data filtered by commerce
-    setProducts(dataFromStorage?.products || filterByCommerce(allProducts));
-    setClients(dataFromStorage?.clients || filterByCommerce(allClients));
-    setEmployees(dataFromStorage?.employees || filterByCommerce(allEmployees));
-    setOrders(dataFromStorage?.orders || filterByCommerce(allOrders));
-    setExpenses(dataFromStorage?.expenses || filterByCommerce(allExpenses));
-
-  }, [user, viewedCommerceId, commerces, allProducts, allClients, allEmployees, allOrders, allExpenses]);
-
-
-  // Save scoped data to localStorage when it changes for the specific commerce
-  useEffect(() => {
-    if (!viewedCommerceId) return;
-    
-    const storageKey = `caisse_mp_data_${viewedCommerceId}`;
-    const dataToSave = {
-        products,
-        clients,
-        employees,
-        orders,
-        expenses,
-        timestamp: new Date().toISOString()
-    };
-
-    // Avoid saving empty initial state
-    if (products.length > 0 || clients.length > 0 || employees.length > 0 || orders.length > 0 || expenses.length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-    }
-  }, [products, clients, employees, orders, expenses, viewedCommerceId]);
+  }, [user, fetchAllData, fetchDataForCommerce]);
 
 
   // Network status detection
@@ -259,46 +278,66 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
-  // Sync simulation
+  // Sync logic (simplified to just re-fetch)
   const syncNow = useCallback(async () => {
     if (!isOnline || !user) return;
-    setSyncStatus('syncing');
-    try {
-      await new Promise(res => setTimeout(res, 1500));
-      // In a real app, this is where you'd push local changes to a server (like Supabase)
-      // and pull server changes to update state.
-      setSyncStatus('synced');
-      setLastSync(new Date());
-    } catch (error) {
-      console.error('Erreur sync:', error);
-      setSyncStatus('error');
+    
+    if (user.isSuperAdmin) {
+      await fetchAllData();
+    } else if (user.commerceId) {
+      await fetchDataForCommerce(user.commerceId);
     }
-  }, [isOnline, user]);
+  }, [isOnline, user, fetchAllData, fetchDataForCommerce]);
 
   // Auto and periodic sync
   useEffect(() => {
     const interval = setInterval(() => {
-      if (isOnline && user) syncNow();
-    }, 60000);
-    if(isOnline && user) syncNow();
+      syncNow();
+    }, 60000); // Sync every minute
     return () => clearInterval(interval);
-  }, [isOnline, user, syncNow]);
+  }, [syncNow]);
+
+  const allScopedData = {
+    products, clients, employees, orders, expenses
+  }
+
+  // SuperAdmin data filtering logic
+  const SuperAdminFilteredData = (() => {
+      if (!user?.isSuperAdmin) return allScopedData;
+      if (!viewedCommerceId) return { products: [], clients: [], employees: [], orders: [], expenses: [] };
+
+      const filter = (items: any[]) => items.filter(i => i.commerce_id === viewedCommerceId);
+      
+      return {
+          products: filter(products),
+          clients: filter(clients),
+          employees: filter(employees),
+          orders: filter(orders),
+          expenses: filter(expenses),
+      }
+  })();
 
 
   const value: AppContextType = {
     user, setUser,
-    allProducts, allClients, allEmployees, allOrders, allExpenses,
-    products, setProducts,
+    products: user?.isSuperAdmin ? SuperAdminFilteredData.products : products,
+    setProducts,
     cart, setCart,
-    clients, setClients,
-    employees, setEmployees,
-    orders, setOrders,
-    expenses, setExpenses,
+    clients: user?.isSuperAdmin ? SuperAdminFilteredData.clients : clients,
+    setClients,
+    employees: user?.isSuperAdmin ? SuperAdminFilteredData.employees : employees,
+    setEmployees,
+    orders: user?.isSuperAdmin ? SuperAdminFilteredData.orders : orders,
+    setOrders,
+    expenses: user?.isSuperAdmin ? SuperAdminFilteredData.expenses : expenses,
+    setExpenses,
     commerces, setCommerces,
     viewedCommerceId, setViewedCommerceId,
     currentView, setCurrentView,
     includeVAT, setIncludeVAT,
-    syncStatus, lastSync, syncNow, isOnline
+    syncStatus, lastSync, syncNow, isOnline,
+    fetchDataForCommerce,
+    fetchAllData
   };
 
   return (

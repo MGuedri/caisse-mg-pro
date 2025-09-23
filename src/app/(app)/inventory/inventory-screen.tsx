@@ -19,10 +19,12 @@ import {
 import {
   Plus, Trash2, Edit
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 
 export const InventoryScreen: React.FC = () => {
-  const { products, setProducts, user } = useApp();
+  const { products, setProducts, user, viewedCommerceId } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -32,6 +34,9 @@ export const InventoryScreen: React.FC = () => {
     stock: 0,
     icon: '☕'
   });
+  const { toast } = useToast();
+
+  const commerceId = user?.isSuperAdmin ? viewedCommerceId : user?.commerceId;
 
   const openModalForAdd = () => {
     setEditingProduct(null);
@@ -45,28 +50,53 @@ export const InventoryScreen: React.FC = () => {
     setIsModalOpen(true);
   };
   
-  const handleSave = () => {
-    if (!formData.name || !formData.price || !user) return;
+  const handleSave = async () => {
+    if (!formData.name || !formData.price || !commerceId) return;
   
     if (editingProduct) {
       // Update
-      setProducts(prev => prev.map(p => 
-        p.id === editingProduct.id 
-          ? { ...p, ...formData, price: Number(formData.price), stock: Number(formData.stock) }
-          : p
-      ));
+      const { data, error } = await supabase
+        .from('products')
+        .update({ 
+            name: formData.name, 
+            price: Number(formData.price), 
+            category: formData.category, 
+            stock: Number(formData.stock), 
+            icon: formData.icon 
+        })
+        .eq('id', editingProduct.id)
+        .select()
+        .single();
+      
+      if (error || !data) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le produit.' });
+        return;
+      }
+      
+      setProducts(prev => prev.map(p => p.id === data.id ? data : p));
+
     } else {
       // Add
-      const newProduct: Product = {
-        id: `${user.commerceId}_${Date.now()}`,
+      const newProduct = {
         name: formData.name,
         price: Number(formData.price),
         category: formData.category || 'Café',
         stock: Number(formData.stock) || 0,
         icon: formData.icon || '📦',
-        commerce_id: user.commerceId,
+        commerce_id: commerceId,
       };
-      setProducts(prev => [...prev, newProduct]);
+      const { data, error } = await supabase
+        .from('products')
+        .insert(newProduct)
+        .select()
+        .single();
+
+      if (error || !data) {
+        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'ajouter le produit." });
+        return;
+      }
+
+      setProducts(prev => [...prev, data]);
     }
   
     setIsModalOpen(false);
@@ -74,7 +104,12 @@ export const InventoryScreen: React.FC = () => {
   };
   
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le produit.' });
+      return;
+    }
     setProducts(prev => prev.filter(p => p.id !== id));
   };
 
@@ -87,7 +122,7 @@ export const InventoryScreen: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {products.map(product => (
           <Card key={product.id} className="bg-gray-800 border-gray-700 flex flex-col">
             <CardContent className="p-4 flex-grow text-center">

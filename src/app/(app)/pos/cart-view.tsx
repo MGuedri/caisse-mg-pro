@@ -15,12 +15,17 @@ import {
 import {
   Plus, Minus, Trash2, CreditCard, ShoppingCart
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
-  const { cart, setCart, clients, includeVAT, setIncludeVAT, orders, setOrders, user } = useApp();
+  const { cart, setCart, clients, includeVAT, setIncludeVAT, setOrders, user, viewedCommerceId } = useApp();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [selectedClient, setSelectedClient] = useState('Client invité');
+  const { toast } = useToast();
+
+  const commerceId = user?.isSuperAdmin ? viewedCommerceId : user?.commerceId;
 
   const updateQuantity = useCallback((id: string, change: number) => {
     setCart(prev => {
@@ -41,24 +46,30 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
   const total = subtotal + vatAmount;
   const change = paymentAmount ? Math.max(0, parseFloat(paymentAmount) - total) : 0;
 
-  const handlePayment = () => {
-    if (cart.length === 0 || !user || !user.commerceId) return;
+  const handlePayment = async () => {
+    if (cart.length === 0 || !user || !commerceId) return;
     
-    const newOrder: Order = {
-      id: `${user.commerceId}_o_${Date.now()}`,
+    const newOrder: Omit<Order, 'id' | 'timestamp'> = {
       items: [...cart],
       total,
       clientName: selectedClient,
-      timestamp: new Date().toISOString(),
       cashierId: user.id,
-      commerce_id: user.commerceId,
+      commerce_id: commerceId,
     };
+
+    const { data, error } = await supabase.from('orders').insert(newOrder).select().single();
     
-    setOrders(prev => [newOrder, ...prev]);
+    if (error || !data) {
+        toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de finaliser la commande.'});
+        return;
+    }
+
+    setOrders(prev => [data, ...prev]);
     setCart([]);
     setIsPaymentOpen(false);
     setPaymentAmount('');
     setSelectedClient('Client invité');
+    toast({variant: 'success', title: 'Commande enregistrée'});
     if (onClose) onClose();
   };
 

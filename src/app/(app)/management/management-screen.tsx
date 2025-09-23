@@ -20,6 +20,8 @@ import {
 import { SalariesTabContent } from './salaries-tab';
 import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 const getInitials = (name: string) => {
     if (!name) return '';
@@ -32,8 +34,11 @@ const getInitials = (name: string) => {
 
 
 export const ManagementScreen: React.FC = () => {
-  const { clients, setClients, employees, setEmployees, expenses, setExpenses, user } = useApp();
+  const { clients, setClients, employees, setEmployees, expenses, setExpenses, user, viewedCommerceId } = useApp();
   const [activeTab, setActiveTab] = useState('clients');
+  const { toast } = useToast();
+
+  const commerceId = user?.isSuperAdmin ? viewedCommerceId : user?.commerceId;
 
   // State for modals
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -69,17 +74,23 @@ export const ManagementScreen: React.FC = () => {
     setEditingClient(client);
     setIsClientModalOpen(true);
   };
-  const handleSaveClient = (clientData: Partial<Client>) => {
-    if (!user || !user.commerceId) return;
+  const handleSaveClient = async (clientData: Partial<Client>) => {
+    if (!commerceId) return;
+
     if (editingClient) {
-      setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...clientData } as Client : c));
+      const { data, error } = await supabase.from('clients').update(clientData).eq('id', editingClient.id).select().single();
+      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le client.' }); return; }
+      setClients(clients.map(c => c.id === editingClient.id ? data : c));
     } else {
-      const newId = `${user.commerceId}_c_${Date.now()}`;
-      setClients([...clients, { ...clientData, id: newId, credit: clientData.credit || 0, isVip: clientData.isVip || false, commerce_id: user.commerceId } as Client]);
+      const { data, error } = await supabase.from('clients').insert({ ...clientData, commerce_id: commerceId }).select().single();
+      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter le client.' }); return; }
+      setClients([...clients, data]);
     }
     setIsClientModalOpen(false);
   };
-  const handleDeleteClient = (clientId: string) => {
+  const handleDeleteClient = async (clientId: string) => {
+    const { error } = await supabase.from('clients').delete().eq('id', clientId);
+    if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le client.' }); return; }
     setClients(clients.filter(c => c.id !== clientId));
   };
 
@@ -88,39 +99,52 @@ export const ManagementScreen: React.FC = () => {
     setEditingEmployee(employee);
     setIsEmployeeModalOpen(true);
   }
-  const handleSaveEmployee = (employeeData: Partial<Employee>) => {
-    if (!user || !user.commerceId) return;
+  const handleSaveEmployee = async (employeeData: Partial<Employee>) => {
+    if (!commerceId) return;
+    const balance = (employeeData.salary || 0) - (employeeData.advance || 0);
+
     if (editingEmployee) {
-      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeData, balance: (employeeData.salary || e.salary) - (employeeData.advance || e.advance) } as Employee : e));
+      const { data, error } = await supabase.from('employees').update({ ...employeeData, balance }).eq('id', editingEmployee.id).select().single();
+      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour l\'employé.' }); return; }
+      setEmployees(employees.map(e => e.id === editingEmployee.id ? data : e));
     } else {
-      const newId = `${user.commerceId}_e_${Date.now()}`;
-      const newEmployee = { ...employeeData, id: newId, commerce_id: user.commerceId } as Employee;
-      newEmployee.balance = (newEmployee.salary || 0) - (newEmployee.advance || 0);
-      setEmployees([...employees, newEmployee]);
+      const { data, error } = await supabase.from('employees').insert({ ...employeeData, balance, commerce_id: commerceId }).select().single();
+      if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter l\'employé.' }); return; }
+      setEmployees([...employees, data]);
     }
     setIsEmployeeModalOpen(false);
   }
-  const handleDeleteEmployee = (employeeId: string) => {
+  const handleDeleteEmployee = async (employeeId: string) => {
+    const { error } = await supabase.from('employees').delete().eq('id', employeeId);
+    if (error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'employé.' }); return; }
     setEmployees(employees.filter(e => e.id !== employeeId));
   }
 
-  const handlePaySalary = (employeeId: string) => {
-    if (!user || !user.commerceId) return;
+  const handlePaySalary = async (employeeId: string) => {
+    if (!commerceId) return;
     const employee = employees.find(e => e.id === employeeId);
     if (!employee || employee.balance <= 0) return;
 
-    const newExpense: Expense = {
-      id: `exp_sal_${user.commerceId}_${Date.now()}`,
+    const newExpense = {
       description: `Paiement salaire: ${employee.name}`,
       amount: employee.salary,
       category: 'Charges Salaires',
       date: new Date().toLocaleDateString('fr-CA'),
-      commerce_id: user.commerceId,
+      commerce_id: commerceId,
     };
-    setExpenses(prevExpenses => [...prevExpenses, newExpense]);
+    
+    const { data: expenseData, error: expenseError } = await supabase.from('expenses').insert(newExpense).select().single();
+    if(expenseError || !expenseData) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de créer la dépense de salaire.' }); return;
+    }
+    setExpenses(prevExpenses => [...prevExpenses, expenseData]);
 
-    // Update employee state to reflect payment
-    setEmployees(employees.map(e => e.id === employeeId ? { ...e, advance: 0, balance: 0 } : e));
+    const { data: employeeData, error: employeeError } = await supabase.from('employees').update({ advance: 0, balance: 0 }).eq('id', employeeId).select().single();
+    if(employeeError || !employeeData) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le solde de l\'employé.' }); return;
+    }
+    setEmployees(employees.map(e => e.id === employeeId ? employeeData : e));
+    toast({variant: 'success', title: 'Paiement effectué', description: `Le salaire de ${employee.name} a été payé.`});
   }
 
   // --- Expense Actions ---
@@ -128,16 +152,23 @@ export const ManagementScreen: React.FC = () => {
     setEditingExpense(expense);
     setIsExpenseModalOpen(true);
   }
-  const handleSaveExpense = (expenseData: Partial<Expense>) => {
-    if(!user || !user.commerceId) return;
+  const handleSaveExpense = async (expenseData: Partial<Expense>) => {
+    if(!commerceId) return;
     if (editingExpense) {
-      setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...e, ...expenseData } as Expense : e));
+      const { data, error } = await supabase.from('expenses').update(expenseData).eq('id', editingExpense.id).select().single();
+      if(error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la dépense.' }); return; }
+      setExpenses(expenses.map(e => e.id === editingExpense.id ? data : e));
     } else {
-      setExpenses([...expenses, { ...expenseData, id: `${user.commerceId}_exp_${Date.now()}`, date: new Date().toLocaleDateString('fr-CA'), commerce_id: user.commerceId } as Expense]);
+      const newExpense = { ...expenseData, date: new Date().toLocaleDateString('fr-CA'), commerce_id: commerceId };
+      const { data, error } = await supabase.from('expenses').insert(newExpense).select().single();
+      if(error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter la dépense.' }); return; }
+      setExpenses([...expenses, data]);
     }
     setIsExpenseModalOpen(false);
   }
-  const handleDeleteExpense = (expenseId: string) => {
+  const handleDeleteExpense = async (expenseId: string) => {
+    const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
+    if(error) { toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la dépense.' }); return; }
     setExpenses(expenses.filter(e => e.id !== expenseId));
   }
 

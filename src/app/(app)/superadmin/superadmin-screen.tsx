@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useApp } from '@/app/(app)/app-provider';
-import type { Commerce } from '@/lib/commerces';
+import type { Commerce } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card"
@@ -47,18 +47,39 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { CommerceForm } from './superadmin-forms';
 import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 export const SuperAdminScreen: React.FC = () => {
   const { 
     user, setUser, setCurrentView,
     commerces, setCommerces,
-    allClients, allOrders,
-    viewedCommerceId, setViewedCommerceId
+    clients, orders,
+    viewedCommerceId, setViewedCommerceId,
+    fetchAllData,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Fetch all commerces on mount
+    const getCommerces = async () => {
+      const { data } = await supabase.from('commerces').select('*');
+      if (data) setCommerces(data);
+    };
+    getCommerces();
+  }, [setCommerces]);
+
+
+  useEffect(() => {
+    // Re-fetch all data when viewedCommerceId changes
+    if (viewedCommerceId) {
+      fetchAllData();
+    }
+  }, [viewedCommerceId, fetchAllData]);
 
   const handleLogout = () => {
     setUser(null);
@@ -66,43 +87,52 @@ export const SuperAdminScreen: React.FC = () => {
   };
 
   const platformStats = useMemo(() => {
-    const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0);
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
     return {
       commerceCount: commerces.length,
-      clientCount: allClients.length,
+      clientCount: clients.length,
       totalRevenue: totalRevenue,
     }
-  }, [commerces, allClients, allOrders]);
+  }, [commerces, clients, orders]);
 
   const handleOpenModal = (commerce: Commerce | null = null) => {
     setEditingCommerce(commerce);
     setIsModalOpen(true);
   };
 
-  const handleSaveCommerce = (commerceData: Partial<Commerce>) => {
+  const handleSaveCommerce = async (commerceData: Partial<Commerce>) => {
     if (editingCommerce) {
-      setCommerces(commerces.map(c => c.id === editingCommerce.id ? { ...c, ...commerceData } as Commerce : c));
+      const { data, error } = await supabase
+        .from('commerces')
+        .update(commerceData)
+        .eq('id', editingCommerce.id)
+        .select()
+        .single();
+      
+      if(error || !data) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le commerce.'}); return; }
+      setCommerces(commerces.map(c => c.id === editingCommerce.id ? data : c));
+
     } else {
-      const newId = commerceData.name?.toLowerCase().replace(/\s/g, '_') || `comm_${Date.now()}`;
-      const newCommerce: Commerce = {
-        id: newId,
-        name: commerceData.name || "Nouveau Commerce",
-        ownerName: commerceData.ownerName || "N/A",
-        ownerEmail: commerceData.ownerEmail || "N/A",
-        password: commerceData.password || "",
-        subscription: commerceData.subscription || 'Trial',
-        creationDate: new Date().toISOString().split('T')[0]
-      };
-      setCommerces([...commerces, newCommerce]);
+      const { data, error } = await supabase
+        .from('commerces')
+        .insert(commerceData)
+        .select()
+        .single();
+      if(error || !data) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter le commerce.'}); return; }
+      setCommerces([...commerces, data]);
     }
     setIsModalOpen(false);
   };
 
-  const handleDeleteCommerce = (commerceId: string) => {
+  const handleDeleteCommerce = async (commerceId: string) => {
+    const { error } = await supabase.from('commerces').delete().eq('id', commerceId);
+    if(error) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le commerce.'}); return; }
+    
     setCommerces(commerces.filter(c => c.id !== commerceId));
     if (viewedCommerceId === commerceId) {
       setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerceId)!.id : null);
     }
+    toast({variant: 'success', title: 'Commerce Supprimé'});
   };
 
   const getSubscriptionBadge = (status: Commerce['subscription']) => {
@@ -116,8 +146,6 @@ export const SuperAdminScreen: React.FC = () => {
   
   if (!user || !user.isSuperAdmin) return null;
   
-  const viewedCommerceName = commerces.find(c => c.id === viewedCommerceId)?.name || 'Aucun commerce sélectionné';
-
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between">
