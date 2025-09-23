@@ -75,5 +75,3 @@ export const LoginScreen = () => {
         </div>
       );
 }
-
-    

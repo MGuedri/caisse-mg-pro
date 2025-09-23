@@ -87,6 +87,14 @@ export async function debugSignIn(formData: FormData): Promise<never> {
   }
 }
 
+export async function serverSignOut(): Promise<void> {
+  const supabase = createServerActionClient({ cookies });
+  await supabase.auth.signOut();
+  revalidatePath('/', 'layout');
+  redirect('/login');
+}
+
+
 // Version pour tester la connexion Supabase
 export async function testSupabaseConnection(): Promise<{success: boolean, message: string}> {
   console.log('🧪 Testing Supabase connection...');
@@ -109,11 +117,4 @@ export async function testSupabaseConnection(): Promise<{success: boolean, messa
     console.log('💥 Supabase connection test exception:', error.message);
     return { success: false, message: `Exception: ${error.message}` };
   }
-}
-
-export async function serverSignOut(): Promise<void> {
-  const supabase = createServerActionClient({ cookies });
-  await supabase.auth.signOut();
-  revalidatePath('/', 'layout');
-  redirect('/login');
 }
