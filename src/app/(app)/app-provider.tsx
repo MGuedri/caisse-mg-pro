@@ -86,6 +86,7 @@ export interface Commerce {
   password?: string;
   subscription: 'Active' | 'Inactive' | 'Trial';
   creationDate: string;
+  address?: string;
 }
 
 
@@ -165,7 +166,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Only run on client
     const savedCommerceId = localStorage.getItem('viewedCommerceId');
     if (savedCommerceId) {
-      setViewedCommerceId(JSON.parse(savedCommerceId));
+      try {
+        const parsedId = JSON.parse(savedCommerceId);
+        if(parsedId) {
+          setViewedCommerceId(parsedId);
+        }
+      } catch (e) {
+        console.error("Failed to parse viewedCommerceId from localStorage", e);
+        localStorage.removeItem('viewedCommerceId');
+      }
     }
   }, []);
 
@@ -195,37 +204,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('syncing');
     try {
       const commercesRes = await supabase.from('commerces').select('*');
-      if (commercesRes.error) { console.error("Error fetching commerces:", commercesRes.error); throw commercesRes.error; }
+      if (commercesRes.error) { console.error("Error fetching commerces:", commercesRes.error.message); throw commercesRes.error; }
       setCommerces(commercesRes.data || []);
       if (commercesRes.data && commercesRes.data.length > 0 && !viewedCommerceId) {
         setViewedCommerceId(commercesRes.data[0].id);
       }
 
       const productsRes = await supabase.from('products').select('*');
-      if (productsRes.error) { console.error("Error fetching products:", productsRes.error); throw productsRes.error; }
+      if (productsRes.error) { console.error("Error fetching products:", productsRes.error.message); throw productsRes.error; }
       setProducts(productsRes.data || []);
 
       const clientsRes = await supabase.from('clients').select('*');
-      if (clientsRes.error) { console.error("Error fetching clients:", clientsRes.error); throw clientsRes.error; }
+      if (clientsRes.error) { console.error("Error fetching clients:", clientsRes.error.message); throw clientsRes.error; }
       setClients(clientsRes.data || []);
       
       const employeesRes = await supabase.from('employees').select('*');
-      if (employeesRes.error) { console.error("Error fetching employees:", employeesRes.error); throw employeesRes.error; }
+      if (employeesRes.error) { console.error("Error fetching employees:", employeesRes.error.message); throw employeesRes.error; }
       setEmployees(employeesRes.data || []);
       
       const ordersRes = await supabase.from('orders').select('*');
-      if (ordersRes.error) { console.error("Error fetching orders:", ordersRes.error); throw ordersRes.error; }
+      if (ordersRes.error) { console.error("Error fetching orders:", ordersRes.error.message); throw ordersRes.error; }
       setOrders(ordersRes.data || []);
       
       const expensesRes = await supabase.from('expenses').select('*');
-      if (expensesRes.error) { console.error("Error fetching expenses:", expensesRes.error); throw expensesRes.error; }
+      if (expensesRes.error) { console.error("Error fetching expenses:", expensesRes.error.message); throw expensesRes.error; }
       setExpenses(expensesRes.data || []);
       
       setSyncStatus('synced');
       setLastSync(new Date());
 
     } catch(error) {
-        console.error("Error during fetchAllData:", error);
+        console.error("Error during fetchAllData:", String(error));
         setSyncStatus('error');
     }
   }, [viewedCommerceId]);
@@ -236,29 +245,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     clearData();
     try {
         const productsRes = await supabase.from('products').select('*').eq('commerce_id', commerceId);
-        if (productsRes.error) { console.error("Error fetching products:", productsRes.error); throw productsRes.error; }
+        if (productsRes.error) { console.error("Error fetching products:", productsRes.error.message); throw productsRes.error; }
         setProducts(productsRes.data || []);
 
         const clientsRes = await supabase.from('clients').select('*').eq('commerce_id', commerceId);
-        if (clientsRes.error) { console.error("Error fetching clients:", clientsRes.error); throw clientsRes.error; }
+        if (clientsRes.error) { console.error("Error fetching clients:", clientsRes.error.message); throw clientsRes.error; }
         setClients(clientsRes.data || []);
         
         const employeesRes = await supabase.from('employees').select('*').eq('commerce_id', commerceId);
-        if (employeesRes.error) { console.error("Error fetching employees:", employeesRes.error); throw employeesRes.error; }
+        if (employeesRes.error) { console.error("Error fetching employees:", employeesRes.error.message); throw employeesRes.error; }
         setEmployees(employeesRes.data || []);
 
         const ordersRes = await supabase.from('orders').select('*').eq('commerce_id', commerceId);
-        if (ordersRes.error) { console.error("Error fetching orders:", ordersRes.error); throw ordersRes.error; }
+        if (ordersRes.error) { console.error("Error fetching orders:", ordersRes.error.message); throw ordersRes.error; }
         setOrders(ordersRes.data || []);
 
         const expensesRes = await supabase.from('expenses').select('*').eq('commerce_id', commerceId);
-        if (expensesRes.error) { console.error("Error fetching expenses:", expensesRes.error); throw expensesRes.error; }
+        if (expensesRes.error) { console.error("Error fetching expenses:", expensesRes.error.message); throw expensesRes.error; }
         setExpenses(expensesRes.data || []);
 
         setSyncStatus('synced');
         setLastSync(new Date());
     } catch(error) {
-        console.error("Error fetching commerce data:", error);
+        console.error("Error fetching commerce data:", String(error));
         setSyncStatus('error');
     }
   }, []);
@@ -267,7 +276,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!user) {
         clearData();
-        setViewedCommerceId(null);
+        // Do not clear viewedCommerceId on logout for superadmin
+        if(!user?.isSuperAdmin) {
+            setViewedCommerceId(null);
+        }
         return;
     }
 
@@ -359,3 +371,5 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     </AppContext.Provider>
   );
 };
+
+    

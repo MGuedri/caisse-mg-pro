@@ -65,21 +65,18 @@ export const SuperAdminScreen: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Fetch all commerces on mount
-    const getCommerces = async () => {
-      const { data } = await supabase.from('commerces').select('*');
-      if (data) setCommerces(data);
-    };
-    getCommerces();
-  }, [setCommerces]);
+    if (user?.isSuperAdmin) {
+      fetchAllData();
+    }
+  }, [user, fetchAllData]);
 
 
   useEffect(() => {
-    // Re-fetch all data when viewedCommerceId changes
-    if (viewedCommerceId) {
+    // Re-fetch all data when viewedCommerceId changes for superadmin
+    if (user?.isSuperAdmin) {
       fetchAllData();
     }
-  }, [viewedCommerceId, fetchAllData]);
+  }, [viewedCommerceId, user, fetchAllData]);
 
   const handleLogout = () => {
     setUser(null);
@@ -102,15 +99,22 @@ export const SuperAdminScreen: React.FC = () => {
 
   const handleSaveCommerce = async (commerceData: Partial<Commerce>) => {
     if (editingCommerce) {
+      // Don't send the password back if it's empty
+      const updateData = { ...commerceData };
+      if (!updateData.password) {
+        delete updateData.password;
+      }
+      
       const { data, error } = await supabase
         .from('commerces')
-        .update(commerceData)
+        .update(updateData)
         .eq('id', editingCommerce.id)
         .select()
         .single();
       
       if(error || !data) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le commerce.'}); return; }
       setCommerces(commerces.map(c => c.id === editingCommerce.id ? data : c));
+      toast({variant: 'success', title: 'Succès', description: 'Commerce mis à jour.'});
 
     } else {
       const { data, error } = await supabase
@@ -120,6 +124,7 @@ export const SuperAdminScreen: React.FC = () => {
         .single();
       if(error || !data) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter le commerce.'}); return; }
       setCommerces([...commerces, data]);
+      toast({variant: 'success', title: 'Succès', description: 'Commerce ajouté.'});
     }
     setIsModalOpen(false);
   };
@@ -268,7 +273,7 @@ export const SuperAdminScreen: React.FC = () => {
                                 <TableRow className="border-gray-700 hover:bg-gray-800">
                                     <TableHead className="text-white">Nom du Commerce</TableHead>
                                     <TableHead className="text-white hidden lg:table-cell">Propriétaire</TableHead>
-                                    <TableHead className="text-white hidden md:table-cell">Email</TableHead>
+                                    <TableHead className="text-white hidden md:table-cell">Adresse</TableHead>
                                     <TableHead className="text-white">Abonnement</TableHead>
                                     <TableHead className="text-white hidden lg:table-cell">Date Création</TableHead>
                                     <TableHead className="text-right w-[50px]"></TableHead>
@@ -279,7 +284,7 @@ export const SuperAdminScreen: React.FC = () => {
                                     <TableRow key={commerce.id} className="border-gray-700 hover:bg-gray-700/50">
                                         <TableCell className="font-medium text-white">{commerce.name}</TableCell>
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.ownerName}</TableCell>
-                                        <TableCell className="text-gray-300 hidden md:table-cell">{commerce.ownerEmail}</TableCell>
+                                        <TableCell className="text-gray-300 hidden md:table-cell">{commerce.address}</TableCell>
                                         <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.creationDate}</TableCell>
                                         <TableCell className="text-right">
@@ -341,3 +346,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
