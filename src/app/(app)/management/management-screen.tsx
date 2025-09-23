@@ -38,14 +38,13 @@ export const ManagementScreen: React.FC = () => {
     { value: 'employees', label: 'Employés', icon: UserPlus },
     { value: 'salaries', label: 'Salaires', icon: Wallet },
     { value: 'expenses', label: 'Dépenses', icon: DollarSign },
-    { value: 'report', label: 'Rapport', icon: FileText },
   ]
 
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-white mb-4">Gestion</h1>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 bg-gray-800 p-1 mb-6 h-auto">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-800 p-1 mb-6 h-auto">
           {managementTabs.map(tab => (
             <TabsTrigger 
               key={tab.value}
@@ -276,15 +275,6 @@ export const ManagementScreen: React.FC = () => {
               </Card>
             ))}
           </div>
-        </TabsContent>
-         <TabsContent value="report">
-           <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-6 text-center text-gray-400">
-                <FileText className="h-12 w-12 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">Rapports</h3>
-                <p>Cette section est en cours de développement.</p>
-              </CardContent>
-            </Card>
         </TabsContent>
       </Tabs>
     </div>
