@@ -10,8 +10,8 @@ export const Logo = ({ size = 'lg', className }: { size?: 'sm' | 'lg', className
       className
     )}>
       <div className={cn(
-        "relative flex items-center justify-center bg-white rounded-full",
-        isLarge ? 'w-24 h-24' : 'w-10 h-10'
+        "relative flex items-center justify-center bg-transparent rounded-full border-white",
+        isLarge ? 'w-24 h-24 border-4' : 'w-10 h-10 border-2'
       )}>
         <span className={cn(
           "font-black text-primary", // Orange M
