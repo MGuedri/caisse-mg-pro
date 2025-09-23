@@ -2,8 +2,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useApp, AppUser, Commerce } from '@/app/(app)/app-provider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useApp, AppUser } from '@/app/(app)/app-provider';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/app/(app)/logo';
@@ -22,30 +22,13 @@ export const LoginScreen: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // SuperAdmin check first (local)
-    if (email === 'onz@live.fr' && password === '06034434mg') {
-      setUser({ 
-        id: 'sa1', 
-        name: 'Super Admin', 
-        email, 
-        role: 'SuperAdmin',
-        isSuperAdmin: true,
-      });
-      setCurrentView('superadmin');
-      setIsLoading(false);
-      return;
-    }
-
-    // Attempt to log in with Supabase Auth (or check against commerces table)
-    // For simplicity, we'll check the commerces table directly.
-    // A more robust solution would use Supabase Auth.
-    const { data: commerceUser, error } = await supabase
-      .from('commerces')
-      .select('*')
-      .eq('ownerEmail', email)
-      .single();
-
-    if (error || !commerceUser || commerceUser.password !== password) {
+    const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+    
+    if (userError || !userData || userData.password !== password) {
         toast({
             variant: "destructive",
             title: "Erreur de connexion",
@@ -55,27 +38,65 @@ export const LoginScreen: React.FC = () => {
         return;
     }
 
-    if (commerceUser.subscription === 'Inactive') {
-        toast({
-            variant: "destructive",
-            title: "Accès refusé",
-            description: "Votre compte est inactif. Veuillez contacter l'administrateur de la plateforme.",
+    if (userData.role === 'SuperAdmin') {
+        setUser({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: 'SuperAdmin',
+            isSuperAdmin: true,
         });
+        setCurrentView('superadmin');
         setIsLoading(false);
         return;
     }
 
-    setUser({
-        id: commerceUser.id,
-        name: commerceUser.ownerName,
-        email: commerceUser.ownerEmail,
-        role: 'Owner',
-        isSuperAdmin: false,
-        commerceId: commerceUser.id,
-        commerceName: commerceUser.name,
-        ownerEmail: commerceUser.ownerEmail,
+    if (userData.role === 'Owner') {
+        const { data: commerceData, error: commerceError } = await supabase
+            .from('commerces')
+            .select('*')
+            .eq('id', userData.commerce_id)
+            .single();
+        
+        if (commerceError || !commerceData) {
+             toast({
+                variant: "destructive",
+                title: "Erreur de connexion",
+                description: "Aucun commerce n'est associé à ce compte.",
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        if (commerceData.subscription === 'Inactive') {
+            toast({
+                variant: "destructive",
+                title: "Accès refusé",
+                description: "Votre compte est inactif. Veuillez contacter l'administrateur de la plateforme.",
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        setUser({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: 'Owner',
+            isSuperAdmin: false,
+            commerceId: commerceData.id,
+            commerceName: commerceData.name,
+        });
+        setCurrentView('pos');
+        setIsLoading(false);
+        return;
+    }
+    
+    toast({
+        variant: "destructive",
+        title: "Erreur de rôle",
+        description: "Le rôle de cet utilisateur n'est pas reconnu.",
     });
-    setCurrentView('pos');
     setIsLoading(false);
   };
 

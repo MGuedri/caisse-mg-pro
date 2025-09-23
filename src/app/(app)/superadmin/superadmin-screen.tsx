@@ -97,45 +97,118 @@ export const SuperAdminScreen: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSaveCommerce = async (commerceData: Partial<Commerce>) => {
+  const handleSaveCommerce = async (commerceData: Partial<Commerce>, ownerPassword?: string) => {
     if (editingCommerce) {
-      // Don't send the password back if it's empty
-      const updateData = { ...commerceData };
-      if (!updateData.password) {
-        delete updateData.password;
-      }
-      
-      const { data, error } = await supabase
+      // --- UPDATE ---
+      const { data: updatedCommerce, error: commerceError } = await supabase
         .from('commerces')
-        .update(updateData)
+        .update({
+          name: commerceData.name,
+          ownerName: commerceData.ownerName,
+          ownerEmail: commerceData.ownerEmail,
+          subscription: commerceData.subscription,
+          address: commerceData.address
+        })
         .eq('id', editingCommerce.id)
         .select()
         .single();
       
-      if(error || !data) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le commerce.'}); return; }
-      setCommerces(commerces.map(c => c.id === editingCommerce.id ? data : c));
+      if(commerceError || !updatedCommerce) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le commerce.'}); return; }
+
+      // Update user table if email or password changed
+      const userUpdate: {email?: string, password?: string, name?: string} = {};
+      if (commerceData.ownerEmail && commerceData.ownerEmail !== editingCommerce.ownerEmail) {
+        userUpdate.email = commerceData.ownerEmail;
+      }
+      if (ownerPassword) {
+        userUpdate.password = ownerPassword;
+      }
+      if (commerceData.ownerName && commerceData.ownerName !== editingCommerce.ownerName) {
+        userUpdate.name = commerceData.ownerName;
+      }
+      
+      if (Object.keys(userUpdate).length > 0 && editingCommerce.owner_id) {
+         const { error: userError } = await supabase
+          .from('users')
+          .update(userUpdate)
+          .eq('id', editingCommerce.owner_id);
+        
+         if (userError) {
+           toast({variant: 'destructive', title: 'Erreur Utilisateur', description: 'Impossible de mettre à jour l\'utilisateur associé.'});
+           // Potentially roll back commerce change here
+           return;
+         }
+      }
+
+      setCommerces(commerces.map(c => c.id === updatedCommerce.id ? updatedCommerce : c));
       toast({variant: 'success', title: 'Succès', description: 'Commerce mis à jour.'});
 
     } else {
-      const { data, error } = await supabase
-        .from('commerces')
-        .insert(commerceData)
+      // --- CREATE ---
+      if (!ownerPassword || !commerceData.ownerEmail || !commerceData.ownerName) {
+        toast({variant: 'destructive', title: 'Erreur', description: 'Mot de passe, email et nom du propriétaire sont requis.'});
+        return;
+      }
+
+      // 1. Create the user
+      const { data: newUserData, error: newUserError } = await supabase
+        .from('users')
+        .insert({
+          name: commerceData.ownerName,
+          email: commerceData.ownerEmail,
+          password: ownerPassword,
+          role: 'Owner',
+        })
         .select()
         .single();
-      if(error || !data) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter le commerce.'}); return; }
-      setCommerces([...commerces, data]);
-      toast({variant: 'success', title: 'Succès', description: 'Commerce ajouté.'});
+
+      if (newUserError || !newUserData) {
+        toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de créer l\'utilisateur propriétaire. L\'email existe peut-être déjà.'});
+        return;
+      }
+
+      // 2. Create the commerce and link it
+      const { data: newCommerceData, error: newCommerceError } = await supabase
+        .from('commerces')
+        .insert({
+          ...commerceData,
+          owner_id: newUserData.id,
+          password: 'managed_by_users_table' // Dummy value
+        })
+        .select()
+        .single();
+      
+      if (newCommerceError || !newCommerceData) {
+        toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de créer le commerce.'});
+        // Rollback user creation
+        await supabase.from('users').delete().eq('id', newUserData.id);
+        return;
+      }
+
+      // 3. Link commerce_id back to user
+      await supabase.from('users').update({ commerce_id: newCommerceData.id }).eq('id', newUserData.id);
+
+      setCommerces([...commerces, newCommerceData]);
+      toast({variant: 'success', title: 'Succès', description: 'Commerce et propriétaire ajoutés.'});
     }
     setIsModalOpen(false);
   };
 
-  const handleDeleteCommerce = async (commerceId: string) => {
-    const { error } = await supabase.from('commerces').delete().eq('id', commerceId);
-    if(error) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le commerce.'}); return; }
+
+  const handleDeleteCommerce = async (commerce: Commerce) => {
+    // 1. Delete associated user first
+    if (commerce.owner_id) {
+        const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
+        if(userError) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'utilisateur associé.'}); return; }
+    }
     
-    setCommerces(commerces.filter(c => c.id !== commerceId));
-    if (viewedCommerceId === commerceId) {
-      setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerceId)!.id : null);
+    // 2. Delete the commerce (should cascade delete related products, clients etc via DB schema)
+    const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
+    if(commerceError) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le commerce.'}); return; }
+    
+    setCommerces(commerces.filter(c => c.id !== commerce.id));
+    if (viewedCommerceId === commerce.id) {
+      setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerce.id)!.id : null);
     }
     toast({variant: 'success', title: 'Commerce Supprimé'});
   };
@@ -311,12 +384,12 @@ export const SuperAdminScreen: React.FC = () => {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
                                                             <AlertDialogDescription className="text-gray-400">
-                                                                Cette action est irréversible. Toutes les données associées à ce commerce seront perdues.
+                                                                Cette action est irréversible. Toutes les données associées à ce commerce (et son utilisateur) seront perdues.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel className="border-gray-600">Annuler</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteCommerce(commerce.id)} className="bg-red-600 hover:bg-red-700">
+                                                            <AlertDialogAction onClick={() => handleDeleteCommerce(commerce)} className="bg-red-600 hover:bg-red-700">
                                                                 Confirmer la Suppression
                                                             </AlertDialogAction>
                                                         </AlertDialogFooter>
@@ -346,5 +419,3 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
-
-    

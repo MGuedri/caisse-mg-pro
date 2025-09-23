@@ -42,16 +42,21 @@ const MainApp: React.FC = () => {
   };
 
   useEffect(() => {
+    // This effect ensures the view is correctly set based on user state
     if (!user) {
       setCurrentView('login');
     } else {
       if (user.isSuperAdmin) {
-        setCurrentView('superadmin');
-      } else if (currentView === 'login' || currentView === 'superadmin') {
-        setCurrentView('pos');
+        if (currentView !== 'superadmin') {
+            setCurrentView('superadmin');
+        }
+      } else { // Is an Owner/Caissier
+        if (currentView === 'login' || currentView === 'superadmin') {
+           setCurrentView('pos');
+        }
       }
     }
-  }, [user, setCurrentView]);
+  }, [user, currentView, setCurrentView]);
 
   if (currentView === 'login' || !user) {
     return <LoginScreen />;

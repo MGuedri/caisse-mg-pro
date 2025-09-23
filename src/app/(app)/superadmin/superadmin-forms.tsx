@@ -13,31 +13,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface CommerceFormProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (commerceData: Partial<Commerce>) => void;
+  onSave: (commerceData: Partial<Commerce>, ownerPassword?: string) => void;
   commerce: Commerce | null;
 }
 
 export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange, onSave, commerce }) => {
   const [formData, setFormData] = useState<Partial<Commerce>>({});
+  const [ownerPassword, setOwnerPassword] = useState('');
 
   useEffect(() => {
     if (commerce) {
       setFormData(commerce);
+      setOwnerPassword(''); // Clear password on edit
     } else {
       setFormData({ 
         name: '', 
         ownerName: '', 
         ownerEmail: '',
-        password: '',
         subscription: 'Trial', 
         creationDate: new Date().toISOString().split('T')[0],
         address: '',
       });
+      setOwnerPassword('');
     }
   }, [commerce, isOpen]);
 
   const handleSave = () => {
-    onSave(formData);
+    onSave(formData, ownerPassword);
   };
 
   return (
@@ -51,7 +53,13 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
           <Input placeholder="Nom du Propriétaire" value={formData.ownerName || ''} onChange={(e) => setFormData(p => ({...p, ownerName: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input placeholder="Adresse" value={formData.address || ''} onChange={(e) => setFormData(p => ({...p, address: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input placeholder="Email du Propriétaire" type="email" value={formData.ownerEmail || ''} onChange={(e) => setFormData(p => ({...p, ownerEmail: e.target.value}))} className="bg-gray-700 border-gray-600"/>
-          <Input placeholder="Mot de passe" type="password" value={formData.password || ''} onChange={(e) => setFormData(p => ({...p, password: e.target.value}))} className="bg-gray-700 border-gray-600"/>
+          <Input 
+            placeholder={commerce ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe du propriétaire"}
+            type="password" 
+            value={ownerPassword} 
+            onChange={(e) => setOwnerPassword(e.target.value)} 
+            className="bg-gray-700 border-gray-600"
+          />
           <Select value={formData.subscription} onValueChange={(value: Commerce['subscription']) => setFormData(p => ({...p, subscription: value}))}>
             <SelectTrigger className="bg-gray-700 border-gray-600">
                 <SelectValue placeholder="Abonnement" />
@@ -71,5 +79,3 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
     </Dialog>
   );
 };
-
-    
