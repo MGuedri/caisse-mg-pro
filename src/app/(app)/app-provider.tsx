@@ -171,10 +171,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     // Only run on client
-    if (viewedCommerceId) {
-      localStorage.setItem('viewedCommerceId', JSON.stringify(viewedCommerceId));
-    } else {
-      localStorage.removeItem('viewedCommerceId');
+    if (typeof window !== 'undefined') {
+        if (viewedCommerceId) {
+            localStorage.setItem('viewedCommerceId', JSON.stringify(viewedCommerceId));
+        } else {
+            localStorage.removeItem('viewedCommerceId');
+        }
     }
   }, [viewedCommerceId]);
 
@@ -192,42 +194,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const fetchAllData = useCallback(async () => {
     setSyncStatus('syncing');
     try {
-      const fetchCommerces = supabase.from('commerces').select('*');
-      const fetchProducts = supabase.from('products').select('*');
-      const fetchClients = supabase.from('clients').select('*');
-      const fetchEmployees = supabase.from('employees').select('*');
-      const fetchOrders = supabase.from('orders').select('*');
-      const fetchExpenses = supabase.from('expenses').select('*');
-
-      const [
-          { data: commercesData, error: commercesError },
-          { data: productsData, error: productsError },
-          { data: clientsData, error: clientsError },
-          { data: employeesData, error: employeesError },
-          { data: ordersData, error: ordersError },
-          { data: expensesData, error: expensesError },
-      ] = await Promise.all([fetchCommerces, fetchProducts, fetchClients, fetchEmployees, fetchOrders, fetchExpenses]);
-
-      if (commercesError || productsError || clientsError || employeesError || ordersError || expensesError) {
-          throw new Error('Failed to fetch all data');
+      const commercesRes = await supabase.from('commerces').select('*');
+      if (commercesRes.error) { console.error("Error fetching commerces:", commercesRes.error); throw commercesRes.error; }
+      setCommerces(commercesRes.data || []);
+      if (commercesRes.data && commercesRes.data.length > 0 && !viewedCommerceId) {
+        setViewedCommerceId(commercesRes.data[0].id);
       }
+
+      const productsRes = await supabase.from('products').select('*');
+      if (productsRes.error) { console.error("Error fetching products:", productsRes.error); throw productsRes.error; }
+      setProducts(productsRes.data || []);
+
+      const clientsRes = await supabase.from('clients').select('*');
+      if (clientsRes.error) { console.error("Error fetching clients:", clientsRes.error); throw clientsRes.error; }
+      setClients(clientsRes.data || []);
       
-      setCommerces(commercesData || []);
-      setProducts(productsData || []);
-      setClients(clientsData || []);
-      setEmployees(employeesData || []);
-      setOrders(ordersData || []);
-      setExpenses(expensesData || []);
+      const employeesRes = await supabase.from('employees').select('*');
+      if (employeesRes.error) { console.error("Error fetching employees:", employeesRes.error); throw employeesRes.error; }
+      setEmployees(employeesRes.data || []);
       
-      if (commercesData && commercesData.length > 0 && !viewedCommerceId) {
-        setViewedCommerceId(commercesData[0].id);
-      }
+      const ordersRes = await supabase.from('orders').select('*');
+      if (ordersRes.error) { console.error("Error fetching orders:", ordersRes.error); throw ordersRes.error; }
+      setOrders(ordersRes.data || []);
+      
+      const expensesRes = await supabase.from('expenses').select('*');
+      if (expensesRes.error) { console.error("Error fetching expenses:", expensesRes.error); throw expensesRes.error; }
+      setExpenses(expensesRes.data || []);
       
       setSyncStatus('synced');
       setLastSync(new Date());
 
     } catch(error) {
-        console.error("Error fetching all data:", error);
+        console.error("Error during fetchAllData:", error);
         setSyncStatus('error');
     }
   }, [viewedCommerceId]);
@@ -237,29 +235,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('syncing');
     clearData();
     try {
-        const fetchProducts = supabase.from('products').select('*').eq('commerce_id', commerceId);
-        const fetchClients = supabase.from('clients').select('*').eq('commerce_id', commerceId);
-        const fetchEmployees = supabase.from('employees').select('*').eq('commerce_id', commerceId);
-        const fetchOrders = supabase.from('orders').select('*').eq('commerce_id', commerceId);
-        const fetchExpenses = supabase.from('expenses').select('*').eq('commerce_id', commerceId);
+        const productsRes = await supabase.from('products').select('*').eq('commerce_id', commerceId);
+        if (productsRes.error) { console.error("Error fetching products:", productsRes.error); throw productsRes.error; }
+        setProducts(productsRes.data || []);
 
-        const [
-            { data: productsData, error: productsError },
-            { data: clientsData, error: clientsError },
-            { data: employeesData, error: employeesError },
-            { data: ordersData, error: ordersError },
-            { data: expensesData, error: expensesError },
-        ] = await Promise.all([fetchProducts, fetchClients, fetchEmployees, fetchOrders, fetchExpenses]);
+        const clientsRes = await supabase.from('clients').select('*').eq('commerce_id', commerceId);
+        if (clientsRes.error) { console.error("Error fetching clients:", clientsRes.error); throw clientsRes.error; }
+        setClients(clientsRes.data || []);
         
-        if (productsError || clientsError || employeesError || ordersError || expensesError) {
-            throw new Error(`Failed to fetch data for commerce ${commerceId}`);
-        }
+        const employeesRes = await supabase.from('employees').select('*').eq('commerce_id', commerceId);
+        if (employeesRes.error) { console.error("Error fetching employees:", employeesRes.error); throw employeesRes.error; }
+        setEmployees(employeesRes.data || []);
 
-        setProducts(productsData || []);
-        setClients(clientsData || []);
-        setEmployees(employeesData || []);
-        setOrders(ordersData || []);
-        setExpenses(expensesData || []);
+        const ordersRes = await supabase.from('orders').select('*').eq('commerce_id', commerceId);
+        if (ordersRes.error) { console.error("Error fetching orders:", ordersRes.error); throw ordersRes.error; }
+        setOrders(ordersRes.data || []);
+
+        const expensesRes = await supabase.from('expenses').select('*').eq('commerce_id', commerceId);
+        if (expensesRes.error) { console.error("Error fetching expenses:", expensesRes.error); throw expensesRes.error; }
+        setExpenses(expensesRes.data || []);
 
         setSyncStatus('synced');
         setLastSync(new Date());
