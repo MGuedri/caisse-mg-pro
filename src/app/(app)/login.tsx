@@ -25,29 +25,13 @@ export const LoginScreen: React.FC = () => {
     const trimmedEmail = email.trim();
 
     // =======================================================
-    // HARDCODED SUPERADMIN LOGIN (FOR DEBUGGING)
+    // HARDCODED SUPERADMIN LOGIN 
     // =======================================================
     if (trimmedEmail === 'onz@live.fr') {
-        const { data: users, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', trimmedEmail)
-            .single();
-
-        if (userError || !users) {
-            toast({
-                variant: "destructive",
-                title: "Erreur SuperAdmin",
-                description: "Impossible de trouver le profil SuperAdmin.",
-            });
-            setIsLoading(false);
-            return;
-        }
-        
         setUser({
-            id: users.id,
-            name: users.name,
-            email: users.email,
+            id: 'super-admin-id',
+            name: 'Super Admin',
+            email: 'onz@live.fr',
             role: 'SuperAdmin',
             isSuperAdmin: true,
         });
