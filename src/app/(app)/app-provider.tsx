@@ -232,7 +232,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('syncing');
 
     try {
-      const db = supabaseAdmin; // Use the admin client for all-powerful access
+      // NOTE: This uses the standard `supabase` client.
+      // RLS policies MUST be in place for this to work.
+      // The policy should allow users with the 'SuperAdmin' role to read all tables.
+      const db = supabase;
       const commercesRes = await db.from('commerces').select('*');
       if (commercesRes.error) { console.error("Error fetching commerces:", commercesRes.error.message); throw commercesRes.error; }
       const commercesData = commercesRes.data || [];
