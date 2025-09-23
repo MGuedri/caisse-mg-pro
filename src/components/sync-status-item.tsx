@@ -1,3 +1,4 @@
+
 'use client';
 import { useApp } from "@/app/(app)/app-provider";
 import { RefreshCw, Wifi, WifiOff, AlertCircle } from 'lucide-react';
@@ -5,7 +6,9 @@ import React from 'react';
 import { DropdownMenuItem } from "./ui/dropdown-menu";
 
 export const SyncStatusItem: React.FC = () => {
-  const { syncStatus, lastSync, syncNow, isOnline } = useApp();
+  const { syncStatus, lastSync, refreshData } = useApp();
+
+  const isOnline = syncStatus !== 'offline';
 
   const getIcon = () => {
     if (!isOnline) return <WifiOff className="mr-2 h-4 w-4 text-red-500" />;
@@ -27,7 +30,7 @@ export const SyncStatusItem: React.FC = () => {
 
   return (
     <DropdownMenuItem
-      onClick={syncNow}
+      onClick={refreshData}
       className="cursor-pointer focus:bg-gray-700"
     >
       {getIcon()}

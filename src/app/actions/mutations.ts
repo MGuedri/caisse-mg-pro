@@ -9,7 +9,7 @@ import { add } from 'date-fns';
 import { randomUUID } from 'crypto';
 
 // General purpose function to handle mutations
-async function handleMutation(callback: (supabase: any) => Promise<any>) {
+async function handleMutation(callback: (supabase: any) => Promise<any>, revalidationPaths: string[] = []) {
     const supabase = createServerActionClient({ cookies });
     try {
         const { data, error } = await callback(supabase);
@@ -17,7 +17,14 @@ async function handleMutation(callback: (supabase: any) => Promise<any>) {
             console.error('Supabase mutation error:', error.message);
             return { data: null, error: error.message };
         }
-        revalidatePath('/'); // Revalidate all paths for simplicity
+        
+        // Targeted revalidation
+        if (revalidationPaths.length > 0) {
+            revalidationPaths.forEach(path => revalidatePath(path));
+        } else {
+            revalidatePath('/'); // Fallback for simplicity
+        }
+
         return { data, error: null };
     } catch (e: any) {
         console.error('Server action error:', e.message);
@@ -54,7 +61,8 @@ export async function createCommerce(commerceData: Commerce, ownerPassword?: str
                 ...commerceData,
                 id: undefined, // Let Supabase generate it
                 owner_id,
-            })
+            }),
+            ['/'] // Revalidate everything for superadmin
         );
     } catch (e: any) {
         return { data: null, error: e.message };
@@ -63,7 +71,8 @@ export async function createCommerce(commerceData: Commerce, ownerPassword?: str
 
 export async function updateCommerce(id: string, commerceData: Partial<Commerce>) {
     return handleMutation(supabase => 
-        supabase.from('commerces').update(commerceData).eq('id', id)
+        supabase.from('commerces').update(commerceData).eq('id', id),
+        ['/']
     );
 }
 
@@ -115,13 +124,15 @@ export async function createInvoice(commerceId: string, amount: number, commerce
         commerceName: commerceName,
     };
     return handleMutation(supabase => 
-        supabase.from('invoices').insert(newInvoice)
+        supabase.from('invoices').insert(newInvoice),
+        ['/']
     );
 }
 
 export async function markInvoiceAsPaid(invoiceId: string) {
      return handleMutation(supabase => 
-        supabase.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', invoiceId)
+        supabase.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', invoiceId),
+        ['/']
     );
 }
 
@@ -130,23 +141,23 @@ export async function markInvoiceAsPaid(invoiceId: string) {
 // GENERIC MUTATIONS (for Owners)
 // ======================
 export async function addProduct(productData: Omit<Product, 'id'>) {
-    return handleMutation(supabase => supabase.from('products').insert(productData));
+    return handleMutation(supabase => supabase.from('products').insert(productData), ['/products', '/inventory']);
 }
 export async function updateProduct(id: string, productData: Partial<Product>) {
-    return handleMutation(supabase => supabase.from('products').update(productData).eq('id', id));
+    return handleMutation(supabase => supabase.from('products').update(productData).eq('id', id), ['/products', '/inventory']);
 }
 export async function deleteProduct(id: string) {
-    return handleMutation(supabase => supabase.from('products').delete().eq('id', id));
+    return handleMutation(supabase => supabase.from('products').delete().eq('id', id), ['/products', '/inventory']);
 }
 
 export async function addClient(clientData: Omit<Client, 'id'>) {
-    return handleMutation(supabase => supabase.from('clients').insert(clientData));
+    return handleMutation(supabase => supabase.from('clients').insert(clientData), ['/management']);
 }
 export async function updateClient(id: string, clientData: Partial<Client>) {
-    return handleMutation(supabase => supabase.from('clients').update(clientData).eq('id', id));
+    return handleMutation(supabase => supabase.from('clients').update(clientData).eq('id', id), ['/management']);
 }
 export async function deleteClient(id: string) {
-    return handleMutation(supabase => supabase.from('clients').delete().eq('id', id));
+    return handleMutation(supabase => supabase.from('clients').delete().eq('id', id), ['/management']);
 }
 
 export async function addEmployee(employeeData: Omit<Employee, 'id'>) {
@@ -154,27 +165,27 @@ export async function addEmployee(employeeData: Omit<Employee, 'id'>) {
         ...employeeData,
         avatar: `https://i.pravatar.cc/150?u=${randomUUID()}`
     };
-    return handleMutation(supabase => supabase.from('employees').insert(fullEmployeeData));
+    return handleMutation(supabase => supabase.from('employees').insert(fullEmployeeData), ['/management']);
 }
 export async function updateEmployee(id: string, employeeData: Partial<Employee>) {
-    return handleMutation(supabase => supabase.from('employees').update(employeeData).eq('id', id));
+    return handleMutation(supabase => supabase.from('employees').update(employeeData).eq('id', id), ['/management']);
 }
 export async function deleteEmployee(id: string) {
-    return handleMutation(supabase => supabase.from('employees').delete().eq('id', id));
+    return handleMutation(supabase => supabase.from('employees').delete().eq('id', id), ['/management']);
 }
 
 export async function addExpense(expenseData: Omit<Expense, 'id'>) {
-    return handleMutation(supabase => supabase.from('expenses').insert(expenseData));
+    return handleMutation(supabase => supabase.from('expenses').insert(expenseData), ['/management']);
 }
 export async function updateExpense(id: string, expenseData: Partial<Expense>) {
-    return handleMutation(supabase => supabase.from('expenses').update(expenseData).eq('id', id));
+    return handleMutation(supabase => supabase.from('expenses').update(expenseData).eq('id', id), ['/management']);
 }
 export async function deleteExpense(id: string) {
-    return handleMutation(supabase => supabase.from('expenses').delete().eq('id', id));
+    return handleMutation(supabase => supabase.from('expenses').delete().eq('id', id), ['/management']);
 }
 
 export async function addOrder(orderData: Omit<Order, 'id'>) {
     // The items in an order are JSON, so we need to stringify them if they are not already
     const payload = { ...orderData, items: orderData.items };
-    return handleMutation(supabase => supabase.from('orders').insert(payload));
+    return handleMutation(supabase => supabase.from('orders').insert(payload), ['/pos', '/dashboard']);
 }

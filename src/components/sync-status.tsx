@@ -5,7 +5,9 @@ import { RefreshCw, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import React from 'react';
 
 export const SyncStatus: React.FC = () => {
-  const { syncStatus, lastSync, syncNow, isOnline } = useApp();
+  const { syncStatus, lastSync, refreshData } = useApp();
+
+  const isOnline = syncStatus !== 'offline';
 
   const getIcon = () => {
     if(!isOnline) return <WifiOff className="h-4 w-4 text-red-500" />;
@@ -28,7 +30,7 @@ export const SyncStatus: React.FC = () => {
   return (
     <div 
       className="flex items-center gap-2 cursor-pointer"
-      onClick={(e) => { e.stopPropagation(); syncNow(); }}
+      onClick={(e) => { e.stopPropagation(); refreshData(); }}
       title={`Sync status: ${getStatusText()}`}
     >
       {getIcon()}

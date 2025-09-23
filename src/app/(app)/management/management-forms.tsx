@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 
 
 // ======================
@@ -21,9 +22,10 @@ interface ClientFormProps {
   onOpenChange: (isOpen: boolean) => void;
   onSave: (clientData: Partial<Client>) => void;
   client: Client | null;
+  isPending: boolean;
 }
 
-export const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onOpenChange, onSave, client }) => {
+export const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onOpenChange, onSave, client, isPending }) => {
   const [formData, setFormData] = useState<Partial<Client>>({});
 
   useEffect(() => {
@@ -56,7 +58,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onOpenChange, on
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="border-gray-600">Annuler</Button>
-          <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">Sauvegarder</Button>
+          <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Sauvegarder
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -72,9 +77,10 @@ interface EmployeeFormProps {
     onOpenChange: (isOpen: boolean) => void;
     onSave: (employeeData: Partial<Employee>) => void;
     employee: Employee | null;
+    isPending: boolean;
 }
   
-export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onOpenChange, onSave, employee }) => {
+export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onOpenChange, onSave, employee, isPending }) => {
     const [formData, setFormData] = useState<Partial<Employee>>({});
 
     useEffect(() => {
@@ -151,7 +157,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onOpenChange
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)} className="border-gray-600">Annuler</Button>
-                    <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">Sauvegarder</Button>
+                    <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+                      {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sauvegarder
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -167,9 +176,10 @@ interface ExpenseFormProps {
     onOpenChange: (isOpen: boolean) => void;
     onSave: (expenseData: Partial<Expense>) => void;
     expense: Expense | null;
+    isPending: boolean;
 }
 
-export const ExpenseForm: React.FC<ExpenseFormProps> = ({ isOpen, onOpenChange, onSave, expense }) => {
+export const ExpenseForm: React.FC<ExpenseFormProps> = ({ isOpen, onOpenChange, onSave, expense, isPending }) => {
     const [formData, setFormData] = useState<Partial<Expense>>({});
 
     useEffect(() => {
@@ -197,7 +207,10 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ isOpen, onOpenChange, 
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)} className="border-gray-600">Annuler</Button>
-                    <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">Sauvegarder</Button>
+                    <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+                      {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sauvegarder
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

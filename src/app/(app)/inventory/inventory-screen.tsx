@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { useApp, Product } from '@/app/(app)/app-provider';
 import {
   Card, CardContent
@@ -17,14 +17,14 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog"
 import {
-  Plus, Trash2, Edit
+  Plus, Trash2, Edit, Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addProduct, updateProduct, deleteProduct } from '@/app/actions/mutations';
 
 
 export const InventoryScreen: React.FC = () => {
-  const { products, setProducts, user, viewedCommerceId, fetchData } = useApp();
+  const { products, user, viewedCommerceId } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -35,6 +35,7 @@ export const InventoryScreen: React.FC = () => {
     icon: '☕'
   });
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const commerceId = user?.isSuperAdmin ? viewedCommerceId : user?.commerceId;
 
@@ -53,54 +54,56 @@ export const InventoryScreen: React.FC = () => {
   const handleSave = async () => {
     if (!formData.name || !formData.price || !commerceId) return;
   
-    let result;
-    if (editingProduct) {
-      result = await updateProduct(editingProduct.id, formData);
-      if (!result.error) {
-        toast({ variant: 'success', title: 'Produit mis à jour' });
+    startTransition(async () => {
+      let result;
+      if (editingProduct) {
+        result = await updateProduct(editingProduct.id, formData);
+        if (!result.error) {
+          toast({ variant: 'success', title: 'Produit mis à jour' });
+        }
+      } else {
+        const newProductData: Omit<Product, 'id'> = {
+          name: formData.name,
+          price: Number(formData.price),
+          category: formData.category || 'Café',
+          stock: Number(formData.stock) || 0,
+          icon: formData.icon || '📦',
+          commerce_id: commerceId,
+        };
+        result = await addProduct(newProductData);
+        if (!result.error) {
+          toast({ variant: 'success', title: 'Produit ajouté' });
+        }
       }
-    } else {
-      const newProductData: Omit<Product, 'id'> = {
-        name: formData.name,
-        price: Number(formData.price),
-        category: formData.category || 'Café',
-        stock: Number(formData.stock) || 0,
-        icon: formData.icon || '📦',
-        commerce_id: commerceId,
-      };
-      result = await addProduct(newProductData);
-      if (!result.error) {
-        toast({ variant: 'success', title: 'Produit ajouté' });
-      }
-    }
 
-    if (result.error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-      await fetchData();
-    }
-  
-    setIsModalOpen(false);
-    setEditingProduct(null);
+      if (result.error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+        setIsModalOpen(false);
+        setEditingProduct(null);
+      }
+    });
   };
   
 
   const handleDeleteProduct = async (id: string) => {
-    const result = await deleteProduct(id);
-    if (result.error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-      toast({ variant: 'success', title: 'Produit supprimé' });
-      await fetchData();
-    }
+    startTransition(async () => {
+      const result = await deleteProduct(id);
+      if (result.error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+        toast({ variant: 'success', title: 'Produit supprimé' });
+      }
+    });
   };
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-white">Inventaire</h1>
-        <Button onClick={openModalForAdd} className="bg-orange-500 hover:bg-orange-600">
-          <Plus className="mr-2 h-4 w-4" /> Ajouter
+        <Button onClick={openModalForAdd} className="bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+           {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" /> }
+           Ajouter
         </Button>
       </div>
 
@@ -115,12 +118,12 @@ export const InventoryScreen: React.FC = () => {
               <Badge variant="outline" className="mt-2 text-gray-400 border-gray-600">{product.category}</Badge>
             </CardContent>
             <div className="flex gap-2 p-4 border-t border-gray-700">
-                <Button size="sm" variant="outline" className="flex-1 border-gray-600 text-gray-300" onClick={() => openModalForEdit(product)}>
+                <Button size="sm" variant="outline" className="flex-1 border-gray-600 text-gray-300" onClick={() => openModalForEdit(product)} disabled={isPending}>
                   <Edit className="h-3 w-3 mr-1" /> Modifier
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="destructive" className="flex-1">
+                    <Button size="sm" variant="destructive" className="flex-1" disabled={isPending}>
                       <Trash2 className="h-3 w-3 mr-1" /> Supprimer
                     </Button>
                   </AlertDialogTrigger>
@@ -160,7 +163,8 @@ export const InventoryScreen: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)} className="border-gray-600">Annuler</Button>
-            <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600" disabled={!formData.name || !formData.price}>
+            <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600" disabled={isPending || !formData.name || !formData.price}>
+              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
               {editingProduct ? 'Mettre à jour' : 'Ajouter'}
             </Button>
           </DialogFooter>

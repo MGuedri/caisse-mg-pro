@@ -28,7 +28,7 @@ import { signOut } from '@/app/actions/auth';
 
 // --- NAVIGATION PRINCIPALE ---
 const MainApp: React.FC = () => {
-  const { user, setUser, currentView, setCurrentView } = useApp();
+  const { user, setUser, currentView, setCurrentView, refreshData } = useApp();
 
   const navigation = [
     { id: 'pos', label: 'Caisse', icon: ShoppingCart, allowedRoles: ['Owner', 'Caissier'] },
@@ -48,8 +48,8 @@ const MainApp: React.FC = () => {
       setCurrentView('login');
     } else {
       if (user.isSuperAdmin) {
-        if (currentView !== 'superadmin') {
-            setCurrentView('superadmin');
+        if (currentView !== 'superadmin' && currentView !== 'dashboard') {
+            setCurrentView('dashboard');
         }
       } else {
         if (currentView === 'login' || currentView === 'superadmin') {
@@ -58,6 +58,15 @@ const MainApp: React.FC = () => {
       }
     }
   }, [user, currentView, setCurrentView]);
+  
+  // Auto-refresh periodically
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      refreshData();
+    }, 5 * 60 * 1000); // every 5 minutes
+    return () => clearInterval(interval);
+  }, [user, refreshData]);
 
   if (currentView === 'login' || !user) {
     return <LoginScreen />;

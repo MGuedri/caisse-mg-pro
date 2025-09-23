@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { useApp, Client, Employee, Expense } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import {
-  Users, Trash2, Edit, Plus, Wallet, DollarSign, Star, UserPlus, Landmark,
+  Users, Trash2, Edit, Plus, Wallet, DollarSign, Star, UserPlus, Landmark, Loader2,
 } from 'lucide-react';
 import { SalariesTabContent } from './salaries-tab';
 import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
@@ -34,9 +34,10 @@ const getInitials = (name: string) => {
 
 
 export const ManagementScreen: React.FC = () => {
-  const { clients, employees, expenses, user, viewedCommerceId, fetchData } = useApp();
+  const { clients, employees, expenses, user, viewedCommerceId } = useApp();
   const [activeTab, setActiveTab] = useState('clients');
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const commerceId = user?.isSuperAdmin ? viewedCommerceId : user?.commerceId;
 
@@ -77,38 +78,40 @@ export const ManagementScreen: React.FC = () => {
   const handleSaveClient = async (clientData: Partial<Client>) => {
     if (!commerceId) return;
 
-    let result;
-    if (editingClient) {
-      result = await updateClient(editingClient.id, clientData);
-      if (!result.error) toast({variant: 'success', title: 'Client mis à jour' });
-    } else {
-      const newClientData: Omit<Client, 'id'> = {
-          commerce_id: commerceId,
-          name: clientData.name || 'N/A',
-          email: clientData.email || '',
-          phone: clientData.phone || '',
-          isVip: clientData.isVip || false,
-          credit: clientData.credit || 0
-      };
-      result = await addClient(newClientData);
-      if (!result.error) toast({variant: 'success', title: 'Client ajouté' });
-    }
+    startTransition(async () => {
+      let result;
+      if (editingClient) {
+        result = await updateClient(editingClient.id, clientData);
+        if (!result.error) toast({variant: 'success', title: 'Client mis à jour' });
+      } else {
+        const newClientData: Omit<Client, 'id'> = {
+            commerce_id: commerceId,
+            name: clientData.name || 'N/A',
+            email: clientData.email || '',
+            phone: clientData.phone || '',
+            isVip: clientData.isVip || false,
+            credit: clientData.credit || 0
+        };
+        result = await addClient(newClientData);
+        if (!result.error) toast({variant: 'success', title: 'Client ajouté' });
+      }
 
-    if (result.error) {
-        toast({variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-        await fetchData();
-    }
-    setIsClientModalOpen(false);
+      if (result.error) {
+          toast({variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+          setIsClientModalOpen(false);
+      }
+    });
   };
   const handleDeleteClient = async (clientId: string) => {
-    const result = await deleteClient(clientId);
-    if(result.error) {
-        toast({variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-        toast({variant: 'success', title: 'Client supprimé' });
-        await fetchData();
-    }
+    startTransition(async () => {
+      const result = await deleteClient(clientId);
+      if(result.error) {
+          toast({variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+          toast({variant: 'success', title: 'Client supprimé' });
+      }
+    });
   };
 
   // --- Employee Actions ---
@@ -120,44 +123,46 @@ export const ManagementScreen: React.FC = () => {
     if (!commerceId) return;
     const balance = (employeeData.salary || 0) - (employeeData.advance || 0);
 
-    let result;
-    if (editingEmployee) {
-      result = await updateEmployee(editingEmployee.id, {...employeeData, balance});
-      if (!result.error) toast({ variant: 'success', title: 'Employé mis à jour' });
-    } else {
-        const newEmployeeData: Omit<Employee, 'id'> = {
-            commerce_id: commerceId,
-            name: employeeData.name || 'N/A',
-            role: employeeData.role || 'Caissier',
-            salary: employeeData.salary || 0,
-            evaluation: employeeData.evaluation || 0,
-            schedule: employeeData.schedule || '',
-            workingDays: employeeData.workingDays || [],
-            joinDate: employeeData.joinDate || new Date().toISOString(),
-            advance: employeeData.advance || 0,
-            balance: balance,
-            isTopEmployee: false,
-            avatar: '' // Will be set on the server
-        };
-      result = await addEmployee(newEmployeeData);
-      if (!result.error) toast({ variant: 'success', title: 'Employé ajouté' });
-    }
-    
-    if (result.error) {
-        toast({variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-        await fetchData();
-    }
-    setIsEmployeeModalOpen(false);
+    startTransition(async () => {
+      let result;
+      if (editingEmployee) {
+        result = await updateEmployee(editingEmployee.id, {...employeeData, balance});
+        if (!result.error) toast({ variant: 'success', title: 'Employé mis à jour' });
+      } else {
+          const newEmployeeData: Omit<Employee, 'id'> = {
+              commerce_id: commerceId,
+              name: employeeData.name || 'N/A',
+              role: employeeData.role || 'Caissier',
+              salary: employeeData.salary || 0,
+              evaluation: employeeData.evaluation || 0,
+              schedule: employeeData.schedule || '',
+              workingDays: employeeData.workingDays || [],
+              joinDate: employeeData.joinDate || new Date().toISOString(),
+              advance: employeeData.advance || 0,
+              balance: balance,
+              isTopEmployee: false,
+              avatar: '' // Will be set on the server
+          };
+        result = await addEmployee(newEmployeeData);
+        if (!result.error) toast({ variant: 'success', title: 'Employé ajouté' });
+      }
+      
+      if (result.error) {
+          toast({variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+          setIsEmployeeModalOpen(false);
+      }
+    });
   }
   const handleDeleteEmployee = async (employeeId: string) => {
-    const result = await deleteEmployee(employeeId);
-    if (result.error) {
-        toast({variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-        toast({ variant: 'success', title: 'Employé supprimé' });
-        await fetchData();
-    }
+    startTransition(async () => {
+      const result = await deleteEmployee(employeeId);
+      if (result.error) {
+          toast({variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+          toast({ variant: 'success', title: 'Employé supprimé' });
+      }
+    });
   }
 
   const handlePaySalary = async (employeeId: string) => {
@@ -173,20 +178,20 @@ export const ManagementScreen: React.FC = () => {
       commerce_id: commerceId,
     };
     
-    const expenseResult = await addExpense(newExpenseData);
-    if (expenseResult.error) {
-        toast({variant: 'destructive', title: 'Erreur Dépense', description: expenseResult.error});
-        return;
-    }
-    
-    const employeeResult = await updateEmployee(employeeId, { advance: 0, balance: 0 });
-     if (employeeResult.error) {
-        toast({variant: 'destructive', title: 'Erreur Employé', description: employeeResult.error});
-        // Here you might want to handle the fact that the expense was added but employee update failed (e.g. manual correction needed)
-    } else {
-        toast({variant: 'success', title: 'Paiement effectué', description: `Le salaire de ${employee.name} a été payé.`});
-        await fetchData();
-    }
+    startTransition(async () => {
+      const expenseResult = await addExpense(newExpenseData);
+      if (expenseResult.error) {
+          toast({variant: 'destructive', title: 'Erreur Dépense', description: expenseResult.error});
+          return;
+      }
+      
+      const employeeResult = await updateEmployee(employeeId, { advance: 0, balance: 0 });
+      if (employeeResult.error) {
+          toast({variant: 'destructive', title: 'Erreur Employé', description: employeeResult.error});
+      } else {
+          toast({variant: 'success', title: 'Paiement effectué', description: `Le salaire de ${employee.name} a été payé.`});
+      }
+    });
   }
 
   // --- Expense Actions ---
@@ -197,37 +202,39 @@ export const ManagementScreen: React.FC = () => {
   const handleSaveExpense = async (expenseData: Partial<Expense>) => {
     if(!commerceId) return;
 
-    let result;
-    if (editingExpense) {
-      result = await updateExpense(editingExpense.id, expenseData);
-      if (!result.error) toast({ variant: 'success', title: 'Dépense mise à jour'});
-    } else {
-      const newExpenseData: Omit<Expense, 'id'> = {
-          description: expenseData.description || 'N/A',
-          amount: expenseData.amount || 0,
-          category: expenseData.category || 'Divers',
-          date: new Date().toLocaleDateString('fr-CA'),
-          commerce_id: commerceId
-      };
-      result = await addExpense(newExpenseData);
-      if (!result.error) toast({ variant: 'success', title: 'Dépense ajoutée'});
-    }
+    startTransition(async () => {
+      let result;
+      if (editingExpense) {
+        result = await updateExpense(editingExpense.id, expenseData);
+        if (!result.error) toast({ variant: 'success', title: 'Dépense mise à jour'});
+      } else {
+        const newExpenseData: Omit<Expense, 'id'> = {
+            description: expenseData.description || 'N/A',
+            amount: expenseData.amount || 0,
+            category: expenseData.category || 'Divers',
+            date: new Date().toLocaleDateString('fr-CA'),
+            commerce_id: commerceId
+        };
+        result = await addExpense(newExpenseData);
+        if (!result.error) toast({ variant: 'success', title: 'Dépense ajoutée'});
+      }
 
-    if(result.error) {
-        toast({ variant: 'destructive', title: 'Erreur', description: result.error});
-    } else {
-        await fetchData();
-    }
-    setIsExpenseModalOpen(false);
+      if(result.error) {
+          toast({ variant: 'destructive', title: 'Erreur', description: result.error});
+      } else {
+          setIsExpenseModalOpen(false);
+      }
+    });
   }
   const handleDeleteExpense = async (expenseId: string) => {
-    const result = await deleteExpense(expenseId);
-    if(result.error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: result.error});
-    } else {
-      toast({ variant: 'success', title: 'Dépense supprimée' });
-      await fetchData();
-    }
+    startTransition(async () => {
+      const result = await deleteExpense(expenseId);
+      if(result.error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: result.error});
+      } else {
+        toast({ variant: 'success', title: 'Dépense supprimée' });
+      }
+    });
   }
 
   return (
@@ -273,8 +280,9 @@ export const ManagementScreen: React.FC = () => {
             </Card>
              <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                 <Button onClick={() => handleOpenClientModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600">
-                    <Plus className="mr-2 h-4 w-4" /> Ajouter un client
+                 <Button onClick={() => handleOpenClientModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
+                     Ajouter un client
                   </Button>
               </CardHeader>
             </Card>
@@ -298,10 +306,10 @@ export const ManagementScreen: React.FC = () => {
                         <p className="text-gray-400 text-sm">{client.phone}</p>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white" onClick={() => handleOpenClientModal(client)}><Edit className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white" onClick={() => handleOpenClientModal(client)} disabled={isPending}><Edit className="h-4 w-4" /></Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-400" disabled={isPending}><Trash2 className="h-4 w-4" /></Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
                             <AlertDialogHeader>
@@ -355,8 +363,9 @@ export const ManagementScreen: React.FC = () => {
             </Card>
              <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                 <Button onClick={() => handleOpenEmployeeModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600">
-                    <Plus className="mr-2 h-4 w-4" /> Ajouter un employé
+                 <Button onClick={() => handleOpenEmployeeModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
+                     Ajouter un employé
                   </Button>
               </CardHeader>
             </Card>
@@ -380,10 +389,10 @@ export const ManagementScreen: React.FC = () => {
                           </div>
                            <div className="flex items-center gap-2">
                             {employee.isTopEmployee && <Badge className="bg-green-600 text-white">Top Employé</Badge>}
-                            <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white" onClick={() => handleOpenEmployeeModal(employee)}><Edit className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="text-gray-400 hover:text-white" onClick={() => handleOpenEmployeeModal(employee)} disabled={isPending}><Edit className="h-4 w-4" /></Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-400" disabled={isPending}><Trash2 className="h-4 w-4" /></Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
                                 <AlertDialogHeader>
@@ -445,6 +454,7 @@ export const ManagementScreen: React.FC = () => {
           <SalariesTabContent 
             onPay={handlePaySalary}
             onDetails={handleOpenEmployeeModal}
+            isPending={isPending}
           />
         </TabsContent>
 
@@ -474,8 +484,9 @@ export const ManagementScreen: React.FC = () => {
             </Card>
             <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
-                    <Button onClick={() => handleOpenExpenseModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600">
-                        <Plus className="mr-2 h-4 w-4" /> Ajouter une dépense
+                    <Button onClick={() => handleOpenExpenseModal()} className="w-full h-full bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
+                        Ajouter une dépense
                     </Button>
                 </CardHeader>
             </Card>
@@ -494,10 +505,10 @@ export const ManagementScreen: React.FC = () => {
                     <div className="text-right flex-shrink-0">
                       <p className="text-red-400 font-bold text-lg">- {expense.amount.toFixed(3)} DT</p>
                       <div className="flex gap-2 mt-2">
-                        <Button size="sm" variant="outline" className="border-gray-600" onClick={() => handleOpenExpenseModal(expense)}><Edit className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="outline" className="border-gray-600" onClick={() => handleOpenExpenseModal(expense)} disabled={isPending}><Edit className="h-3 w-3" /></Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="destructive"><Trash2 className="h-3 w-3" /></Button>
+                            <Button size="sm" variant="destructive" disabled={isPending}><Trash2 className="h-3 w-3" /></Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
                             <AlertDialogHeader>
@@ -526,18 +537,21 @@ export const ManagementScreen: React.FC = () => {
         onOpenChange={setIsClientModalOpen}
         onSave={handleSaveClient}
         client={editingClient}
+        isPending={isPending}
       />
       <EmployeeForm
         isOpen={isEmployeeModalOpen}
         onOpenChange={setIsEmployeeModalOpen}
         onSave={handleSaveEmployee}
         employee={editingEmployee}
+        isPending={isPending}
       />
       <ExpenseForm
         isOpen={isExpenseModalOpen}
         onOpenChange={setIsExpenseModalOpen}
         onSave={handleSaveExpense}
         expense={editingExpense}
+        isPending={isPending}
       />
     </div>
   );

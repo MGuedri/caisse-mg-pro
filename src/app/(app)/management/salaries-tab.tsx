@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -28,9 +29,10 @@ const getInitials = (name: string) => {
 interface SalariesTabContentProps {
     onPay: (employeeId: string) => void;
     onDetails: (employee: Employee) => void;
+    isPending: boolean;
 }
 
-export const SalariesTabContent: React.FC<SalariesTabContentProps> = ({ onPay, onDetails }) => {
+export const SalariesTabContent: React.FC<SalariesTabContentProps> = ({ onPay, onDetails, isPending }) => {
     const { employees, setEmployees } = useApp();
   
     const totalBrut = employees.reduce((acc, emp) => acc + emp.salary, 0);
@@ -141,10 +143,10 @@ export const SalariesTabContent: React.FC<SalariesTabContentProps> = ({ onPay, o
                                 </div>
                             </div>
                              <div className="mt-4 flex justify-end gap-2">
-                                <Button size="sm" variant="outline" className="border-gray-600" onClick={() => onDetails(employee)}>Détails</Button>
+                                <Button size="sm" variant="outline" className="border-gray-600" onClick={() => onDetails(employee)} disabled={isPending}>Détails</Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={employee.balance <= 0}>
+                                        <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={isPending || employee.balance <= 0}>
                                             <DollarSign className="mr-1 h-4 w-4"/> Payer
                                         </Button>
                                     </AlertDialogTrigger>
@@ -183,8 +185,8 @@ export const SalariesTabContent: React.FC<SalariesTabContentProps> = ({ onPay, o
                                             <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700">
                                                 Annuler
                                             </AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => onPay(employee.id)} className="bg-green-600 hover:bg-green-700">
-                                                <CheckCircle className="mr-2 h-4 w-4"/>
+                                            <AlertDialogAction onClick={() => onPay(employee.id)} className="bg-green-600 hover:bg-green-700" disabled={isPending}>
+                                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
                                                 Confirmer le Paiement
                                             </AlertDialogAction>
                                         </AlertDialogFooter>

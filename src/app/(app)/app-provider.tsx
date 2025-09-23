@@ -136,10 +136,8 @@ type AppContextType = {
   setIncludeVAT: (include: boolean) => void;
   syncStatus: 'offline' | 'syncing' | 'synced' | 'error';
   lastSync: Date | null;
-  syncNow: () => Promise<void>;
-  isOnline: boolean;
   
-  fetchData: () => Promise<void>;
+  refreshData: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -182,7 +180,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCommerces([]);
   }, []);
 
-  const fetchData = useCallback(async () => {
+  const refreshData = useCallback(async () => {
     if (!user) return;
     setSyncStatus('syncing');
     try {
@@ -244,22 +242,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     if (user) {
-        fetchData();
+        refreshData();
     } else {
         clearData();
     }
-  }, [user, fetchData, clearData]);
+  }, [user, refreshData, clearData]);
 
   // Refetch data when viewed commerce changes for superadmin
   useEffect(() => {
     if (user?.isSuperAdmin && viewedCommerceId) {
-        fetchData();
+        refreshData();
     }
-  }, [user?.isSuperAdmin, viewedCommerceId, fetchData])
-
-  const syncNow = useCallback(async () => {
-    await fetchData();
-  }, [fetchData]);
+  }, [user?.isSuperAdmin, viewedCommerceId, refreshData])
 
   const value: AppContextType = {
     user, setUser,
@@ -274,8 +268,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     viewedCommerceId, setViewedCommerceId,
     currentView, setCurrentView,
     includeVAT, setIncludeVAT,
-    syncStatus, lastSync, syncNow, isOnline,
-    fetchData
+    syncStatus, lastSync,
+    refreshData
   };
 
   return (

@@ -10,15 +10,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 
 interface CommerceFormProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSave: (commerceData: Partial<Commerce>, ownerPassword?: string) => void;
   commerce: Commerce | null;
+  isPending: boolean;
 }
 
-export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange, onSave, commerce }) => {
+export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange, onSave, commerce, isPending }) => {
   const [formData, setFormData] = useState<Partial<Commerce>>({});
   const [ownerPassword, setOwnerPassword] = useState('');
 
@@ -98,7 +100,10 @@ export const CommerceForm: React.FC<CommerceFormProps> = ({ isOpen, onOpenChange
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="border-gray-600">Annuler</Button>
-          <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">Sauvegarder</Button>
+          <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600" disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Sauvegarder
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

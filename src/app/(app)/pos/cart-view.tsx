@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useTransition } from 'react';
 import { useApp, CartItem, Order } from '@/app/(app)/app-provider';
 import {
   Card, CardContent
@@ -13,17 +13,18 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  Plus, Minus, Trash2, CreditCard, ShoppingCart
+  Plus, Minus, Trash2, CreditCard, ShoppingCart, Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addOrder } from '@/app/actions/mutations';
 
 export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
-  const { cart, setCart, clients, includeVAT, setIncludeVAT, user, viewedCommerceId, fetchData } = useApp();
+  const { cart, setCart, clients, includeVAT, setIncludeVAT, user, viewedCommerceId } = useApp();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [selectedClient, setSelectedClient] = useState('Client invité');
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const commerceId = user?.isSuperAdmin ? viewedCommerceId : user?.commerceId;
 
@@ -58,19 +59,20 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
       commerce_id: commerceId,
     };
 
-    const result = await addOrder(newOrderData);
-    
-    if (result.error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-      toast({variant: 'success', title: 'Commande enregistrée'});
-      await fetchData(); // Refresh data to show new order
-      setCart([]);
-      setIsPaymentOpen(false);
-      setPaymentAmount('');
-      setSelectedClient('Client invité');
-      if (onClose) onClose();
-    }
+    startTransition(async () => {
+      const result = await addOrder(newOrderData);
+      
+      if (result.error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+        toast({variant: 'success', title: 'Commande enregistrée'});
+        setCart([]);
+        setIsPaymentOpen(false);
+        setPaymentAmount('');
+        setSelectedClient('Client invité');
+        if (onClose) onClose();
+      }
+    });
   };
 
   return (
@@ -163,8 +165,8 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
             
             <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full bg-orange-500 hover:bg-orange-600 text-lg py-6">
-                  <CreditCard className="mr-2 h-5 w-5" />
+                <Button className="w-full bg-orange-500 hover:bg-orange-600 text-lg py-6" disabled={isPending}>
+                  {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
                   Payer
                 </Button>
               </DialogTrigger>
@@ -224,8 +226,9 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
                    <Button 
                       onClick={handlePayment}
                       className="bg-green-600 hover:bg-green-700"
-                      disabled={!paymentAmount || parseFloat(paymentAmount) < total}
+                      disabled={isPending || !paymentAmount || parseFloat(paymentAmount) < total}
                     >
+                      {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       Confirmer
                     </Button>
                 </DialogFooter>

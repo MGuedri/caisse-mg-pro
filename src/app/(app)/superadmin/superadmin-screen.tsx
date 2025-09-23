@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useTransition } from 'react';
 import { useApp } from '@/app/(app)/app-provider';
 import type { Commerce, Invoice } from '@/app/(app)/app-provider';
 import {
@@ -42,7 +42,8 @@ import {
   Settings,
   Building,
   FileText,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -50,7 +51,6 @@ import { CommerceForm } from './superadmin-forms';
 import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
 import { useToast } from '@/hooks/use-toast';
-import { add } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { signOut } from '@/app/actions/auth';
 import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
@@ -62,7 +62,7 @@ export const SuperAdminScreen: React.FC = () => {
     clients, orders,
     invoices,
     viewedCommerceId, setViewedCommerceId,
-    fetchData,
+    refreshData,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -70,12 +70,13 @@ export const SuperAdminScreen: React.FC = () => {
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
   const [commerceToInvoiceId, setCommerceToInvoiceId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (user?.isSuperAdmin) {
-      fetchData();
+      refreshData();
     }
-  }, [user, fetchData]);
+  }, [user, refreshData]);
 
   const handleLogout = async () => {
     await signOut();
@@ -97,68 +98,71 @@ export const SuperAdminScreen: React.FC = () => {
   };
 
   const handleSaveCommerce = async (commerceData: Partial<Commerce>, ownerPassword?: string) => {
-    let result;
-    if (editingCommerce) {
-      result = await updateCommerce(editingCommerce.id, commerceData);
-      if (!result.error) {
-        toast({variant: 'success', title: 'Succès', description: 'Commerce mis à jour.'});
+    startTransition(async () => {
+      let result;
+      if (editingCommerce) {
+        result = await updateCommerce(editingCommerce.id, commerceData);
+        if (!result.error) {
+          toast({variant: 'success', title: 'Succès', description: 'Commerce mis à jour.'});
+        }
+      } else {
+        if (!commerceData.owneremail || !commerceData.ownername || !commerceData.name || !ownerPassword) {
+          toast({ variant: 'destructive', title: 'Erreur', description: 'Tous les champs sont requis, y compris le mot de passe.' });
+          return;
+        }
+        result = await createCommerce(commerceData as Commerce, ownerPassword);
+        if (!result.error) {
+          toast({ variant: 'success', title: 'Succès', description: 'Commerce ajouté.' });
+        }
       }
-    } else {
-      if (!commerceData.owneremail || !commerceData.ownername || !commerceData.name || !ownerPassword) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Tous les champs sont requis, y compris le mot de passe.' });
-        return;
-      }
-      result = await createCommerce(commerceData as Commerce, ownerPassword);
-      if (!result.error) {
-        toast({ variant: 'success', title: 'Succès', description: 'Commerce ajouté.' });
-      }
-    }
 
-    if (result.error) {
-        toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-    } else {
-        await fetchData(); // Refresh all data
-    }
-    
-    setIsModalOpen(false);
+      if (result.error) {
+          toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+      } else {
+        setIsModalOpen(false);
+      }
+    });
   };
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    const result = await deleteCommerce(commerce.id);
-    if(result.error) {
-        toast({variant: 'destructive', title: 'Erreur', description: result.error});
-    } else {
-        toast({variant: 'success', title: 'Commerce Supprimé'});
-        await fetchData();
-        if (viewedCommerceId === commerce.id) {
-          setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerce.id)!.id : null);
-        }
-    }
+    startTransition(async () => {
+      const result = await deleteCommerce(commerce.id);
+      if(result.error) {
+          toast({variant: 'destructive', title: 'Erreur', description: result.error});
+      } else {
+          toast({variant: 'success', title: 'Commerce Supprimé'});
+          if (viewedCommerceId === commerce.id) {
+            setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerce.id)!.id : null);
+          }
+      }
+    });
   };
 
   const handleGenerateInvoice = async (commerceId: string) => {
-    const commerce = commerces.find(c => c.id === commerceId);
-    if(!commerce || !commerce.subscription_price) {
-        toast({variant: 'destructive', title: 'Erreur', description: 'Commerce non trouvé ou prix non défini.'});
-        return;
-    }
-    const result = await createInvoice(commerceId, commerce.subscription_price, commerce.name);
-    if (result.error) {
-        toast({variant: 'destructive', title: 'Erreur', description: result.error});
-    } else {
-        toast({variant: 'success', title: 'Facture Générée'});
-        await fetchData();
-    }
+    startTransition(async () => {
+      const commerce = commerces.find(c => c.id === commerceId);
+      if(!commerce || !commerce.subscription_price) {
+          toast({variant: 'destructive', title: 'Erreur', description: 'Commerce non trouvé ou prix non défini.'});
+          return;
+      }
+      const result = await createInvoice(commerceId, commerce.subscription_price, commerce.name);
+      if (result.error) {
+          toast({variant: 'destructive', title: 'Erreur', description: result.error});
+      } else {
+          toast({variant: 'success', title: 'Facture Générée'});
+      }
+    });
   };
 
   const handleMarkAsPaid = async (invoiceId: string) => {
-    const result = await markInvoiceAsPaid(invoiceId);
-     if (result.error) {
-        toast({variant: 'destructive', title: 'Erreur', description: result.error});
-    } else {
-        toast({variant: 'success', title: 'Facture Payée'});
-        await fetchData();
-    }
+    startTransition(async () => {
+      const result = await markInvoiceAsPaid(invoiceId);
+      if (result.error) {
+          toast({variant: 'destructive', title: 'Erreur', description: result.error});
+      } else {
+          toast({variant: 'success', title: 'Facture Payée'});
+      }
+    });
   };
 
 
@@ -287,8 +291,8 @@ export const SuperAdminScreen: React.FC = () => {
                             <CardDescription className="text-gray-400">Ajouter, modifier ou supprimer des commerces.</CardDescription>
                         </div>
                         <div className='flex gap-2 flex-col sm:flex-row w-full sm:w-auto'>
-                            <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
-                                <Plus className="mr-2 h-4 w-4"/>
+                            <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto" disabled={isPending}>
+                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4"/>}
                                 Ajouter Commerce
                             </Button>
                         </div>
@@ -319,7 +323,7 @@ export const SuperAdminScreen: React.FC = () => {
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
                                                     <span className="sr-only">Open menu</span>
                                                     <MoreVertical className="h-4 w-4" />
                                                 </Button>
@@ -395,8 +399,9 @@ export const SuperAdminScreen: React.FC = () => {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 {invoice.status === 'pending' && (
-                                                <Button size="sm" onClick={() => handleMarkAsPaid(invoice.id)} className="bg-green-600 hover:bg-green-700">
-                                                    <CheckCircle className="mr-2 h-4 w-4"/> Marquer Payée
+                                                <Button size="sm" onClick={() => handleMarkAsPaid(invoice.id)} className="bg-green-600 hover:bg-green-700" disabled={isPending}>
+                                                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                                                     Marquer Payée
                                                 </Button>
                                                 )}
                                             </TableCell>
@@ -431,9 +436,10 @@ export const SuperAdminScreen: React.FC = () => {
                                         }
                                     }}
                                     className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto"
-                                    disabled={!commerceToInvoiceId}
+                                    disabled={isPending || !commerceToInvoiceId}
                                 >
-                                    <Plus className="mr-2 h-4 w-4" /> Générer
+                                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
+                                     Générer
                                 </Button>
                             </div>
                         </div>
@@ -449,6 +455,7 @@ export const SuperAdminScreen: React.FC = () => {
         onOpenChange={setIsModalOpen}
         onSave={handleSaveCommerce}
         commerce={editingCommerce}
+        isPending={isPending}
       />
     </div>
   );
