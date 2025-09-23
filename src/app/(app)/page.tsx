@@ -22,7 +22,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
 import { SyncStatusItem } from '@/components/sync-status-item';
-import { serverSignOut } from '@/app/actions/debug-auth';
+import { serverSignOut } from '@/app/actions/auth';
 
 
 // --- NAVIGATION PRINCIPALE ---

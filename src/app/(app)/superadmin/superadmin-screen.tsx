@@ -52,7 +52,7 @@ import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
-import { serverSignOut } from '@/app/actions/debug-auth';
+import { serverSignOut } from '@/app/actions/auth';
 import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
 
 export const SuperAdminScreen: React.FC = () => {
