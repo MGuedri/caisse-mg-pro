@@ -150,21 +150,42 @@ export const SuperAdminScreen: React.FC = () => {
       toast({variant: 'success', title: 'Succès', description: 'Commerce mis à jour.'});
 
     } else {
-        // --- CREATE (Simplified Logic) ---
+        // --- CREATE ---
         if (!commerceData.owneremail || !commerceData.ownername || !commerceData.name) {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Nom du commerce, nom du propriétaire et email sont requis.' });
             return;
         }
 
-        // 1. Find existing user
+        // 1. Get or create the owner user
+        let ownerUser;
         const { data: existingUser } = await supabase.from('users').select('*').eq('email', commerceData.owneremail).single();
 
-        if (existingUser && existingUser.commerce_id) {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Cet utilisateur est déjà propriétaire d\'un autre commerce.' });
-            return;
+        if (existingUser) {
+            if (existingUser.commerce_id) {
+                toast({ variant: 'destructive', title: 'Erreur', description: 'Cet utilisateur est déjà propriétaire d\'un autre commerce.' });
+                return;
+            }
+            ownerUser = existingUser;
+        } else {
+            if (!ownerPassword) {
+                toast({ variant: 'destructive', title: 'Erreur', description: 'Le mot de passe est requis pour un nouveau propriétaire.' });
+                return;
+            }
+            const { data: newUserData, error: newUserError } = await supabase.from('users').insert({
+                name: commerceData.ownername,
+                email: commerceData.owneremail,
+                password: ownerPassword,
+                role: 'Owner',
+            }).select().single();
+
+            if (newUserError || !newUserData) {
+                toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire: ${newUserError?.message}` });
+                return;
+            }
+            ownerUser = newUserData;
         }
 
-        // 2. Create Commerce first
+        // 2. Create the commerce and link the owner_id
         const { data: newCommerceData, error: newCommerceError } = await supabase.from('commerces').insert({
             name: commerceData.name,
             ownername: commerceData.ownername,
@@ -174,69 +195,30 @@ export const SuperAdminScreen: React.FC = () => {
             address: commerceData.address,
             subscription_price: commerceData.subscription_price,
             subscription_period: commerceData.subscription_period,
-            // owner_id will be updated later if needed
+            owner_id: ownerUser.id,
         }).select().single();
 
         if (newCommerceError || !newCommerceData) {
             toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer le commerce: ${newCommerceError?.message}` });
             return;
         }
-
-        let ownerId: string;
-
-        // 3. Create or Update User with the new commerce_id
-        if (existingUser) {
-            const { data: updatedUser, error: userUpdateError } = await supabase
-                .from('users')
-                .update({ commerce_id: newCommerceData.id })
-                .eq('id', existingUser.id)
-                .select()
-                .single();
-
-            if (userUpdateError || !updatedUser) {
-                toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer à l'utilisateur: ${userUpdateError.message}` });
-                // We should probably rollback commerce creation here, but for now, we'll just show the error
-                return;
-            }
-            ownerId = updatedUser.id;
-        } else {
-            if (!ownerPassword) {
-                toast({ variant: 'destructive', title: 'Erreur', description: 'Le mot de passe est requis pour un nouveau propriétaire.' });
-                // Rollback commerce creation
-                await supabase.from('commerces').delete().eq('id', newCommerceData.id);
-                return;
-            }
-            const { data: newUserData, error: newUserError } = await supabase.from('users').insert({
-                name: commerceData.ownername,
-                email: commerceData.owneremail,
-                password: ownerPassword,
-                role: 'Owner',
-                commerce_id: newCommerceData.id, // Assign commerce_id on creation
-            }).select().single();
-
-            if (newUserError || !newUserData) {
-                toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire: ${newUserError.message}` });
-                 // Rollback commerce creation
-                await supabase.from('commerces').delete().eq('id', newCommerceData.id);
-                return;
-            }
-            ownerId = newUserData.id;
-        }
-
-        // 4. Finally, update the commerce with the owner_id
-        const { data: finalCommerceData, error: finalCommerceError } = await supabase
-            .from('commerces')
-            .update({ owner_id: ownerId })
-            .eq('id', newCommerceData.id)
+        
+        // 3. Update the user with the new commerce_id
+        const { data: updatedUser, error: userUpdateError } = await supabase
+            .from('users')
+            .update({ commerce_id: newCommerceData.id })
+            .eq('id', ownerUser.id)
             .select()
             .single();
 
-        if (finalCommerceError || !finalCommerceData) {
-            toast({ variant: 'destructive', title: 'Erreur Finale', description: `Impossible de lier le propriétaire au commerce: ${finalCommerceError.message}` });
+        if (userUpdateError || !updatedUser) {
+            toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer à l'utilisateur: ${userUpdateError.message}` });
+            // Rollback commerce creation if user update fails
+            await supabase.from('commerces').delete().eq('id', newCommerceData.id);
             return;
         }
 
-        setCommerces([...commerces, finalCommerceData]);
+        setCommerces([...commerces, newCommerceData]);
         toast({ variant: 'success', title: 'Succès', description: 'Commerce et propriétaire ajoutés.' });
     }
     setIsModalOpen(false);
@@ -593,6 +575,7 @@ export const SuperAdminScreen: React.FC = () => {
                                         }
                                     }}
                                     className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto"
+                                    disabled={!commerceToInvoiceId}
                                 >
                                     <Plus className="mr-2 h-4 w-4" /> Générer
                                 </Button>
@@ -617,6 +600,8 @@ export const SuperAdminScreen: React.FC = () => {
     
 
 
+
+    
 
     
 
