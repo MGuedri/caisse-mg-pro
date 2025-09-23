@@ -41,6 +41,10 @@ const ChiffreAffaireCard: React.FC = () => {
                 <DollarSign className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-green-100">Chiffre d'Affaire</p>
                 <p className="text-3xl font-bold">{totalRevenue.toFixed(3)} DT</p>
+                <div className="flex items-center text-sm mt-2">
+                    <ArrowDown className="h-4 w-4 text-white/80 mr-1"/>
+                    <span className="text-white/80">-100.0% par rapport à hier</span>
+                </div>
              </CardContent>
         </Card>
     )
@@ -56,6 +60,10 @@ const NombreVentesCard: React.FC = () => {
                 <ShoppingCart className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-blue-100">Nombre de Ventes</p>
                 <p className="text-3xl font-bold">{totalSales}</p>
+                <div className="flex items-center text-sm mt-2">
+                    <ArrowDown className="h-4 w-4 text-white/80 mr-1"/>
+                    <span className="text-white/80">-100.0% par rapport à hier</span>
+                </div>
              </CardContent>
         </Card>
     )
@@ -88,6 +96,10 @@ const TotalCreditCard: React.FC = () => {
                 <CreditCard className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-orange-100">Total Crédit</p>
                 <p className="text-3xl font-bold">{totalCredit.toFixed(3)} DT</p>
+                <div className="flex items-center text-sm mt-2">
+                    <ArrowDown className="h-4 w-4 text-white/80 mr-1"/>
+                    <span className="text-white/80">-100.0% par rapport à hier</span>
+                </div>
              </CardContent>
         </Card>
     )
@@ -296,7 +308,7 @@ export const DashboardScreen: React.FC = () => {
       });
 
       const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-      const mailtoLink = `mailto:${user?.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
+      const mailtoLink = `mailto:${user?.ownerEmail ?? ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
       window.location.href = mailtoLink;
 
     } catch (error) {
@@ -345,5 +357,3 @@ export const DashboardScreen: React.FC = () => {
     </div>
   );
 };
-
-    
