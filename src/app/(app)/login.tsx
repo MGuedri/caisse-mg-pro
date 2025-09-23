@@ -7,11 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/app/(app)/logo';
-import { initialCommerces } from '@/lib/commerces';
-
 
 export const LoginScreen: React.FC = () => {
-  const { setUser, setCurrentView } = useApp();
+  const { setUser, setCurrentView, commerces } = useApp();
   const [email, setEmail] = useState('onz@live.fr');
   const [password, setPassword] = useState('06034434mg');
 
@@ -29,9 +27,14 @@ export const LoginScreen: React.FC = () => {
       return;
     }
 
-    const commerceUser = initialCommerces.find(c => c.ownerEmail === email && c.password === password);
+    const commerceUser = commerces.find(c => c.ownerEmail === email && c.password === password);
 
     if (commerceUser) {
+      if (commerceUser.subscription === 'Inactive') {
+        alert('Votre compte est inactif. Veuillez contacter le support.');
+        return;
+      }
+
       setUser({
         id: commerceUser.id,
         name: commerceUser.ownerName,
