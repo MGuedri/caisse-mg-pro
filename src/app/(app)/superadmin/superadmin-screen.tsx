@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -52,7 +51,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { CommerceForm } from './superadmin-forms';
 import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { add } from 'date-fns';
 import { Label } from '@/components/ui/label';
@@ -122,27 +121,27 @@ export const SuperAdminScreen: React.FC = () => {
         toast({variant: 'destructive', title: 'Erreur', description: `Impossible de mettre à jour le commerce: ${commerceError?.message}`}); 
         return; 
       }
-
-      // Update user table if email or password changed
-      const userUpdate: {email?: string, password?: string, name?: string} = {};
-      if (commerceData.owneremail && commerceData.owneremail !== editingCommerce.owneremail) {
+      
+      // Update Auth user if email or password changed
+      const userUpdate: {email?: string; password?: string; data?: {[key: string]: any}} = {};
+       if (commerceData.owneremail && commerceData.owneremail !== editingCommerce.owneremail) {
         userUpdate.email = commerceData.owneremail;
       }
       if (ownerPassword) {
         userUpdate.password = ownerPassword;
       }
       if (commerceData.ownername && commerceData.ownername !== editingCommerce.ownername) {
-        userUpdate.name = commerceData.ownername;
+        userUpdate.data = { name: commerceData.ownername };
       }
       
       if (Object.keys(userUpdate).length > 0 && editingCommerce.owner_id) {
-         const { error: userError } = await supabase
-          .from('users')
-          .update(userUpdate)
-          .eq('id', editingCommerce.owner_id);
+         const { error: authUserError } = await supabaseAdmin.auth.admin.updateUserById(
+             editingCommerce.owner_id,
+             userUpdate
+         );
         
-         if (userError) {
-           toast({variant: 'destructive', title: 'Erreur Utilisateur', description: `Impossible de mettre à jour l'utilisateur associé: ${userError.message}`});
+         if (authUserError) {
+           toast({variant: 'destructive', title: 'Erreur Auth', description: `Impossible de mettre à jour l'utilisateur associé: ${authUserError.message}`});
            return;
          }
       }
@@ -157,30 +156,23 @@ export const SuperAdminScreen: React.FC = () => {
             return;
         }
 
-        // Step 1: Find or Create the user.
-        let ownerUser;
-        const { data: existingUser } = await supabase.from('users').select('*').eq('email', commerceData.owneremail).single();
-
-        if (existingUser) {
-            if (existingUser.commerce_id) {
-                toast({ variant: 'destructive', title: 'Erreur', description: 'Cet utilisateur est déjà propriétaire d\'un autre commerce.' });
-                return;
-            }
-            ownerUser = existingUser;
-        } else {
-            const { data: newUserData, error: newUserError } = await supabase.from('users').insert({
+        // Step 1: Create the Auth user.
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: commerceData.owneremail,
+            password: ownerPassword,
+            email_confirm: true, // Auto-confirm email
+            user_metadata: {
                 name: commerceData.ownername,
-                email: commerceData.owneremail,
-                password: ownerPassword,
-                role: 'Owner',
-            }).select().single();
+                role: 'Owner'
+            },
+        });
 
-            if (newUserError || !newUserData) {
-                toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer l'utilisateur propriétaire: ${newUserError?.message}` });
-                return;
-            }
-            ownerUser = newUserData;
+        if (authError || !authData.user) {
+            toast({ variant: 'destructive', title: 'Erreur Création Utilisateur', description: `Impossible de créer l'utilisateur: ${authError?.message}` });
+            return;
         }
+        const ownerUser = authData.user;
+
 
         // Step 2: Create the commerce and link the owner.
         const { data: newCommerceData, error: newCommerceError } = await supabase.from('commerces').insert({
@@ -196,27 +188,23 @@ export const SuperAdminScreen: React.FC = () => {
         }).select().single();
         
         if (newCommerceError || !newCommerceData) {
-            toast({ variant: 'destructive', title: 'Erreur', description: `Impossible de créer le commerce: ${newCommerceError?.message}` });
-            // If we created a new user, roll it back.
-            if (!existingUser) {
-              await supabase.from('users').delete().eq('id', ownerUser.id);
-            }
+            toast({ variant: 'destructive', title: 'Erreur Création Commerce', description: `Impossible de créer le commerce: ${newCommerceError?.message}` });
+            // Rollback: delete the newly created auth user
+            await supabaseAdmin.auth.admin.deleteUser(ownerUser.id);
             return;
         }
 
-        // Step 3: Update the user with the new commerce_id. THIS IS THE CRUCIAL STEP.
-        const { error: userUpdateError } = await supabase
+        // Step 3: Update the user's public profile in `users` table with the commerce_id
+        const { error: userProfileError } = await supabase
             .from('users')
             .update({ commerce_id: newCommerceData.id })
             .eq('id', ownerUser.id);
 
-        if (userUpdateError) {
-            toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer à l'utilisateur: ${userUpdateError.message}` });
+        if (userProfileError) {
+            toast({ variant: 'destructive', title: 'Erreur Association', description: `Commerce créé, mais impossible de l'associer au profil: ${userProfileError.message}` });
             // Rollback commerce and user creation
             await supabase.from('commerces').delete().eq('id', newCommerceData.id);
-            if (!existingUser) {
-              await supabase.from('users').delete().eq('id', ownerUser.id);
-            }
+            await supabaseAdmin.auth.admin.deleteUser(ownerUser.id);
             return;
         }
         
@@ -240,18 +228,22 @@ export const SuperAdminScreen: React.FC = () => {
   };
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
+    // First, delete from auth.users
+    if (commerce.owner_id) {
+        const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(commerce.owner_id);
+        if (userError) {
+            // Log the error but proceed, as the public user entry will be deleted by cascade
+            console.error("Could not delete auth user, but proceeding.", userError);
+            toast({variant: 'destructive', title: 'Attention', description: `Le commerce a été supprimé, mais son propriétaire (auth) n'a pas pu être supprimé: ${userError.message}`});
+        }
+    }
+
+    // Deleting from 'commerces' should cascade and delete related data if set up in DB.
+    // If not, we would need to delete from all related tables manually.
     const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
     if(commerceError) { 
         toast({variant: 'destructive', title: 'Erreur', description: `Impossible de supprimer le commerce: ${commerceError.message}`});
         return; 
-    }
-    
-    if (commerce.owner_id) {
-        const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
-        if (userError) {
-            console.error("Could not delete owner, but commerce was deleted.", userError)
-            toast({variant: 'destructive', title: 'Attention', description: 'Le commerce a été supprimé, mais son propriétaire n\'a pas pu être supprimé.'});
-        }
     }
     
     setCommerces(commerces.filter(c => c.id !== commerce.id));
@@ -621,6 +613,7 @@ export const SuperAdminScreen: React.FC = () => {
     
 
     
+
 
 
 

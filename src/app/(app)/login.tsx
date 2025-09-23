@@ -22,14 +22,13 @@ export const LoginScreen: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
-    
-    // This is a plaintext password check, which is insecure but matches the app's current logic.
-    if (userError || !userData || userData.password !== password) {
+    // Step 1: Sign in using Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (authError || !authData.user) {
         toast({
             variant: "destructive",
             title: "Erreur de connexion",
@@ -38,6 +37,24 @@ export const LoginScreen: React.FC = () => {
         setIsLoading(false);
         return;
     }
+
+    // Step 2: Get the user's profile from the 'users' table
+    const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+    
+    if (userError || !userData) {
+        toast({
+            variant: "destructive",
+            title: "Erreur de profil",
+            description: "Profil utilisateur introuvable après la connexion.",
+        });
+        setIsLoading(false);
+        return;
+    }
+
 
     if (userData.role === 'SuperAdmin') {
         setUser({
