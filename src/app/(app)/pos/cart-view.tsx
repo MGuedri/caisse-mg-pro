@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-// import { pdf } from '@react-pdf/renderer'; // Temporarily disabled due to build issues
 import { useApp, CartItem, Order } from '@/app/(app)/app-provider';
 import {
   Card, CardContent
@@ -14,9 +13,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  Plus, Minus, Trash2, CreditCard, Printer, ShoppingCart
+  Plus, Minus, Trash2, CreditCard, ShoppingCart
 } from 'lucide-react';
-// import { TicketPDF } from './ticket-pdf'; // Temporarily disabled
 
 export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
   const { cart, setCart, clients, includeVAT, setIncludeVAT, orders, setOrders, user } = useApp();
@@ -44,14 +42,14 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
   const change = paymentAmount ? Math.max(0, parseFloat(paymentAmount) - total) : 0;
 
   const handlePayment = () => {
-    if (cart.length === 0 || !user) return;
+    if (cart.length === 0 || !user || !user.commerceId) return;
     
     const newOrder: Order = {
       id: `${user.commerceId}_o_${Date.now()}`,
       items: [...cart],
       total,
       clientName: selectedClient,
-      timestamp: new Date().toLocaleString('fr-FR'),
+      timestamp: new Date().toISOString(),
       cashierId: user.id,
       commerce_id: user.commerceId,
     };
@@ -64,40 +62,6 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
     if (onClose) onClose();
   };
 
-    // --- PRINT TICKET BUTTON ---
-  const PrintTicketButton: React.FC<{ order: Order }> = ({ order }) => {
-    const printPDF = async () => {
-      alert("La fonctionnalité d'impression est en cours de développement.");
-      // try {
-      //   const blob = await pdf(<TicketPDF order={order} />).toBlob();
-      //   const url = URL.createObjectURL(blob);
-      //   const iframe = document.createElement('iframe');
-      //   iframe.style.display = 'none';
-      //   iframe.src = url;
-      //   document.body.appendChild(iframe);
-      //   
-      //   iframe.onload = () => {
-      //     if(!iframe.contentWindow) return;
-      //     iframe.contentWindow.focus();
-      //     iframe.contentWindow.print();
-      //     setTimeout(() => {
-      //       URL.revokeObjectURL(url);
-      //       document.body.removeChild(iframe);
-      //     }, 1000);
-      //   };
-      // } catch (error) {
-      //   console.error('Erreur impression:', error);
-      // }
-    };
-
-    return (
-      <Button onClick={printPDF} variant="outline" size="sm" className="gap-1">
-        <Printer className="h-4 w-4" />
-        Imprimer
-      </Button>
-    );
-  };
-  
   return (
     <div className="bg-gray-800 h-full p-6 flex flex-col">
        <div className="flex items-center justify-between mb-6">
@@ -238,10 +202,7 @@ export const CartView: React.FC<{onClose?: () => void}> = ({onClose}) => {
                   )}
                   
                 </div>
-                <DialogFooter className="!justify-between">
-                   <div className="flex-1">
-                      <PrintTicketButton order={{ id: Date.now().toString(), items: cart, total, clientName: selectedClient, timestamp: new Date().toLocaleString('fr-FR'), cashierId: user?.id || 'N/A', commerce_id: user?.commerceId || 'N/A'}} />
-                   </div>
+                <DialogFooter>
                     <Button 
                       variant="outline"
                       onClick={() => setIsPaymentOpen(false)}

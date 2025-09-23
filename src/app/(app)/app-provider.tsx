@@ -140,13 +140,13 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   
-  // Hold ALL data in memory
-  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
-  const [allClients, setAllClients] = useState<Client[]>(initialClients);
-  const [allEmployees, setAllEmployees] = useState<Employee[]>(initialEmployees);
-  const [allOrders, setAllOrders] = useState<Order[]>(initialOrders);
-  const [allExpenses, setAllExpenses] = useState<Expense[]>(initialExpenses);
-  const [commerces, setCommerces] = useState<Commerce[]>(initialCommerces);
+  // Hold ALL data in memory - loaded once
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allClients, setAllClients] = useState<Client[]>([]);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [commerces, setCommerces] = useState<Commerce[]>([]);
   
   // Data scoped to the current commerce view
   const [products, setProducts] = useState<Product[]>([]);
@@ -164,6 +164,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(null);
 
+  // Load initial data from static files. This runs only once.
+  useEffect(() => {
+    setAllProducts(initialProducts);
+    setAllClients(initialClients);
+    setAllEmployees(initialEmployees);
+    setAllOrders(initialOrders);
+    setAllExpenses(initialExpenses);
+    setCommerces(initialCommerces);
+  }, []);
+  
+
   // Load data based on user role and selected commerce
   useEffect(() => {
     if (!user) {
@@ -178,70 +189,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const commerceId = user.isSuperAdmin ? viewedCommerceId : user.commerceId;
 
-    if (user.isSuperAdmin) {
-       // Super Admin can see all commerces, but dashboard view is scoped
-      if (!viewedCommerceId && commerces.length > 0) {
-        setViewedCommerceId(commerces[0].id);
-      }
-    } else {
-       setViewedCommerceId(user.commerceId || null);
+    if (user.isSuperAdmin && !viewedCommerceId && commerces.length > 0) {
+      setViewedCommerceId(commerces[0].id);
+      return; // Data will be re-filtered in the next effect run
     }
     
     if (!commerceId) {
-      // If superadmin has no commerces to view, clear data
-      if(user.isSuperAdmin) {
-        setProducts([]);
-        setClients([]);
-        setEmployees([]);
-        setOrders([]);
-        setExpenses([]);
-      }
+      // Clear data if no commerce is selected (e.g. SuperAdmin with no commerces)
+      setProducts([]);
+      setClients([]);
+      setEmployees([]);
+      setOrders([]);
+      setExpenses([]);
       return;
     }
 
     const storageKey = `caisse_mp_data_${commerceId}`;
-    const savedData = localStorage.getItem(storageKey);
-    let data;
+    let dataFromStorage;
     try {
-        data = savedData ? JSON.parse(savedData) : {};
+        const savedData = localStorage.getItem(storageKey);
+        dataFromStorage = savedData ? JSON.parse(savedData) : null;
     } catch(e) {
         console.error("Error parsing localStorage", e);
-        data = {};
+        dataFromStorage = null;
     }
 
     const filterByCommerce = <T extends { commerce_id: string }>(items: T[]) => items.filter(item => item.commerce_id === commerceId);
-
-    setProducts(data.products || filterByCommerce(allProducts));
-    setClients(data.clients || filterByCommerce(allClients));
-    setEmployees(data.employees || filterByCommerce(allEmployees));
-    setOrders(data.orders || filterByCommerce(allOrders));
-    setExpenses(data.expenses || filterByCommerce(allExpenses));
-
-  }, [user, viewedCommerceId, commerces]);
-
-
-  // Save data to localStorage when it changes for the specific commerce
-  useEffect(() => {
-    if (!viewedCommerceId || !user) return;
     
-    // Determine which global dataset to update
-    const updateGlobalState = <T extends {commerce_id: string}>(
-      globalState: T[], 
-      localState: T[],
-      setGlobalState: React.Dispatch<React.SetStateAction<T[]>>
-    ) => {
-      // Remove old data for the current commerce
-      const otherCommercesData = globalState.filter(item => item.commerce_id !== viewedCommerceId);
-      // Add new data for the current commerce
-      setGlobalState([...otherCommercesData, ...localState]);
-    };
+    // Load from localStorage if available, otherwise from initial data filtered by commerce
+    setProducts(dataFromStorage?.products || filterByCommerce(allProducts));
+    setClients(dataFromStorage?.clients || filterByCommerce(allClients));
+    setEmployees(dataFromStorage?.employees || filterByCommerce(allEmployees));
+    setOrders(dataFromStorage?.orders || filterByCommerce(allOrders));
+    setExpenses(dataFromStorage?.expenses || filterByCommerce(allExpenses));
 
-    updateGlobalState(allProducts, products, setAllProducts);
-    updateGlobalState(allClients, clients, setAllClients);
-    updateGlobalState(allEmployees, employees, setAllEmployees);
-    updateGlobalState(allOrders, orders, setAllOrders);
-    updateGlobalState(allExpenses, expenses, setAllExpenses);
+  }, [user, viewedCommerceId, commerces, allProducts, allClients, allEmployees, allOrders, allExpenses]);
 
+
+  // Save scoped data to localStorage when it changes for the specific commerce
+  useEffect(() => {
+    if (!viewedCommerceId) return;
+    
     const storageKey = `caisse_mp_data_${viewedCommerceId}`;
     const dataToSave = {
         products,
@@ -251,10 +239,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         expenses,
         timestamp: new Date().toISOString()
     };
+
+    // Avoid saving empty initial state
     if (products.length > 0 || clients.length > 0 || employees.length > 0 || orders.length > 0 || expenses.length > 0) {
-        localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
     }
-  }, [products, clients, employees, orders, expenses, viewedCommerceId, user]);
+  }, [products, clients, employees, orders, expenses, viewedCommerceId]);
 
 
   // Network status detection
@@ -275,6 +265,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('syncing');
     try {
       await new Promise(res => setTimeout(res, 1500));
+      // In a real app, this is where you'd push local changes to a server (like Supabase)
+      // and pull server changes to update state.
       setSyncStatus('synced');
       setLastSync(new Date());
     } catch (error) {
