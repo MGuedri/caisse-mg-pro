@@ -8,7 +8,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  Wallet, DollarSign, Landmark, RefreshCw, AlertTriangle
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
+import {
+  Wallet, DollarSign, Landmark, RefreshCw, AlertTriangle, CheckCircle,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -138,9 +142,54 @@ export const SalariesTabContent: React.FC<SalariesTabContentProps> = ({ onPay, o
                             </div>
                              <div className="mt-4 flex justify-end gap-2">
                                 <Button size="sm" variant="outline" className="border-gray-600" onClick={() => onDetails(employee)}>Détails</Button>
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onPay(employee.id)} disabled={employee.balance <= 0}>
-                                    <DollarSign className="mr-1 h-4 w-4"/> Payer
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={employee.balance <= 0}>
+                                            <DollarSign className="mr-1 h-4 w-4"/> Payer
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="flex items-center gap-2">
+                                                <Wallet className="h-6 w-6 text-orange-400"/>
+                                                Confirmer le Paiement du Salaire
+                                            </AlertDialogTitle>
+                                            <AlertDialogDescription className="text-gray-300 pt-2">
+                                                Vous êtes sur le point de payer le salaire de <span className="font-bold text-white">{employee.name}</span>.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        
+                                        <div className="bg-gray-700/50 rounded-lg p-4 my-4 space-y-3 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">Salaire Brut</span>
+                                                <span className="font-medium text-white">{employee.salary.toFixed(3)} DT</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">Acompte déjà versé</span>
+                                                <span className="font-medium text-red-400">{employee.advance.toFixed(3)} DT</span>
+                                            </div>
+                                            <div className="border-t border-gray-600 my-2"></div>
+                                            <div className="flex justify-between font-bold text-base">
+                                                <span className="text-green-400">Solde à Payer</span>
+                                                <span className="text-green-400">{employee.balance.toFixed(3)} DT</span>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-xs text-gray-400">
+                                            Cette action marquera le salaire comme "Payé" et enregistrera une nouvelle dépense dans la catégorie "Charges Salaires".
+                                        </p>
+
+                                        <AlertDialogFooter className="mt-4">
+                                            <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                                                Annuler
+                                            </AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => onPay(employee.id)} className="bg-green-600 hover:bg-green-700">
+                                                <CheckCircle className="mr-2 h-4 w-4"/>
+                                                Confirmer le Paiement
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         </CardContent>
                     </Card>
