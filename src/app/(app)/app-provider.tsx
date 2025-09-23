@@ -1,10 +1,11 @@
+
 'use client';
 
 // ======================
 // DEPENDENCIES & IMPORTS
 // ======================
 import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode } from 'react';
-import { initialProducts, initialClients, initialEmployees } from '@/lib/initial-data';
+import { initialProducts, initialClients, initialEmployees, initialOrders, initialExpenses } from '@/lib/initial-data';
 
 // ======================
 // TYPES
@@ -140,18 +141,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setProducts(data.products || initialProducts);
         setClients(data.clients || initialClients);
         setEmployees(data.employees || initialEmployees);
-        setOrders(data.orders || []);
-        setExpenses(data.expenses || []);
+        setOrders(data.orders || initialOrders);
+        setExpenses(data.expenses || initialExpenses);
       } catch (e) {
         console.error("Erreur chargement localStorage", e);
         setProducts(initialProducts);
         setClients(initialClients);
         setEmployees(initialEmployees);
+        setOrders(initialOrders);
+        setExpenses(initialExpenses);
       }
     } else {
       setProducts(initialProducts);
       setClients(initialClients);
       setEmployees(initialEmployees);
+      setOrders(initialOrders);
+      setExpenses(initialExpenses);
     }
   }, []);
 
