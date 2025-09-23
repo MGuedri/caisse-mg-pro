@@ -21,7 +21,7 @@ export const Logo = ({ size = 'lg', className }: { size?: 'sm' | 'lg', className
         </span>
         <span className={cn(
           "font-black text-blue-500 absolute", // Blue G
-          isLarge ? 'text-5xl left-[52%]' : 'text-xl left-[52%]'
+          isLarge ? 'text-5xl left-[48%]' : 'text-xl left-[48%]'
         )}>
           G
         </span>
