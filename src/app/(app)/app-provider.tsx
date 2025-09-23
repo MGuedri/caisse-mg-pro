@@ -132,10 +132,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : false);
 
-  // Charger depuis localStorage au démarrage
+  // Charger depuis localStorage ou les données initiales au démarrage
   useEffect(() => {
+    // Forcer le chargement des données initiales pour le test
+    const forceReload = true; 
     const saved = localStorage.getItem('caisse_mp_data');
-    if (saved) {
+    
+    if (saved && !forceReload) {
       try {
         const data = JSON.parse(saved);
         setProducts(data.products || initialProducts);
