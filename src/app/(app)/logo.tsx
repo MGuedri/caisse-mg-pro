@@ -34,8 +34,8 @@ export const Logo = ({ size = 'lg', className }: { size?: 'sm' | 'lg', className
         </svg>
       </div>
       {isLarge && (
-        <span className="text-2xl text-white tracking-widest font-light -mt-4">
-          CAISSE
+        <span className="text-xl text-white tracking-widest font-light -mt-2">
+          Café Mon Plaisir
         </span>
       )}
     </div>
