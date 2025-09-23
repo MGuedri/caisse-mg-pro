@@ -29,15 +29,12 @@ import {
   Download, Upload,
   CreditCard,
   TrendingUp,
-  ChevronDown,
   DollarSign,
   ShoppingCart,
-  ArrowDown,
   User,
   Send,
   Loader2,
   Users,
-  Mail,
   FileText,
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
@@ -50,15 +47,11 @@ const ChiffreAffaireCard: React.FC = () => {
     const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
 
     return (
-        <Card className="bg-green-600/90 border-green-500 text-white relative overflow-hidden">
+        <Card className="bg-gray-800 border-gray-700 text-white relative overflow-hidden border-l-4 border-l-green-500">
              <CardContent className="p-6">
-                <DollarSign className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
-                <p className="text-sm text-green-100">Chiffre d'Affaire</p>
+                <DollarSign className="absolute -right-4 -bottom-4 h-24 w-24 text-white/5" />
+                <p className="text-sm text-gray-400">Chiffre d'Affaire</p>
                 <p className="text-3xl font-bold">{totalRevenue.toFixed(3)} DT</p>
-                <div className="flex items-center text-sm mt-2">
-                    <ArrowDown className="h-4 w-4 text-white/80 mr-1"/>
-                    <span className="text-white/80">-100.0% par rapport à hier</span>
-                </div>
              </CardContent>
         </Card>
     )
@@ -69,15 +62,11 @@ const NombreVentesCard: React.FC = () => {
     const totalSales = orders.length;
 
     return (
-        <Card className="bg-blue-600/90 border-blue-500 text-white relative overflow-hidden">
+        <Card className="bg-gray-800 border-gray-700 text-white relative overflow-hidden border-l-4 border-l-blue-500">
              <CardContent className="p-6">
-                <ShoppingCart className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
-                <p className="text-sm text-blue-100">Nombre de Ventes</p>
+                <ShoppingCart className="absolute -right-4 -bottom-4 h-24 w-24 text-white/5" />
+                <p className="text-sm text-gray-400">Nombre de Ventes</p>
                 <p className="text-3xl font-bold">{totalSales}</p>
-                <div className="flex items-center text-sm mt-2">
-                    <ArrowDown className="h-4 w-4 text-white/80 mr-1"/>
-                    <span className="text-white/80">-100.0% par rapport à hier</span>
-                </div>
              </CardContent>
         </Card>
     )
@@ -89,10 +78,10 @@ const NombreClientsCard: React.FC = () => {
     const clientCount = new Set(orders.map(o => o.clientName)).size;
 
     return (
-        <Card className="bg-purple-600/90 border-purple-500 text-white relative overflow-hidden">
+        <Card className="bg-gray-800 border-gray-700 text-white relative overflow-hidden border-l-4 border-l-purple-500">
              <CardContent className="p-6">
-                <Users className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
-                <p className="text-sm text-purple-100">Nombre de Clients</p>
+                <Users className="absolute -right-4 -bottom-4 h-24 w-24 text-white/5" />
+                <p className="text-sm text-gray-400">Nombre de Clients</p>
                 <p className="text-3xl font-bold">{clientCount}</p>
              </CardContent>
         </Card>
@@ -105,15 +94,11 @@ const TotalCreditCard: React.FC = () => {
     const totalCredit = clients.reduce((sum, client) => sum + client.credit, 0);
 
     return (
-        <Card className="bg-orange-600/90 border-orange-500 text-white relative overflow-hidden">
+        <Card className="bg-gray-800 border-gray-700 text-white relative overflow-hidden border-l-4 border-l-orange-500">
              <CardContent className="p-6">
-                <CreditCard className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
-                <p className="text-sm text-orange-100">Total Crédit</p>
+                <CreditCard className="absolute -right-4 -bottom-4 h-24 w-24 text-white/5" />
+                <p className="text-sm text-gray-400">Total Crédit</p>
                 <p className="text-3xl font-bold">{totalCredit.toFixed(3)} DT</p>
-                <div className="flex items-center text-sm mt-2">
-                    <ArrowDown className="h-4 w-4 text-white/80 mr-1"/>
-                    <span className="text-white/80">-100.0% par rapport à hier</span>
-                </div>
              </CardContent>
         </Card>
     )
@@ -381,8 +366,35 @@ export const DashboardScreen: React.FC = () => {
     if (!reportHtml || !recipientEmail) return;
 
     const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-    const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
-    window.location.href = mailtoLink;
+    // The body is HTML, so we need to encode it properly for a mailto link.
+    // However, many clients have limits on URL length. A server-side email service would be more robust.
+    // For this client-side implementation, we'll try to make it work.
+    const body = `
+        <html>
+        <head>
+        <style>
+          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; }
+          .content { padding: 20px; }
+        </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="content">
+              ${reportHtml}
+            </div>
+          </div>
+        </body>
+        </html>
+    `;
+    const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    try {
+        window.location.href = mailtoLink;
+    } catch(e) {
+        console.error("Could not open mailto link, it might be too long.", e);
+        alert("Erreur : Le rapport est trop volumineux pour être envoyé par e-mail de cette manière. Veuillez essayer avec moins de données.");
+    }
     
     setIsReportDialogVisible(false);
   };
@@ -485,4 +497,3 @@ export const DashboardScreen: React.FC = () => {
     </div>
   );
 };
-    

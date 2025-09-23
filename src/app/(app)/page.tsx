@@ -16,11 +16,9 @@ import {
   LogOut,
   User,
   Building,
-  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
-import Image from 'next/image'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
@@ -130,7 +128,7 @@ const MainApp: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto h-[calc(100vh-65px)]">
         {currentView === 'pos' && <POSScreen />}
         {currentView === 'dashboard' && <DashboardScreen />}
         {currentView === 'products' && <InventoryScreen />}
