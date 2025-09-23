@@ -132,7 +132,6 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onOpenChange
                     <Input type="number" placeholder="Acompte" value={formData.advance || 0} onChange={(e) => setFormData(p => ({ ...p, advance: parseFloat(e.target.value) || 0 }))} className="bg-gray-700 border-gray-600" />
                     <Input placeholder="Date d'entrée (JJ/MM/AAAA)" value={formData.joinDate || ''} onChange={(e) => setFormData(p => ({ ...p, joinDate: e.target.value }))} className="bg-gray-700 border-gray-600" />
                     <Input placeholder="Horaire (ex: 10:00 - 18:00)" value={formData.schedule || ''} onChange={(e) => setFormData(p => ({ ...p, schedule: e.target.value }))} className="bg-gray-700 border-gray-600" />
-                    <Input placeholder="URL Avatar" value={formData.avatar || ''} onChange={(e) => setFormData(p => ({ ...p, avatar: e.target.value }))} className="bg-gray-700 border-gray-600 col-span-2" />
                     
                     <div className="col-span-2">
                         <Label>Jours de travail</Label>

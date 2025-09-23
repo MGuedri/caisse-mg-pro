@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { useApp, Employee } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
@@ -11,6 +10,16 @@ import { Badge } from "@/components/ui/badge"
 import {
   Wallet, DollarSign, Landmark, RefreshCw, AlertTriangle
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+const getInitials = (name: string) => {
+    if (!name) return '';
+    const names = name.split(' ');
+    if (names.length > 1) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+};
 
 
 export const SalariesTabContent: React.FC = () => {
@@ -97,7 +106,10 @@ export const SalariesTabContent: React.FC = () => {
                         <CardContent className="p-4">
                             <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <Image src={employee.avatar} alt={employee.name} width={48} height={48} className="rounded-full" />
+                                    <Avatar className="h-12 w-12">
+                                        <AvatarImage src={employee.avatar} alt={employee.name} />
+                                        <AvatarFallback>{getInitials(employee.name)}</AvatarFallback>
+                                    </Avatar>
                                     <div>
                                         <p className="font-bold text-white">{employee.name}</p>
                                         <p className="text-sm text-gray-400">{employee.role}</p>
