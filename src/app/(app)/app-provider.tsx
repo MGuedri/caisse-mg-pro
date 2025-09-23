@@ -6,6 +6,8 @@
 // ======================
 import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode } from 'react';
 import { initialProducts, initialClients, initialEmployees, initialOrders, initialExpenses } from '@/lib/initial-data';
+import { initialCommerces } from '@/lib/commerces';
+import type { Commerce } from '@/lib/commerces';
 
 // ======================
 // TYPES
@@ -76,8 +78,8 @@ export interface AppUser {
   email: string;
   role: 'SuperAdmin' | 'Owner' | 'Caissier';
   isSuperAdmin: boolean;
-  commerceId: string;
-  commerceName: string;
+  commerceId?: string;
+  commerceName?: string;
   ownerEmail?: string;
 }
 
@@ -99,6 +101,8 @@ type AppContextType = {
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   expenses: Expense[];
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
+  commerces: Commerce[];
+  setCommerces: React.Dispatch<React.SetStateAction<Commerce[]>>;
   currentView: string;
   setCurrentView: (view: string) => void;
   includeVAT: boolean;
@@ -128,6 +132,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [commerces, setCommerces] = useState<Commerce[]>([]);
   const [currentView, setCurrentView] = useState<string>('login');
   const [includeVAT, setIncludeVAT] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'synced' | 'error'>('offline');
@@ -144,10 +149,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setEmployees([]);
       setOrders([]);
       setExpenses([]);
+      setCommerces([]);
       return;
     };
     
+    // For SuperAdmin, load all data from all commerces
+    if (user.isSuperAdmin) {
+      setProducts(initialProducts);
+      setClients(initialClients);
+      setEmployees(initialEmployees);
+      setOrders(initialOrders);
+      setExpenses(initialExpenses);
+      setCommerces(initialCommerces);
+      return;
+    }
+
     const commerceId = user.commerceId;
+    if (!commerceId) return;
+
     const storageKey = getLocalStorageKey(commerceId);
     const saved = localStorage.getItem(storageKey);
 
@@ -180,7 +199,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Sauvegarde auto dans localStorage quand les données changent
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.isSuperAdmin || !user.commerceId) return;
     const storageKey = getLocalStorageKey(user.commerceId);
     const data = {
       products,
@@ -215,7 +234,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('syncing');
 
     try {
-      console.log(`Simulating Sync for ${user.commerceName}... Products:`, products.length, "Orders:", orders.length);
+      console.log(`Simulating Sync for ${user.name}...`);
       
       await new Promise(res => setTimeout(res, 1500));
 
@@ -250,6 +269,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     employees, setEmployees,
     orders, setOrders,
     expenses, setExpenses,
+    commerces, setCommerces,
     currentView, setCurrentView,
     includeVAT, setIncludeVAT,
     syncStatus, lastSync, syncNow, isOnline

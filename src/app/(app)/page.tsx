@@ -7,6 +7,7 @@ import { POSScreen } from '@/app/(app)/pos/pos-screen';
 import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
 import { ManagementScreen } from '@/app/(app)/management/management-screen';
+import { SuperAdminScreen } from '@/app/(app)/superadmin/superadmin-screen';
 import {
   ShoppingCart,
   LayoutGrid,
@@ -15,6 +16,7 @@ import {
   LogOut,
   User,
   Building,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
@@ -30,10 +32,10 @@ const MainApp: React.FC = () => {
   const { user, setUser, currentView, setCurrentView } = useApp();
 
   const navigation = [
-    { id: 'pos', label: 'Caisse', icon: ShoppingCart, allowedRoles: ['SuperAdmin', 'Owner', 'Caissier'] },
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid, allowedRoles: ['SuperAdmin', 'Owner'] },
-    { id: 'products', label: 'Inventaire', icon: Package, allowedRoles: ['SuperAdmin', 'Owner'] },
-    { id: 'management', label: 'Gestion', icon: Users, allowedRoles: ['SuperAdmin', 'Owner'] },
+    { id: 'pos', label: 'Caisse', icon: ShoppingCart, allowedRoles: ['Owner', 'Caissier'] },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid, allowedRoles: ['Owner'] },
+    { id: 'products', label: 'Inventaire', icon: Package, allowedRoles: ['Owner'] },
+    { id: 'management', label: 'Gestion', icon: Users, allowedRoles: ['Owner'] },
   ];
 
   const handleLogout = () => {
@@ -44,6 +46,12 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     if (!user) {
       setCurrentView('login');
+    } else {
+      if (user.isSuperAdmin) {
+        setCurrentView('superadmin');
+      } else if (currentView === 'login' || currentView === 'superadmin') {
+        setCurrentView('pos');
+      }
     }
   }, [user, setCurrentView]);
 
@@ -51,6 +59,10 @@ const MainApp: React.FC = () => {
     return <LoginScreen />;
   }
   
+  if (user.isSuperAdmin) {
+     return <SuperAdminScreen />;
+  }
+
   const visibleNav = navigation.filter(item => item.allowedRoles.includes(user.role));
 
   return (
@@ -95,10 +107,10 @@ const MainApp: React.FC = () => {
                       <User className="h-4 w-4 text-gray-400"/>
                       <p className="text-sm font-medium leading-none">{user.name}</p>
                     </div>
-                     <div className="flex items-center gap-2">
+                     {user.commerceName && <div className="flex items-center gap-2">
                        <Building className="h-4 w-4 text-gray-400"/>
                        <p className="text-xs leading-none text-gray-400">{user.commerceName}</p>
-                    </div>
+                    </div>}
                      <div className="flex items-center gap-2">
                        <p className="text-xs leading-none text-gray-400">{user.email}</p>
                     </div>

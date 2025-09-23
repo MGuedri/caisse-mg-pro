@@ -70,12 +70,12 @@ export const ManagementScreen: React.FC = () => {
     setIsClientModalOpen(true);
   };
   const handleSaveClient = (clientData: Partial<Client>) => {
-    if (!user) return;
+    if (!user || !user.commerceId) return;
     if (editingClient) {
       setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...clientData } as Client : c));
     } else {
       const newId = `${user.commerceId}_c_${Date.now()}`;
-      setClients([...clients, { ...clientData, id: newId, credit: clientData.credit || 0, isVip: clientData.isVip || false, avatar: `https://i.pravatar.cc/150?u=${newId}`, commerce_id: user.commerceId } as Client]);
+      setClients([...clients, { ...clientData, id: newId, credit: clientData.credit || 0, isVip: clientData.isVip || false, commerce_id: user.commerceId } as Client]);
     }
     setIsClientModalOpen(false);
   };
@@ -89,12 +89,12 @@ export const ManagementScreen: React.FC = () => {
     setIsEmployeeModalOpen(true);
   }
   const handleSaveEmployee = (employeeData: Partial<Employee>) => {
-    if (!user) return;
+    if (!user || !user.commerceId) return;
     if (editingEmployee) {
       setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...employeeData, balance: (employeeData.salary || e.salary) - (employeeData.advance || e.advance) } as Employee : e));
     } else {
       const newId = `${user.commerceId}_e_${Date.now()}`;
-      const newEmployee = { ...employeeData, id: newId, avatar: `https://i.pravatar.cc/150?u=${newId}`, commerce_id: user.commerceId } as Employee;
+      const newEmployee = { ...employeeData, id: newId, commerce_id: user.commerceId } as Employee;
       newEmployee.balance = (newEmployee.salary || 0) - (newEmployee.advance || 0);
       setEmployees([...employees, newEmployee]);
     }
@@ -105,14 +105,14 @@ export const ManagementScreen: React.FC = () => {
   }
 
   const handlePaySalary = (employeeId: string) => {
-    if (!user) return;
+    if (!user || !user.commerceId) return;
     const employee = employees.find(e => e.id === employeeId);
     if (!employee || employee.balance <= 0) return;
 
     const newExpense: Expense = {
       id: `exp_sal_${user.commerceId}_${Date.now()}`,
       description: `Paiement salaire: ${employee.name}`,
-      amount: employee.balance, // Pay the remaining balance
+      amount: employee.salary,
       category: 'Charges Salaires',
       date: new Date().toLocaleDateString('fr-CA'),
       commerce_id: user.commerceId,
@@ -129,7 +129,7 @@ export const ManagementScreen: React.FC = () => {
     setIsExpenseModalOpen(true);
   }
   const handleSaveExpense = (expenseData: Partial<Expense>) => {
-    if(!user) return;
+    if(!user || !user.commerceId) return;
     if (editingExpense) {
       setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...e, ...expenseData } as Expense : e));
     } else {
@@ -217,7 +217,7 @@ export const ManagementScreen: React.FC = () => {
                           <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
                             <AlertDialogHeader>
                               <AlertDialogTitle>Supprimer {client.name} ?</AlertDialogTitle>
-                              <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                              <AlertDialogDescription className="text-gray-400">Cette action est irréversible.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="border-gray-600 text-gray-300">Annuler</AlertDialogCancel>
@@ -299,7 +299,7 @@ export const ManagementScreen: React.FC = () => {
                               <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Supprimer {employee.name} ?</AlertDialogTitle>
-                                  <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                                  <AlertDialogDescription className="text-gray-400">Cette action est irréversible.</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel className="border-gray-600 text-gray-300">Annuler</AlertDialogCancel>
@@ -413,7 +413,7 @@ export const ManagementScreen: React.FC = () => {
                           <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
                             <AlertDialogHeader>
                               <AlertDialogTitle>Supprimer cette dépense ?</AlertDialogTitle>
-                              <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                              <AlertDialogDescription className="text-gray-400">Cette action est irréversible.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="border-gray-600 text-gray-300">Annuler</AlertDialogCancel>

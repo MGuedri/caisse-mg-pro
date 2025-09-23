@@ -11,18 +11,28 @@ import { Logo } from '@/app/(app)/logo';
 
 export const LoginScreen: React.FC = () => {
   const { setUser, setCurrentView } = useApp();
-  const [email, setEmail] = useState('mg.06sbz@gmail.com');
+  const [email, setEmail] = useState('onz@live.fr');
   const [password, setPassword] = useState('06034434mg');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'mg.06sbz@gmail.com' && password === '06034434mg') {
+    if (email === 'onz@live.fr' && password === '06034434mg') {
+      setUser({ 
+        id: 'sa1', 
+        name: 'Super Admin', 
+        email, 
+        role: 'SuperAdmin',
+        isSuperAdmin: true,
+      });
+      setCurrentView('superadmin');
+    }
+    else if (email === 'mg.06sbz@gmail.com' && password === '06034434mg') {
       setUser({ 
         id: '1', 
         name: 'Issam Bayaoui', 
         email, 
-        role: 'SuperAdmin',
-        isSuperAdmin: true,
+        role: 'Owner',
+        isSuperAdmin: false,
         commerceId: 'mon_plaisir',
         commerceName: 'Café Mon Plaisir',
         ownerEmail: 'mg.06sbz@gmail.com',

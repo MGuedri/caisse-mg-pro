@@ -34,6 +34,7 @@ const mp_orders: Order[] = [
 ];
 const mp_expenses: Expense[] = [
   { id: 'mp_ex1', description: 'Facture STEG', amount: 185.50, category: 'Services Publics', date: '10/07/2023', commerce_id: 'mon_plaisir' },
+  { id: 'mp_ex2', description: 'Paiement salaire: Mourad', amount: 700, category: 'Charges Salaires', date: '01/08/2023', commerce_id: 'mon_plaisir' },
 ];
 
 // ===================================
