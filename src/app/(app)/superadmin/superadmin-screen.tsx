@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -18,33 +19,44 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog"
 import {
   LogOut,
-  User,
   Shield,
-  Building,
+  LayoutGrid,
   Users,
   DollarSign,
   Plus,
   MoreVertical,
   Edit,
   Trash2,
+  Settings,
+  Building,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CommerceForm } from './superadmin-forms';
 import { Logo } from '../logo';
+import { DashboardScreen } from '../dashboard/dashboard-screen';
 
 export const SuperAdminScreen: React.FC = () => {
   const { 
     user, setUser, setCurrentView,
     commerces, setCommerces,
-    clients, orders
+    allClients, allOrders,
+    viewedCommerceId, setViewedCommerceId
   } = useApp();
 
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
 
@@ -54,13 +66,13 @@ export const SuperAdminScreen: React.FC = () => {
   };
 
   const platformStats = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0);
     return {
       commerceCount: commerces.length,
-      clientCount: clients.length,
+      clientCount: allClients.length,
       totalRevenue: totalRevenue,
     }
-  }, [commerces, clients, orders]);
+  }, [commerces, allClients, allOrders]);
 
   const handleOpenModal = (commerce: Commerce | null = null) => {
     setEditingCommerce(commerce);
@@ -87,8 +99,10 @@ export const SuperAdminScreen: React.FC = () => {
 
   const handleDeleteCommerce = (commerceId: string) => {
     setCommerces(commerces.filter(c => c.id !== commerceId));
+    if (viewedCommerceId === commerceId) {
+      setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerceId)!.id : null);
+    }
   };
-
 
   const getSubscriptionBadge = (status: Commerce['subscription']) => {
     switch (status) {
@@ -99,7 +113,9 @@ export const SuperAdminScreen: React.FC = () => {
     }
   };
   
-  if (!user) return null;
+  if (!user || !user.isSuperAdmin) return null;
+  
+  const viewedCommerceName = commerces.find(c => c.id === viewedCommerceId)?.name || 'Aucun commerce sélectionné';
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -108,7 +124,21 @@ export const SuperAdminScreen: React.FC = () => {
           <Logo size="sm" />
           <div className="flex items-center gap-2 text-orange-400">
             <Shield className="h-5 w-5" />
-            <h1 className="text-xl font-bold">Tableau de Bord Super Admin</h1>
+            <h1 className="text-xl font-bold hidden md:block">Super Admin</h1>
+          </div>
+          
+          <div className="w-px h-6 bg-gray-600 mx-4"></div>
+
+          <div className="flex items-center gap-2">
+            <Building className="h-5 w-5 text-gray-400" />
+            <Select value={viewedCommerceId || ''} onValueChange={(id) => setViewedCommerceId(id)}>
+              <SelectTrigger className="w-[200px] bg-gray-700 border-gray-600">
+                <SelectValue placeholder="Sélectionner un commerce..." />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-700 border-gray-600 text-white">
+                {commerces.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -138,113 +168,137 @@ export const SuperAdminScreen: React.FC = () => {
         </div>
       </header>
 
-      <main className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg text-gray-300">Commerces Actifs</CardTitle>
-              <Building className="h-6 w-6 text-blue-400"/>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-white">{platformStats.commerceCount}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg text-gray-300">Clients Totaux</CardTitle>
-              <Users className="h-6 w-6 text-purple-400"/>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-white">{platformStats.clientCount}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg text-gray-300">Revenu Total (estimé)</CardTitle>
-              <DollarSign className="h-6 w-6 text-green-400"/>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-white">{platformStats.totalRevenue.toFixed(3)} <span className="text-xl">DT</span></p>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="text-white">Gestion des Commerces</CardTitle>
-                    <CardDescription className="text-gray-400">Ajouter, modifier ou supprimer des commerces.</CardDescription>
+      <main className="p-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="bg-gray-800 p-1 mb-6">
+                <TabsTrigger value="dashboard" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
+                    <LayoutGrid className="h-4 w-4"/> Tableau de Bord
+                </TabsTrigger>
+                <TabsTrigger value="management" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
+                    <Settings className="h-4 w-4"/> Gestion Commerces
+                </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="dashboard">
+              {viewedCommerceId ? (
+                <DashboardScreen />
+              ) : (
+                <div className="text-center py-20 text-gray-500">
+                  <p>Veuillez sélectionner un commerce pour afficher son tableau de bord.</p>
                 </div>
-                <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600">
-                    <Plus className="mr-2 h-4 w-4"/>
-                    Ajouter Commerce
-                </Button>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow className="border-gray-700 hover:bg-gray-800">
-                            <TableHead className="text-white">Nom du Commerce</TableHead>
-                            <TableHead className="text-white">Propriétaire</TableHead>
-                            <TableHead className="text-white">Email</TableHead>
-                            <TableHead className="text-white">Abonnement</TableHead>
-                            <TableHead className="text-white">Date Création</TableHead>
-                            <TableHead className="text-right w-[50px]"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {commerces.map((commerce) => (
-                            <TableRow key={commerce.id} className="border-gray-700 hover:bg-gray-700/50">
-                                <TableCell className="font-medium text-white">{commerce.name}</TableCell>
-                                <TableCell className="text-gray-300">{commerce.ownerName}</TableCell>
-                                <TableCell className="text-gray-300">{commerce.ownerEmail}</TableCell>
-                                <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
-                                <TableCell className="text-gray-300">{commerce.creationDate}</TableCell>
-                                <TableCell className="text-right">
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">Open menu</span>
-                                            <MoreVertical className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
-                                          <DropdownMenuItem onClick={() => handleOpenModal(commerce)} className="cursor-pointer">
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Modifier
-                                          </DropdownMenuItem>
-                                          <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-400 focus:text-red-400 focus:!bg-red-900/50">
-                                                  <Trash2 className="mr-2 h-4 w-4" />
-                                                  Supprimer
-                                               </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
-                                                    <AlertDialogDescription className="text-gray-400">
-                                                        Cette action est irréversible. Toutes les données associées à ce commerce seront perdues.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel className="border-gray-600">Annuler</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteCommerce(commerce.id)} className="bg-red-600 hover:bg-red-700">
-                                                        Confirmer la Suppression
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                          </AlertDialog>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+              )}
+            </TabsContent>
 
+            <TabsContent value="management">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-lg text-gray-300">Commerces Actifs</CardTitle>
+                      <Building className="h-6 w-6 text-blue-400"/>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-4xl font-bold text-white">{platformStats.commerceCount}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-lg text-gray-300">Clients Totaux</CardTitle>
+                      <Users className="h-6 w-6 text-purple-400"/>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-4xl font-bold text-white">{platformStats.clientCount}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-lg text-gray-300">Revenu Total (estimé)</CardTitle>
+                      <DollarSign className="h-6 w-6 text-green-400"/>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-4xl font-bold text-white">{platformStats.totalRevenue.toFixed(3)} <span className="text-xl">DT</span></p>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle className="text-white">Gestion des Commerces</CardTitle>
+                            <CardDescription className="text-gray-400">Ajouter, modifier ou supprimer des commerces.</CardDescription>
+                        </div>
+                        <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600">
+                            <Plus className="mr-2 h-4 w-4"/>
+                            Ajouter Commerce
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-gray-700 hover:bg-gray-800">
+                                    <TableHead className="text-white">Nom du Commerce</TableHead>
+                                    <TableHead className="text-white">Propriétaire</TableHead>
+                                    <TableHead className="text-white">Email</TableHead>
+                                    <TableHead className="text-white">Abonnement</TableHead>
+                                    <TableHead className="text-white">Date Création</TableHead>
+                                    <TableHead className="text-right w-[50px]"></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {commerces.map((commerce) => (
+                                    <TableRow key={commerce.id} className="border-gray-700 hover:bg-gray-700/50">
+                                        <TableCell className="font-medium text-white">{commerce.name}</TableCell>
+                                        <TableCell className="text-gray-300">{commerce.ownerName}</TableCell>
+                                        <TableCell className="text-gray-300">{commerce.ownerEmail}</TableCell>
+                                        <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
+                                        <TableCell className="text-gray-300">{commerce.creationDate}</TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
+                                                <DropdownMenuItem onClick={() => handleOpenModal(commerce)} className="cursor-pointer">
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Modifier
+                                                </DropdownMenuItem>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-400 focus:text-red-400 focus:!bg-red-900/50">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Supprimer
+                                                    </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-gray-400">
+                                                                Cette action est irréversible. Toutes les données associées à ce commerce seront perdues.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel className="border-gray-600">Annuler</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteCommerce(commerce.id)} className="bg-red-600 hover:bg-red-700">
+                                                                Confirmer la Suppression
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+        </Tabs>
       </main>
 
       <CommerceForm 

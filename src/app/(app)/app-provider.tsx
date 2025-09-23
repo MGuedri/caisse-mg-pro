@@ -89,6 +89,15 @@ export interface AppUser {
 type AppContextType = {
   user: AppUser | null;
   setUser: (user: AppUser | null) => void;
+  
+  // All data for SuperAdmin
+  allProducts: Product[];
+  allClients: Client[];
+  allEmployees: Employee[];
+  allOrders: Order[];
+  allExpenses: Expense[];
+
+  // Filtered/scoped data for views
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   cart: CartItem[];
@@ -103,6 +112,10 @@ type AppContextType = {
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   commerces: Commerce[];
   setCommerces: React.Dispatch<React.SetStateAction<Commerce[]>>;
+  
+  viewedCommerceId: string | null;
+  setViewedCommerceId: (id: string | null) => void;
+
   currentView: string;
   setCurrentView: (view: string) => void;
   includeVAT: boolean;
@@ -126,22 +139,32 @@ export const useApp = () => {
 // ======================
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
+  
+  // Hold ALL data in memory
+  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
+  const [allClients, setAllClients] = useState<Client[]>(initialClients);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>(initialEmployees);
+  const [allOrders, setAllOrders] = useState<Order[]>(initialOrders);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>(initialExpenses);
+  const [commerces, setCommerces] = useState<Commerce[]>(initialCommerces);
+  
+  // Data scoped to the current commerce view
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [commerces, setCommerces] = useState<Commerce[]>([]);
+
   const [currentView, setCurrentView] = useState<string>('login');
   const [includeVAT, setIncludeVAT] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'synced' | 'error'>('offline');
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : false);
 
-  const getLocalStorageKey = (commerceId: string) => `caisse_mp_data_${commerceId}`;
+  const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(null);
 
-  // Load data when user logs in
+  // Load data based on user role and selected commerce
   useEffect(() => {
     if (!user) {
       setProducts([]);
@@ -149,73 +172,92 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setEmployees([]);
       setOrders([]);
       setExpenses([]);
-      setCommerces([]);
-      return;
-    };
-    
-    // For SuperAdmin, load all data from all commerces
-    if (user.isSuperAdmin) {
-      setProducts(initialProducts);
-      setClients(initialClients);
-      setEmployees(initialEmployees);
-      setOrders(initialOrders);
-      setExpenses(initialExpenses);
-      setCommerces(initialCommerces);
+      setViewedCommerceId(null);
       return;
     }
 
-    const commerceId = user.commerceId;
-    if (!commerceId) return;
+    const commerceId = user.isSuperAdmin ? viewedCommerceId : user.commerceId;
 
-    const storageKey = getLocalStorageKey(commerceId);
-    const saved = localStorage.getItem(storageKey);
-
-    const filterByCommerce = <T extends { commerce_id: string }>(data: T[]) => data.filter(item => item.commerce_id === commerceId);
-    
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        setProducts(data.products || filterByCommerce(initialProducts));
-        setClients(data.clients || filterByCommerce(initialClients));
-        setEmployees(data.employees || filterByCommerce(initialEmployees));
-        setOrders(data.orders || filterByCommerce(initialOrders));
-        setExpenses(data.expenses || filterByCommerce(initialExpenses));
-      } catch (e) {
-        console.error("Erreur chargement localStorage", e);
-        setProducts(filterByCommerce(initialProducts));
-        setClients(filterByCommerce(initialClients));
-        setEmployees(filterByCommerce(initialEmployees));
-        setOrders(filterByCommerce(initialOrders));
-        setExpenses(filterByCommerce(initialExpenses));
+    if (user.isSuperAdmin) {
+       // Super Admin can see all commerces, but dashboard view is scoped
+      if (!viewedCommerceId && commerces.length > 0) {
+        setViewedCommerceId(commerces[0].id);
       }
     } else {
-      setProducts(filterByCommerce(initialProducts));
-      setClients(filterByCommerce(initialClients));
-      setEmployees(filterByCommerce(initialEmployees));
-      setOrders(filterByCommerce(initialOrders));
-      setExpenses(filterByCommerce(initialExpenses));
+       setViewedCommerceId(user.commerceId || null);
     }
-  }, [user]);
+    
+    if (!commerceId) {
+      // If superadmin has no commerces to view, clear data
+      if(user.isSuperAdmin) {
+        setProducts([]);
+        setClients([]);
+        setEmployees([]);
+        setOrders([]);
+        setExpenses([]);
+      }
+      return;
+    }
 
-  // Sauvegarde auto dans localStorage quand les données changent
+    const storageKey = `caisse_mp_data_${commerceId}`;
+    const savedData = localStorage.getItem(storageKey);
+    let data;
+    try {
+        data = savedData ? JSON.parse(savedData) : {};
+    } catch(e) {
+        console.error("Error parsing localStorage", e);
+        data = {};
+    }
+
+    const filterByCommerce = <T extends { commerce_id: string }>(items: T[]) => items.filter(item => item.commerce_id === commerceId);
+
+    setProducts(data.products || filterByCommerce(allProducts));
+    setClients(data.clients || filterByCommerce(allClients));
+    setEmployees(data.employees || filterByCommerce(allEmployees));
+    setOrders(data.orders || filterByCommerce(allOrders));
+    setExpenses(data.expenses || filterByCommerce(allExpenses));
+
+  }, [user, viewedCommerceId, commerces]);
+
+
+  // Save data to localStorage when it changes for the specific commerce
   useEffect(() => {
-    if (!user || user.isSuperAdmin || !user.commerceId) return;
-    const storageKey = getLocalStorageKey(user.commerceId);
-    const data = {
-      products,
-      clients,
-      employees,
-      orders,
-      expenses,
-      timestamp: new Date().toISOString()
+    if (!viewedCommerceId || !user) return;
+    
+    // Determine which global dataset to update
+    const updateGlobalState = <T extends {commerce_id: string}>(
+      globalState: T[], 
+      localState: T[],
+      setGlobalState: React.Dispatch<React.SetStateAction<T[]>>
+    ) => {
+      // Remove old data for the current commerce
+      const otherCommercesData = globalState.filter(item => item.commerce_id !== viewedCommerceId);
+      // Add new data for the current commerce
+      setGlobalState([...otherCommercesData, ...localState]);
     };
-    // Only save if there's data to save, to avoid overwriting on logout
-    if (products.length > 0 || clients.length > 0 || employees.length > 0 || orders.length > 0 || expenses.length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify(data));
-    }
-  }, [products, clients, employees, orders, expenses, user]);
 
-  // Détecter état réseau
+    updateGlobalState(allProducts, products, setAllProducts);
+    updateGlobalState(allClients, clients, setAllClients);
+    updateGlobalState(allEmployees, employees, setAllEmployees);
+    updateGlobalState(allOrders, orders, setAllOrders);
+    updateGlobalState(allExpenses, expenses, setAllExpenses);
+
+    const storageKey = `caisse_mp_data_${viewedCommerceId}`;
+    const dataToSave = {
+        products,
+        clients,
+        employees,
+        orders,
+        expenses,
+        timestamp: new Date().toISOString()
+    };
+    if (products.length > 0 || clients.length > 0 || employees.length > 0 || orders.length > 0 || expenses.length > 0) {
+        localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    }
+  }, [products, clients, employees, orders, expenses, viewedCommerceId, user]);
+
+
+  // Network status detection
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -227,42 +269,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
-  // Synchroniser avec service externe (simulation)
+  // Sync simulation
   const syncNow = useCallback(async () => {
     if (!isOnline || !user) return;
-
     setSyncStatus('syncing');
-
     try {
-      console.log(`Simulating Sync for ${user.name}...`);
-      
       await new Promise(res => setTimeout(res, 1500));
-
       setSyncStatus('synced');
       setLastSync(new Date());
     } catch (error) {
       console.error('Erreur sync:', error);
       setSyncStatus('error');
     }
-  }, [products, orders, isOnline, user]);
+  }, [isOnline, user]);
 
-  // Auto-sync
-  useEffect(() => {
-    if (isOnline && user) {
-      syncNow();
-    }
-  }, [isOnline, user, syncNow]);
-
-  // Sync périodique
+  // Auto and periodic sync
   useEffect(() => {
     const interval = setInterval(() => {
       if (isOnline && user) syncNow();
-    }, 60000); // Sync every 60 seconds
+    }, 60000);
+    if(isOnline && user) syncNow();
     return () => clearInterval(interval);
-  }, [syncNow, isOnline, user]);
+  }, [isOnline, user, syncNow]);
+
 
   const value: AppContextType = {
     user, setUser,
+    allProducts, allClients, allEmployees, allOrders, allExpenses,
     products, setProducts,
     cart, setCart,
     clients, setClients,
@@ -270,6 +303,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     orders, setOrders,
     expenses, setExpenses,
     commerces, setCommerces,
+    viewedCommerceId, setViewedCommerceId,
     currentView, setCurrentView,
     includeVAT, setIncludeVAT,
     syncStatus, lastSync, syncNow, isOnline
