@@ -8,6 +8,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion"
+import {
   Download, Upload,
   CreditCard,
   TrendingUp,
@@ -15,6 +21,7 @@ import {
   DollarSign,
   ShoppingCart,
   ArrowDown,
+  User,
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
 
@@ -119,8 +126,8 @@ const PeakHourCard: React.FC = () => (
 );
 
 const SalesHistoryCard: React.FC = () => {
-    const { orders } = useApp();
-    const todayOrders = orders.slice(0, 2); // Mocking today's orders
+    const { orders, user } = useApp();
+    const todayOrders = orders; // Using all orders for now
 
     return (
         <Card className="bg-gray-800 border-gray-700">
@@ -131,23 +138,52 @@ const SalesHistoryCard: React.FC = () => {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
+                <Accordion type="single" collapsible className="w-full">
                     {todayOrders.map(order => (
-                        <div key={order.id} className="flex items-center justify-between">
-                            <div>
-                                <p className="text-white font-medium">{order.clientName}</p>
-                                <p className="text-gray-400 text-sm">#{order.id.slice(-6)}</p>
-                            </div>
-                            <div className="text-right flex items-center gap-2">
-                                <div>
-                                    <p className="text-gray-400 text-sm">{new Date(order.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
-                                    <p className="text-orange-400 font-bold">{order.total.toFixed(3)} DT</p>
+                        <AccordionItem value={order.id} key={order.id} className="border-b-gray-700">
+                            <AccordionTrigger className="hover:no-underline [&[data-state=open]>svg]:text-orange-400">
+                                <div className="flex items-center justify-between w-full pr-4">
+                                    <div>
+                                        <p className="text-white font-medium text-left">{order.clientName}</p>
+                                        <p className="text-gray-400 text-sm text-left">#{order.id.slice(-6)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-gray-400 text-sm">{new Date(order.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="text-orange-400 font-bold">{order.total.toFixed(3)} DT</p>
+                                    </div>
                                 </div>
-                                <ChevronDown className="h-4 w-4 text-gray-400"/>
-                            </div>
-                        </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="bg-gray-900/50 p-4 rounded-md">
+                               <div className="space-y-2 mb-4">
+                                 {order.items.map(item => (
+                                    <div key={item.id} className="flex justify-between text-sm">
+                                        <p className="text-gray-300">{item.quantity} x {item.name} @ {item.price.toFixed(3)} DT</p>
+                                        <p className="text-white">{(item.quantity * item.price).toFixed(3)} DT</p>
+                                    </div>
+                                 ))}
+                               </div>
+                               <div className="border-t border-gray-700 pt-2 space-y-1 text-sm">
+                                   <div className="flex justify-between">
+                                       <p className="text-gray-400">Sous-total</p>
+                                       <p className="text-white">{order.total.toFixed(3)} DT</p>
+                                   </div>
+                                    <div className="flex justify-between">
+                                       <p className="text-gray-400">TVA</p>
+                                       <p className="text-white">0.000 DT</p>
+                                   </div>
+                                    <div className="flex justify-between font-bold">
+                                       <p className="text-white">Total</p>
+                                       <p className="text-orange-400">{order.total.toFixed(3)} DT</p>
+                                   </div>
+                               </div>
+                               <div className="border-t border-gray-700 mt-3 pt-2 flex items-center gap-2 text-sm text-gray-400">
+                                   <User className="h-4 w-4"/>
+                                   <span>Vendu par : <span className="font-medium text-white">{user?.name}</span></span>
+                               </div>
+                            </AccordionContent>
+                        </AccordionItem>
                     ))}
-                </div>
+                </Accordion>
             </CardContent>
         </Card>
     );
