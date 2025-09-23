@@ -2,31 +2,26 @@
 import type { Product, Client, Employee, Order, Expense } from "@/app/(app)/app-provider";
 
 export const initialProducts: Product[] = [
-    // Caffeinated Beverages
-    { id: '1', name: 'Café express', price: 1.7, category: 'Boissons Chaudes', stock: 100, icon: '☕' },
-    { id: '2', name: 'Capucin', price: 2.0, category: 'Boissons Chaudes', stock: 100, icon: '☕' },
-    { id: '3', name: 'Café direct', price: 1.7, category: 'Boissons Chaudes', stock: 100, icon: '☕' },
-    { id: '4', name: 'Café crème', price: 2.2, category: 'Boissons Chaudes', stock: 80, icon: '☕' },
-    { id: '5', name: 'Chocolat au lait', price: 2.5, category: 'Boissons Chaudes', stock: 60, icon: '🍫' },
+    // Caffeinated Beverages from menu
+    { id: '1', name: 'Café express', price: 1.700, category: 'Boissons Chaudes', stock: 100, icon: '☕' },
+    { id: '2', name: 'Capucin', price: 2.000, category: 'Boissons Chaudes', stock: 100, icon: '☕' },
+    { id: '3', name: 'Café direct', price: 1.700, category: 'Boissons Chaudes', stock: 100, icon: '☕' },
+    { id: '4', name: 'Café lait au chocolat', price: 1.500, category: 'Boissons Chaudes', stock: 80, icon: '🍫' },
+    { id: '5', name: 'Café filtre', price: 1.600, category: 'Boissons Chaudes', stock: 60, icon: '☕' },
     
-    // Tea
-    { id: '6', name: 'Thé vert', price: 1.5, category: 'Thé', stock: 100, icon: '🍵' },
-    { id: '7', name: 'Thé au menthe', price: 1.8, category: 'Thé', stock: 50, icon: '🌿' },
-    { id: '8', name: 'Thé infusion', price: 2.0, category: 'Thé', stock: 40, icon: '🌺' },
+    // Tea from menu
+    { id: '6', name: 'Thé vert', price: 1.200, category: 'Thé', stock: 100, icon: '🍵' },
+    { id: '7', name: 'Thé au menthe', price: 1.500, category: 'Thé', stock: 50, icon: '🌿' },
 
-    // Fresh Juices
-    { id: '9', name: 'Jus d\'orange', price: 3.5, category: 'Jus Frais', stock: 30, icon: '🍊' },
-    { id: '10', name: 'Jus de fraise', price: 4.0, category: 'Jus Frais', stock: 25, icon: '🍓' },
-    { id: '11', name: 'Citronnade', price: 3.0, category: 'Jus Frais', stock: 50, icon: '🍋' },
+    // Fresh Juices from menu
+    { id: '8', name: 'Jus de saison', price: 1.500, category: 'Jus Frais', stock: 30, icon: '🍹' },
+    { id: '9', name: 'Jus de citron', price: 1.200, category: 'Jus Frais', stock: 50, icon: '🍋' },
+    { id: '10', name: 'Citronnade au menthe', price: 1.300, category: 'Jus Frais', stock: 40, icon: '🍃' },
     
-    // Boissons
-    { id: '12', name: 'Coca-Cola', price: 2.0, category: 'Boissons Fraîches', stock: 100, icon: '🥤' },
-    { id: '13', name: 'Eau minérale 1.5L', price: 1.5, category: 'Boissons Fraîches', stock: 100, icon: '💧' },
-    { id: '14', name: 'Eau minérale 0.5L', price: 1.0, category: 'Boissons Fraîches', stock: 100, icon: '💧' },
-
-    // Viennoiserie
-    { id: '15', name: 'Croissant', price: 1.2, category: 'Viennoiserie', stock: 40, icon: '🥐' },
-    { id: '16', name: 'Pain au chocolat', price: 1.5, category: 'Viennoiserie', stock: 35, icon: '🍫' },
+    // Boissons from menu
+    { id: '11', name: 'Boisson gazeuse', price: 1.500, category: 'Boissons Fraîches', stock: 100, icon: '🥤' },
+    { id: '12', name: 'Eau minérale 1.5L', price: 1.500, category: 'Boissons Fraîches', stock: 100, icon: '💧' },
+    { id: '13', name: 'Eau minérale 0.5L', price: 1.000, category: 'Boissons Fraîches', stock: 100, icon: '💧' },
   ];
   
 export const initialClients: Client[] = [
@@ -87,9 +82,8 @@ export const initialOrders: Order[] = [
     id: '1689333333',
     items: [
       { ...initialProducts[0], quantity: 2 },
-      { ...initialProducts[15], quantity: 1 }
     ],
-    total: (1.7 * 2) + 1.5,
+    total: (1.7 * 2),
     clientName: 'Ahmed Ben Ali',
     timestamp: '2023-07-14T12:35:33Z',
     cashierId: '1'
@@ -100,7 +94,7 @@ export const initialOrders: Order[] = [
       { ...initialProducts[5], quantity: 1 },
       { ...initialProducts[8], quantity: 1 }
     ],
-    total: 1.5 + 3.5,
+    total: 1.6 + 1.2,
     clientName: 'Client invité',
     timestamp: '2023-07-14T15:40:44Z',
     cashierId: '3'
