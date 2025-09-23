@@ -58,10 +58,10 @@ const MainApp: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 overflow-hidden rounded-full bg-gray-900 flex items-center justify-center">
               <div className="relative h-full w-full">
-                <div className="absolute left-0 top-0 h-full w-1/2 bg-orange-500" />
-                <div className="absolute right-0 top-0 h-full w-1/2 bg-gray-700" />
+                <div className="absolute left-0 top-0 h-full w-1/2 bg-gray-700" />
+                <div className="absolute right-0 top-0 h-full w-1/2 bg-white" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="font-bold text-xl text-white mix-blend-overlay">MG</span>
+                  <span className="font-bold text-xl text-white mix-blend-difference">MG</span>
                 </div>
               </div>
             </div>
