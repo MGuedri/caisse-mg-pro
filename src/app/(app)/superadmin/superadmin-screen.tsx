@@ -173,7 +173,6 @@ export const SuperAdminScreen: React.FC = () => {
         .insert({
           ...commerceData,
           owner_id: newUserData.id,
-          password: 'managed_by_users_table' // Dummy value
         })
         .select()
         .single();
@@ -418,4 +417,5 @@ export const SuperAdminScreen: React.FC = () => {
       />
     </div>
   );
-};
+
+    
