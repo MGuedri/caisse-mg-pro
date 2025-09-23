@@ -48,7 +48,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onOpenChange, on
           <Input placeholder="Email" type="email" value={formData.email || ''} onChange={(e) => setFormData(p => ({...p, email: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input placeholder="Téléphone" value={formData.phone || ''} onChange={(e) => setFormData(p => ({...p, phone: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <Input type="number" placeholder="Crédit" value={formData.credit || 0} onChange={(e) => setFormData(p => ({...p, credit: parseFloat(e.target.value) || 0}))} className="bg-gray-700 border-gray-600"/>
-          <Input placeholder="URL Avatar" value={formData.avatar || ''} onChange={(e) => setFormData(p => ({...p, avatar: e.target.value}))} className="bg-gray-700 border-gray-600"/>
           <div className="flex items-center space-x-2">
             <Checkbox id="isVip" checked={formData.isVip} onCheckedChange={(checked) => setFormData(p => ({ ...p, isVip: !!checked }))} />
             <Label htmlFor="isVip">Client VIP</Label>

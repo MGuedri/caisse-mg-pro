@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { useApp, Client, Employee, Expense } from '@/app/(app)/app-provider';
 import {
   Card, CardContent, CardHeader
@@ -19,10 +18,21 @@ import {
 } from 'lucide-react';
 import { SalariesTabContent } from './salaries-tab';
 import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Image from 'next/image';
+
+const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length > 1) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+};
+
 
 export const ManagementScreen: React.FC = () => {
   const { clients, setClients, employees, setEmployees, expenses, setExpenses } = useApp();
-  const [activeTab, setActiveTab] = useState('employees');
+  const [activeTab, setActiveTab] = useState('clients');
 
   // State for modals
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -155,7 +165,10 @@ export const ManagementScreen: React.FC = () => {
             {clients.map(client => (
               <Card key={client.id} className="bg-gray-800 border-gray-700">
                 <CardContent className="p-4 flex items-center gap-4">
-                  <Image src={client.avatar || `https://i.pravatar.cc/150?u=${client.id}`} alt={client.name} width={64} height={64} className="rounded-full" />
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={client.avatar} alt={client.name} />
+                    <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+                  </Avatar>
                   <div className="flex-grow">
                     <div className="flex justify-between items-start">
                       <div>
@@ -236,7 +249,10 @@ export const ManagementScreen: React.FC = () => {
                 <CardContent className="p-4">
                   <div className="flex flex-col sm:flex-row gap-4">
                      <div className="flex-shrink-0 flex flex-col items-center">
-                        <Image src={employee.avatar} alt={employee.name} width={80} height={80} className="rounded-full mb-2" />
+                        <Avatar className="h-20 w-20">
+                           <AvatarImage src={employee.avatar} alt={employee.name} />
+                           <AvatarFallback>{getInitials(employee.name)}</AvatarFallback>
+                        </Avatar>
                      </div>
                      <div className="flex-grow">
                         <div className="flex justify-between items-start mb-2">
