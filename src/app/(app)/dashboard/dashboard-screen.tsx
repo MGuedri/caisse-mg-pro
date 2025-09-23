@@ -11,10 +11,42 @@ import {
   Download, Upload,
   CreditCard,
   TrendingUp,
-  ChevronDown
+  ChevronDown,
+  DollarSign,
+  ShoppingCart
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
 
+
+const ChiffreAffaireCard: React.FC = () => {
+    const { orders } = useApp();
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+
+    return (
+        <Card className="bg-green-600/90 border-green-500 text-white relative overflow-hidden">
+             <CardContent className="p-6">
+                <DollarSign className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
+                <p className="text-sm text-green-100">Chiffre d'Affaire</p>
+                <p className="text-3xl font-bold">{totalRevenue.toFixed(3)} DT</p>
+             </CardContent>
+        </Card>
+    )
+}
+
+const NombreVentesCard: React.FC = () => {
+    const { orders } = useApp();
+    const totalSales = orders.length;
+
+    return (
+        <Card className="bg-blue-600/90 border-blue-500 text-white relative overflow-hidden">
+             <CardContent className="p-6">
+                <ShoppingCart className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
+                <p className="text-sm text-blue-100">Nombre de Ventes</p>
+                <p className="text-3xl font-bold">{totalSales}</p>
+             </CardContent>
+        </Card>
+    )
+}
 
 const TotalCreditCard: React.FC = () => {
     const { clients } = useApp();
@@ -180,16 +212,18 @@ export const DashboardScreen: React.FC = () => {
         <SyncStatus />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <ChiffreAffaireCard />
+        <NombreVentesCard />
         <TotalCreditCard />
         <PeakHourCard/>
-        <div className="md:col-span-2">
+        <div className="lg:col-span-2">
             <TopProductsCard />
         </div>
-        <div className="md:col-span-2">
+        <div className="lg:col-span-2">
             <SalesHistoryCard />
         </div>
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 lg:col-span-4">
             <DataManagementCard />
         </div>
       </div>
