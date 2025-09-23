@@ -82,7 +82,6 @@ export interface Commerce {
   name: string;
   ownerName: string;
   ownerEmail: string;
-  password?: string;
   subscription: 'Active' | 'Inactive' | 'Trial';
   creationDate: string;
   address?: string;
@@ -144,13 +143,21 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   
-  // Data states
+  // RAW data states - holds all data for superadmin
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allClients, setAllClients] = useState<Client[]>([]);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  
+  // Scoped data states - for single commerce view
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  
   const [commerces, setCommerces] = useState<Commerce[]>([]);
 
   // UI and Sync states
@@ -163,7 +170,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   
   useEffect(() => {
-    // Only run on client
+    // This effect runs only on the client to get the last viewed commerce ID
     const savedCommerceId = localStorage.getItem('viewedCommerceId');
     if (savedCommerceId) {
       try {
@@ -179,7 +186,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   useEffect(() => {
-    // Only run on client
+    // This effect runs only on the client to save the viewed commerce ID
     if (typeof window !== 'undefined') {
         if (viewedCommerceId) {
             localStorage.setItem('viewedCommerceId', JSON.stringify(viewedCommerceId));
@@ -207,32 +214,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const commercesRes = await supabase.from('commerces').select('*');
       if (commercesRes.error) { console.error("Error fetching commerces:", String(commercesRes.error)); throw commercesRes.error; }
-      const commercesData = commercesRes.data || [];
-      setCommerces(commercesData);
+      setCommerces(commercesRes.data || []);
       
-      if (commercesData.length > 0 && !viewedCommerceId) {
-        setViewedCommerceId(commercesData[0].id);
-      }
-
       const productsRes = await supabase.from('products').select('*');
       if (productsRes.error) { console.error("Error fetching products:", String(productsRes.error)); throw productsRes.error; }
-      setProducts(productsRes.data || []);
+      setAllProducts(productsRes.data || []);
 
       const clientsRes = await supabase.from('clients').select('*');
       if (clientsRes.error) { console.error("Error fetching clients:", String(clientsRes.error)); throw clientsRes.error; }
-      setClients(clientsRes.data || []);
+      setAllClients(clientsRes.data || []);
       
       const employeesRes = await supabase.from('employees').select('*');
       if (employeesRes.error) { console.error("Error fetching employees:", String(employeesRes.error)); throw employeesRes.error; }
-      setEmployees(employeesRes.data || []);
+      setAllEmployees(employeesRes.data || []);
       
       const ordersRes = await supabase.from('orders').select('*');
       if (ordersRes.error) { console.error("Error fetching orders:", String(ordersRes.error)); throw ordersRes.error; }
-      setOrders(ordersRes.data || []);
+      setAllOrders(ordersRes.data || []);
       
       const expensesRes = await supabase.from('expenses').select('*');
       if (expensesRes.error) { console.error("Error fetching expenses:", String(expensesRes.error)); throw expensesRes.error; }
-      setExpenses(expensesRes.data || []);
+      setAllExpenses(expensesRes.data || []);
       
       setSyncStatus('synced');
       setLastSync(new Date());
@@ -241,7 +243,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.error("Error during fetchAllData:", String(error));
         setSyncStatus('error');
     }
-  }, [user, viewedCommerceId]);
+  }, [user]);
 
 
   // Fetch data for a specific commerce
@@ -281,6 +283,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!user) {
         clearData();
+        setCommerces([]);
         return;
     }
 
@@ -290,6 +293,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         fetchDataForCommerce(user.commerceId);
     }
   }, [user, fetchAllData, fetchDataForCommerce]);
+
+
+  // SuperAdmin data filtering logic
+  useEffect(() => {
+      if (user?.isSuperAdmin) {
+        if (!viewedCommerceId && commerces.length > 0) {
+            setViewedCommerceId(commerces[0].id);
+        }
+
+        const filter = (items: any[]) => items.filter(i => i.commerce_id === viewedCommerceId);
+        setProducts(filter(allProducts));
+        setClients(filter(allClients));
+        setEmployees(filter(allEmployees));
+        setOrders(filter(allOrders));
+        setExpenses(filter(allExpenses));
+      }
+  }, [user?.isSuperAdmin, viewedCommerceId, commerces, allProducts, allClients, allEmployees, allOrders, allExpenses]);
 
 
   // Network status detection
@@ -304,7 +324,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
-  // Sync logic (simplified to just re-fetch)
+  // Sync logic
   const syncNow = useCallback(async () => {
     if (!isOnline || !user) return;
     
@@ -315,7 +335,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [isOnline, user, fetchAllData, fetchDataForCommerce]);
 
-  // Auto and periodic sync
+  // Periodic sync
   useEffect(() => {
     const interval = setInterval(() => {
       syncNow();
@@ -323,40 +343,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [syncNow]);
 
-  const allScopedData = {
-    products, clients, employees, orders, expenses
-  }
-
-  // SuperAdmin data filtering logic
-  const SuperAdminFilteredData = (() => {
-      if (!user?.isSuperAdmin) return allScopedData;
-      if (!viewedCommerceId) return { products: [], clients: [], employees: [], orders: [], expenses: [] };
-
-      const filter = (items: any[]) => items.filter(i => i.commerce_id === viewedCommerceId);
-      
-      return {
-          products: filter(products),
-          clients: filter(clients),
-          employees: filter(employees),
-          orders: filter(orders),
-          expenses: filter(expenses),
-      }
-  })();
-
-
   const value: AppContextType = {
     user, setUser,
-    products: user?.isSuperAdmin ? SuperAdminFilteredData.products : products,
-    setProducts,
+    products, setProducts,
     cart, setCart,
-    clients: user?.isSuperAdmin ? SuperAdminFilteredData.clients : clients,
-    setClients,
-    employees: user?.isSuperAdmin ? SuperAdminFilteredData.employees : employees,
-    setEmployees,
-    orders: user?.isSuperAdmin ? SuperAdminFilteredData.orders : orders,
-    setOrders,
-    expenses: user?.isSuperAdmin ? SuperAdminFilteredData.expenses : expenses,
-    setExpenses,
+    clients, setClients,
+    employees, setEmployees,
+    orders, setOrders,
+    expenses, setExpenses,
     commerces, setCommerces,
     viewedCommerceId, setViewedCommerceId,
     currentView, setCurrentView,
@@ -372,3 +366,5 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     </AppContext.Provider>
   );
 };
+
+    

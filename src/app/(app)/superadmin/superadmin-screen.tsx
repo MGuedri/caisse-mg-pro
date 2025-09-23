@@ -54,7 +54,7 @@ export const SuperAdminScreen: React.FC = () => {
   const { 
     user, setUser, setCurrentView,
     commerces, setCommerces,
-    clients, orders,
+    clients, orders, products, employees, expenses,
     viewedCommerceId, setViewedCommerceId,
     fetchAllData,
   } = useApp();
@@ -69,14 +69,6 @@ export const SuperAdminScreen: React.FC = () => {
       fetchAllData();
     }
   }, [user, fetchAllData]);
-
-
-  useEffect(() => {
-    // Re-fetch all data when viewedCommerceId changes for superadmin
-    if (user?.isSuperAdmin) {
-      fetchAllData();
-    }
-  }, [viewedCommerceId, user, fetchAllData]);
 
   const handleLogout = () => {
     setUser(null);
@@ -135,7 +127,6 @@ export const SuperAdminScreen: React.FC = () => {
         
          if (userError) {
            toast({variant: 'destructive', title: 'Erreur Utilisateur', description: 'Impossible de mettre à jour l\'utilisateur associé.'});
-           // Potentially roll back commerce change here
            return;
          }
       }
@@ -195,15 +186,23 @@ export const SuperAdminScreen: React.FC = () => {
 
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    // 1. Delete associated user first
-    if (commerce.owner_id) {
-        const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
-        if(userError) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'utilisateur associé.'}); return; }
+    // 1. Delete the commerce (should cascade delete related products, clients etc via DB schema)
+    const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
+    if(commerceError) { 
+        toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le commerce.'});
+        console.error("Error deleting commerce: ", commerceError);
+        return; 
     }
     
-    // 2. Delete the commerce (should cascade delete related products, clients etc via DB schema)
-    const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
-    if(commerceError) { toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le commerce.'}); return; }
+    // 2. Delete associated user
+    if (commerce.owner_id) {
+        const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
+        if(userError) { 
+            toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'utilisateur associé.'}); 
+            console.error("Error deleting user: ", userError);
+            return; 
+        }
+    }
     
     setCommerces(commerces.filter(c => c.id !== commerce.id));
     if (viewedCommerceId === commerce.id) {
@@ -222,6 +221,21 @@ export const SuperAdminScreen: React.FC = () => {
   };
   
   if (!user || !user.isSuperAdmin) return null;
+
+  const currentCommerceData = useMemo(() => {
+    if (!viewedCommerceId) return null;
+    const commerce = commerces.find(c => c.id === viewedCommerceId);
+    if (!commerce) return null;
+
+    return {
+        commerce,
+        products: products.filter(p => p.commerce_id === viewedCommerceId),
+        clients: clients.filter(c => c.commerce_id === viewedCommerceId),
+        employees: employees.filter(e => e.commerce_id === viewedCommerceId),
+        orders: orders.filter(o => o.commerce_id === viewedCommerceId),
+        expenses: expenses.filter(ex => ex.commerce_id === viewedCommerceId),
+    }
+  }, [viewedCommerceId, commerces, products, clients, employees, orders, expenses]);
   
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -286,7 +300,7 @@ export const SuperAdminScreen: React.FC = () => {
             </TabsList>
             
             <TabsContent value="dashboard">
-              {viewedCommerceId ? (
+              {viewedCommerceId && currentCommerceData ? (
                 <DashboardScreen />
               ) : (
                 <div className="text-center py-20 text-gray-500">
@@ -313,7 +327,7 @@ export const SuperAdminScreen: React.FC = () => {
                       <Users className="h-6 w-6 text-purple-400"/>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-4xl font-bold text-white">{platformStats.clientCount}</p>
+                      <p className="text-4xl font-bold text-white">{clients.length}</p>
                     </CardContent>
                   </Card>
                   <Card className="bg-gray-800 border-gray-700">
@@ -322,7 +336,7 @@ export const SuperAdminScreen: React.FC = () => {
                       <DollarSign className="h-6 w-6 text-green-400"/>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-4xl font-bold text-white">{platformStats.totalRevenue.toFixed(3)} <span className="text-xl">DT</span></p>
+                      <p className="text-4xl font-bold text-white">{orders.reduce((acc, o) => acc + o.total, 0).toFixed(3)} <span className="text-xl">DT</span></p>
                     </CardContent>
                   </Card>
                 </div>
@@ -358,7 +372,7 @@ export const SuperAdminScreen: React.FC = () => {
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.ownerName}</TableCell>
                                         <TableCell className="text-gray-300 hidden md:table-cell">{commerce.address}</TableCell>
                                         <TableCell>{getSubscriptionBadge(commerce.subscription)}</TableCell>
-                                        <TableCell className="text-gray-300 hidden lg:table-cell">{commerce.creationDate}</TableCell>
+                                        <TableCell className="text-gray-300 hidden lg:table-cell">{new Date(commerce.creationDate).toLocaleDateString('fr-FR')}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -417,5 +431,7 @@ export const SuperAdminScreen: React.FC = () => {
       />
     </div>
   );
+
+    
 
     
