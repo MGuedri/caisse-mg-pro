@@ -13,7 +13,8 @@ import {
   TrendingUp,
   ChevronDown,
   DollarSign,
-  ShoppingCart
+  ShoppingCart,
+  ArrowDown,
 } from 'lucide-react';
 import { SyncStatus } from '@/components/sync-status';
 
@@ -28,6 +29,10 @@ const ChiffreAffaireCard: React.FC = () => {
                 <DollarSign className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-green-100">Chiffre d'Affaire</p>
                 <p className="text-3xl font-bold">{totalRevenue.toFixed(3)} DT</p>
+                <div className="flex items-center text-xs text-green-100 mt-1">
+                    <ArrowDown className="h-3 w-3 mr-1"/>
+                    <span>-100.0% par rapport à hier</span>
+                </div>
              </CardContent>
         </Card>
     )
@@ -43,6 +48,10 @@ const NombreVentesCard: React.FC = () => {
                 <ShoppingCart className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-blue-100">Nombre de Ventes</p>
                 <p className="text-3xl font-bold">{totalSales}</p>
+                <div className="flex items-center text-xs text-blue-100 mt-1">
+                    <ArrowDown className="h-3 w-3 mr-1"/>
+                    <span>-100.0% par rapport à hier</span>
+                </div>
              </CardContent>
         </Card>
     )
@@ -58,6 +67,10 @@ const TotalCreditCard: React.FC = () => {
                 <CreditCard className="absolute -right-4 -bottom-4 h-24 w-24 text-white/10" />
                 <p className="text-sm text-orange-100">Total Crédit</p>
                 <p className="text-3xl font-bold">{totalCredit.toFixed(3)} DT</p>
+                <div className="flex items-center text-xs text-orange-100 mt-1">
+                    <ArrowDown className="h-3 w-3 mr-1"/>
+                    <span>-100.0% par rapport à hier</span>
+                </div>
              </CardContent>
         </Card>
     )
