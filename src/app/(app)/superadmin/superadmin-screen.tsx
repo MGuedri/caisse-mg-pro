@@ -41,6 +41,8 @@ import {
   Trash2,
   Settings,
   Building,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -49,6 +51,8 @@ import { Logo } from '../logo';
 import { DashboardScreen } from '../dashboard/dashboard-screen';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { defaultProducts, defaultClients, defaultEmployees, defaultExpenses } from '@/lib/initial-data';
+
 
 export const SuperAdminScreen: React.FC = () => {
   const { 
@@ -61,6 +65,7 @@ export const SuperAdminScreen: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
   const { toast } = useToast();
 
@@ -186,22 +191,22 @@ export const SuperAdminScreen: React.FC = () => {
 
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
-    // 1. Delete the commerce (should cascade delete related products, clients etc via DB schema)
+    // 1. Delete associated user first
+    if (commerce.owner_id) {
+      const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
+      if (userError) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'utilisateur associé.' });
+        console.error("Error deleting user: ", userError);
+        return;
+      }
+    }
+
+    // 2. Delete the commerce (should cascade delete related products, clients etc via DB schema)
     const { error: commerceError } = await supabase.from('commerces').delete().eq('id', commerce.id);
     if(commerceError) { 
         toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le commerce.'});
         console.error("Error deleting commerce: ", commerceError);
         return; 
-    }
-    
-    // 2. Delete associated user
-    if (commerce.owner_id) {
-        const { error: userError } = await supabase.from('users').delete().eq('id', commerce.owner_id);
-        if(userError) { 
-            toast({variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'utilisateur associé.'}); 
-            console.error("Error deleting user: ", userError);
-            return; 
-        }
     }
     
     setCommerces(commerces.filter(c => c.id !== commerce.id));
@@ -210,6 +215,81 @@ export const SuperAdminScreen: React.FC = () => {
     }
     toast({variant: 'success', title: 'Commerce Supprimé'});
   };
+
+  const handleRestoreDemoCommerce = async () => {
+    setIsRestoring(true);
+    const demoEmail = '06sbz@gmail.com';
+    const demoCommerceName = 'Café Mon Plaisir';
+
+    try {
+        // 1. Check if user exists, if not create them
+        let { data: ownerUser } = await supabase.from('users').select('*').eq('email', demoEmail).single();
+        if (!ownerUser) {
+            const { data: newUserData, error: newUserError } = await supabase.from('users').insert({
+                name: 'Café Mon Plaisir MG',
+                email: demoEmail,
+                password: '06034434mg',
+                role: 'Owner'
+            }).select().single();
+
+            if (newUserError) throw new Error(`Impossible de créer l'utilisateur démo: ${newUserError.message}`);
+            ownerUser = newUserData;
+        }
+
+        // 2. Check if commerce exists, if not create it
+        let { data: demoCommerce } = await supabase.from('commerces').select('*').eq('name', demoCommerceName).single();
+        if (!demoCommerce) {
+            const { data: newCommerceData, error: newCommerceError } = await supabase.from('commerces').insert({
+                name: demoCommerceName,
+                ownerName: ownerUser.name,
+                ownerEmail: ownerUser.email,
+                subscription: 'Active',
+                creationDate: new Date().toISOString().split('T')[0],
+                address: '123 Rue du Café, Tunis',
+                owner_id: ownerUser.id
+            }).select().single();
+            if (newCommerceError) throw new Error(`Impossible de créer le commerce démo: ${newCommerceError.message}`);
+            demoCommerce = newCommerceData;
+        }
+
+        // 3. Link commerce_id to user if it's not already
+        if (ownerUser.commerce_id !== demoCommerce.id) {
+            await supabase.from('users').update({ commerce_id: demoCommerce.id }).eq('id', ownerUser.id);
+        }
+
+        // 4. Delete existing data for this commerce
+        await supabase.from('products').delete().eq('commerce_id', demoCommerce.id);
+        await supabase.from('clients').delete().eq('commerce_id', demoCommerce.id);
+        await supabase.from('employees').delete().eq('commerce_id', demoCommerce.id);
+        await supabase.from('expenses').delete().eq('commerce_id', demoCommerce.id);
+        await supabase.from('orders').delete().eq('commerce_id', demoCommerce.id);
+
+        // 5. Insert all default data
+        const dataToInsert = [
+            { table: 'products', data: defaultProducts },
+            { table: 'clients', data: defaultClients },
+            { table: 'employees', data: defaultEmployees },
+            { table: 'expenses', data: defaultExpenses }
+        ];
+
+        for (const item of dataToInsert) {
+            const dataWithCommerceId = item.data.map(d => ({ ...d, commerce_id: demoCommerce.id }));
+            const { error } = await supabase.from(item.table).insert(dataWithCommerceId);
+            if (error) throw new Error(`Erreur d'insertion dans ${item.table}: ${error.message}`);
+        }
+
+        toast({ variant: 'success', title: 'Restauration Réussie', description: `${demoCommerceName} a été restauré avec toutes ses données.` });
+        await fetchAllData();
+        setViewedCommerceId(demoCommerce.id);
+        setActiveTab('dashboard');
+
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Erreur de Restauration', description: e.message });
+    } finally {
+        setIsRestoring(false);
+    }
+  }
+
 
   const getSubscriptionBadge = (status: Commerce['subscription']) => {
     switch (status) {
@@ -347,10 +427,16 @@ export const SuperAdminScreen: React.FC = () => {
                             <CardTitle className="text-white">Gestion des Commerces</CardTitle>
                             <CardDescription className="text-gray-400">Ajouter, modifier ou supprimer des commerces.</CardDescription>
                         </div>
-                        <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
-                            <Plus className="mr-2 h-4 w-4"/>
-                            Ajouter Commerce
-                        </Button>
+                        <div className='flex gap-2 flex-col sm:flex-row w-full sm:w-auto'>
+                            <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
+                                <Plus className="mr-2 h-4 w-4"/>
+                                Ajouter Commerce
+                            </Button>
+                             <Button onClick={handleRestoreDemoCommerce} variant="outline" className="w-full sm:w-auto border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white" disabled={isRestoring}>
+                                {isRestoring ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
+                                Restaurer Démo
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                        <div className="overflow-x-auto">
