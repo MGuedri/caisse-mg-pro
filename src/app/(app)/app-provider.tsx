@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext, useCallback, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 // ======================
 // TYPES
@@ -232,33 +232,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('syncing');
 
     try {
-      const commercesRes = await supabase.from('commerces').select('*');
-      if (commercesRes.error) { console.error("Error fetching commerces:", String(commercesRes.error)); throw commercesRes.error; }
+      const db = supabaseAdmin; // Use the admin client for all-powerful access
+      const commercesRes = await db.from('commerces').select('*');
+      if (commercesRes.error) { console.error("Error fetching commerces:", commercesRes.error.message); throw commercesRes.error; }
       const commercesData = commercesRes.data || [];
       setCommerces(commercesData);
       
-      const productsRes = await supabase.from('products').select('*');
-      if (productsRes.error) { console.error("Error fetching products:", String(productsRes.error)); throw productsRes.error; }
+      const productsRes = await db.from('products').select('*');
+      if (productsRes.error) { console.error("Error fetching products:", productsRes.error.message); throw productsRes.error; }
       setAllProducts(productsRes.data || []);
 
-      const clientsRes = await supabase.from('clients').select('*');
-      if (clientsRes.error) { console.error("Error fetching clients:", String(clientsRes.error)); throw clientsRes.error; }
+      const clientsRes = await db.from('clients').select('*');
+      if (clientsRes.error) { console.error("Error fetching clients:", clientsRes.error.message); throw clientsRes.error; }
       setAllClients(clientsRes.data || []);
       
-      const employeesRes = await supabase.from('employees').select('*');
-      if (employeesRes.error) { console.error("Error fetching employees:", String(employeesRes.error)); throw employeesRes.error; }
+      const employeesRes = await db.from('employees').select('*');
+      if (employeesRes.error) { console.error("Error fetching employees:", employeesRes.error.message); throw employeesRes.error; }
       setAllEmployees(employeesRes.data || []);
       
-      const ordersRes = await supabase.from('orders').select('*');
-      if (ordersRes.error) { console.error("Error fetching orders:", String(ordersRes.error)); throw ordersRes.error; }
+      const ordersRes = await db.from('orders').select('*');
+      if (ordersRes.error) { console.error("Error fetching orders:", ordersRes.error.message); throw ordersRes.error; }
       setAllOrders(ordersRes.data || []);
       
-      const expensesRes = await supabase.from('expenses').select('*');
-      if (expensesRes.error) { console.error("Error fetching expenses:", String(expensesRes.error)); throw expensesRes.error; }
+      const expensesRes = await db.from('expenses').select('*');
+      if (expensesRes.error) { console.error("Error fetching expenses:", expensesRes.error.message); throw expensesRes.error; }
       setAllExpenses(expensesRes.data || []);
       
-      const invoicesRes = await supabase.from('invoices').select('*');
-      if (invoicesRes.error) { console.error("Error fetching invoices:", String(invoicesRes.error)); throw invoicesRes.error; }
+      const invoicesRes = await db.from('invoices').select('*');
+      if (invoicesRes.error) { console.error("Error fetching invoices:", invoicesRes.error.message); throw invoicesRes.error; }
       const commerceMap = new Map(commercesData.map(c => [c.id, c.name]));
       const invoicesData = (invoicesRes.data || []).map(inv => ({...inv, commerceName: commerceMap.get(inv.commerce_id)}));
       setAllInvoices(invoicesData);
@@ -266,8 +267,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setSyncStatus('synced');
       setLastSync(new Date());
 
-    } catch(error) {
-        console.error("Error during fetchAllData:", String(error));
+    } catch(error: any) {
+        console.error("Error during fetchAllData:", error.message || String(error));
         setSyncStatus('error');
     }
   }, [user]);
