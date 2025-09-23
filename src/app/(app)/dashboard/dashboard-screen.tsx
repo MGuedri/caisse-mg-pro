@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -345,7 +344,8 @@ export const DashboardScreen: React.FC = () => {
       });
 
       const subject = `Bilan de la Journée - ${new Date().toLocaleDateString('fr-FR')}`;
-      const mailtoLink = `mailto:${user?.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
+      const ownerEmail = user?.ownerEmail || '';
+      const mailtoLink = `mailto:${ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportHtml)}`;
       window.location.href = mailtoLink;
 
     } catch (error) {
@@ -401,3 +401,4 @@ export const DashboardScreen: React.FC = () => {
     </div>
   );
 };
+    
