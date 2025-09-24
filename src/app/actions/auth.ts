@@ -8,29 +8,39 @@ export async function signIn(formData: FormData) {
   const email = String(formData.get('email'));
   const password = String(formData.get('password'));
 
-  // Garde de vérification des variables d'environnement
+  // Étape 1 : Vérification des variables d'environnement
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('SERVER ACTION ERROR: Missing Supabase environment variables.');
       return { error: 'Erreur de configuration serveur : Clés Supabase manquantes.' };
   }
 
-  const supabase = createServerActionClient({ cookies });
+  try {
+    // Étape 2 : Tentative de création du client Supabase
+    const supabase = createServerActionClient({ cookies });
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    // Étape 3 : Tentative d'authentification
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
-    console.error('Supabase Sign-in error:', error.message);
-    if (error.message.includes('Invalid login credentials')) {
-        return { error: 'Email ou mot de passe incorrect.' };
+    if (error) {
+      console.error('Supabase Sign-in error:', error.message);
+      if (error.message.includes('Invalid login credentials')) {
+          return { error: 'Email ou mot de passe incorrect.' };
+      }
+      // Retourner le message d'erreur réel de Supabase pour les autres cas
+      return { error: `Erreur Supabase: ${error.message}` };
     }
-    // Retourner le message d'erreur réel de Supabase pour les autres cas
-    return { error: error.message };
-  }
 
-  return { error: null };
+    // Étape 4 : Succès
+    return { error: null };
+
+  } catch (e: any) {
+    // Étape 5 : Capture de toute autre exception
+    console.error('CRITICAL SERVER ACTION ERROR:', e.message);
+    return { error: `Erreur serveur inattendue: ${e.message}` };
+  }
 }
 
 export async function signOut() {
