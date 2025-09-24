@@ -245,10 +245,17 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
   }, [initialUser]);
 
   useEffect(() => {
-    // This effect ensures data is refreshed for the Super Admin when the viewed commerce changes.
-    // For regular users, data is fetched once on login via initialData.
     if (user?.isSuperAdmin) {
-      refreshData();
+      if (viewedCommerceId) {
+        refreshData();
+      } else {
+        // If SuperAdmin and no commerce is viewed, clear the commerce-specific data to prevent crashes
+        setProducts([]);
+        setClients([]);
+        setEmployees([]);
+        setOrders([]);
+        setExpenses([]);
+      }
     }
   }, [user?.isSuperAdmin, viewedCommerceId, refreshData]);
 
