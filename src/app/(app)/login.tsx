@@ -1,15 +1,14 @@
 
 'use client'
-import { useSearchParams } from 'next/navigation';
-import { serverSignIn } from '@/app/actions/auth';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFormStatus } from 'react-dom';
 import { Loader2 } from 'lucide-react';
 
-function SubmitButton() {
-    const { pending } = useFormStatus();
+function SubmitButton({ pending }: { pending: boolean }) {
     return (
         <Button
             type="submit"
@@ -22,22 +21,48 @@ function SubmitButton() {
 }
 
 export const LoginScreen = () => {
-    const searchParams = useSearchParams();
-    const error = searchParams.get('error');
+    const router = useRouter();
+    const [error, setError] = useState<string | null>(null);
+    const [isPending, setIsPending] = useState(false);
 
-    let errorMessage = '';
-    if (error) {
-        if (error.includes('Invalid login credentials')) {
-            errorMessage = 'Email ou mot de passe incorrect.';
-        } else if (error.includes('Email not confirmed')) {
-            errorMessage = 'Veuillez confirmer votre adresse e-mail.';
-        } else if (error === 'missing-credentials') {
-            errorMessage = 'Veuillez saisir votre email et votre mot de passe.';
+    const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsPending(true);
+        setError(null);
+
+        const formData = new FormData(e.currentTarget);
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+
+        if (!email || !password) {
+            setError('Veuillez saisir votre email et votre mot de passe.');
+            setIsPending(false);
+            return;
         }
-        else {
-            errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
+
+        try {
+            const response = await fetch('/api/auth/signin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Une erreur est survenue.');
+            }
+            
+            // On success, refresh the page. The layout will re-render and show the app.
+            router.refresh();
+
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsPending(false);
         }
-    }
+    };
+
 
     return (
         <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
@@ -49,13 +74,13 @@ export const LoginScreen = () => {
               <h1 className="text-2xl font-bold text-white">Caisse MG Pro</h1>
             </div>
     
-            {errorMessage && (
+            {error && (
               <div className="bg-red-600/20 border border-red-600 text-red-300 px-4 py-3 rounded mb-6 text-sm">
-                {errorMessage}
+                {error}
               </div>
             )}
     
-            <form action={serverSignIn} className="space-y-6">
+            <form onSubmit={handleSignIn} className="space-y-6">
               <div>
                 <Input
                   type="email"
@@ -76,7 +101,7 @@ export const LoginScreen = () => {
                 />
               </div>
     
-              <SubmitButton />
+              <SubmitButton pending={isPending} />
 
             </form>
           </div>
