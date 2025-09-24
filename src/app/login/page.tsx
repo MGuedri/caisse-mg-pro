@@ -69,11 +69,12 @@ export default function LoginPage() {
       try {
         result = await response.json();
       } catch (jsonError) {
-        throw new Error('Invalid JSON response from server');
+        // If the server sends a non-JSON response (e.g. 500 error page)
+        throw new Error('Erreur de communication avec le serveur.');
       }
 
       if (!response.ok) {
-        throw new Error(result.error || `HTTP error! status: ${response.status}`);
+        throw new Error(result.error || `Erreur HTTP: ${response.status}`);
       }
       
       if (result.success && result.user) {
@@ -87,17 +88,14 @@ export default function LoginPage() {
         }, 1500);
 
       } else {
+        // This case should be covered by !response.ok, but as a fallback
         setError(result.error || 'Identifiants invalides');
         setSuccess(false);
       }
     } catch (err: any) {
       console.error('Erreur lors de la connexion:', err);
       setError(
-        err.message.includes('Network error') 
-          ? 'Erreur réseau — vérifiez votre connexion' 
-          : err.message.includes('Invalid JSON')
-            ? 'Erreur serveur — veuillez réessayer'
-            : err.message || 'Erreur de connexion. Veuillez réessayer.'
+        err.message || 'Erreur de connexion. Veuillez réessayer.'
       );
       setSuccess(false);
     } finally {
