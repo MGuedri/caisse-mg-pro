@@ -248,7 +248,7 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
 
   // Refetch data when viewed commerce changes for superadmin
   useEffect(() => {
-    if (user?.isSuperAdmin && viewedCommerceId) {
+    if (user?.isSuperAdmin) { // No need to check for viewedCommerceId here
         refreshData();
     }
   }, [user?.isSuperAdmin, viewedCommerceId, refreshData])
@@ -276,5 +276,3 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
     </AppContext.Provider>
   );
 };
-
-    
