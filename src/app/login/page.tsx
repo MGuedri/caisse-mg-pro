@@ -52,6 +52,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+    setSuccess(false);
 
     try {
       const response = await fetch('/api/auth/signin', {
@@ -65,15 +66,12 @@ export default function LoginPage() {
         }),
       });
 
-      let result: AuthResult;
-      try {
-        result = await response.json();
-      } catch (jsonError) {
-        // If the server sends a non-JSON response (e.g. 500 error page)
-        throw new Error('Erreur de communication avec le serveur.');
-      }
+      // ALWAYS parse the JSON body, as our API route sends JSON for both success and error.
+      const result: AuthResult = await response.json();
 
+      // NOW check if the request was successful.
       if (!response.ok) {
+        // Use the error message from the JSON body.
         throw new Error(result.error || `Erreur HTTP: ${response.status}`);
       }
       
@@ -88,7 +86,7 @@ export default function LoginPage() {
         }, 1500);
 
       } else {
-        // This case should be covered by !response.ok, but as a fallback
+        // This case might be redundant if !response.ok always catches errors, but it's a good fallback.
         setError(result.error || 'Identifiants invalides');
         setSuccess(false);
       }
