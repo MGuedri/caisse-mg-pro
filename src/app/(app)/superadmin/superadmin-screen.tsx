@@ -47,9 +47,9 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CommerceForm } from './superadmin-forms';
-import { Logo } from '../logo';
-import { DashboardScreen } from '../dashboard/dashboard-screen';
+import { CommerceForm } from '@/app/(app)/superadmin/superadmin-forms';
+import { Logo } from '@/app/(app)/logo';
+import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
