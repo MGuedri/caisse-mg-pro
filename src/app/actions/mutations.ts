@@ -191,6 +191,5 @@ export async function deleteExpense(id: string) {
 }
 
 export async function addOrder(orderData: Omit<Order, 'id'>) {
-    const payload = { ...orderData, items: orderData.items };
-    return handleMutation(supabase => supabase.from('orders').insert(payload), ['/']);
+    return handleMutation(supabase => supabase.from('orders').insert(orderData as Order), ['/']);
 }
