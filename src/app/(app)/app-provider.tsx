@@ -207,7 +207,6 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
         }
         if (data.invoices) setInvoices(data.invoices);
 
-        // For owner, data is already filtered. For admin, we filter client-side.
         if (user.isSuperAdmin) {
             const currentId = viewedCommerceId;
              if (currentId) {
@@ -217,7 +216,6 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
                 setOrders(data.orders?.filter(o => o.commerce_id === currentId) || []);
                 setExpenses(data.expenses?.filter(e => e.commerce_id === currentId) || []);
              } else {
-                // If no commerce is viewed, clear the data to prevent crashes
                 setProducts([]);
                 setClients([]);
                 setEmployees([]);
@@ -246,7 +244,6 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
     }
   }, [initialUser]);
 
-  // Refetch data when viewed commerce changes for superadmin
   useEffect(() => {
     if (user?.isSuperAdmin) {
       refreshData();
