@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useFormStatus } from 'react-dom';
 import { Loader2 } from 'lucide-react';
 
 function SubmitButton({ pending }: { pending: boolean }) {
