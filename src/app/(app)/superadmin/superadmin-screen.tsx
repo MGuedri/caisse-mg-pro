@@ -65,8 +65,8 @@ export const SuperAdminScreen: React.FC = () => {
   const { 
     user,
     commerces,
-    clients: allClients, 
-    orders: allOrders,
+    clients, 
+    orders,
     invoices,
     viewedCommerceId, setViewedCommerceId,
     refreshData,
@@ -87,14 +87,12 @@ export const SuperAdminScreen: React.FC = () => {
   }, [user, refreshData]);
 
   const platformStats = useMemo(() => {
-    const activeClients = allClients || [];
-    const activeOrders = allOrders || [];
     return {
       commerceCount: commerces.length,
-      clientCount: activeClients.length,
-      totalRevenue: activeOrders.reduce((sum, order) => sum + order.total, 0),
+      clientCount: clients.length,
+      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
     }
-  }, [commerces, allClients, allOrders]);
+  }, [commerces, clients, orders]);
 
   const handleOpenModal = (commerce: Commerce | null = null) => {
     setEditingCommerce(commerce);
@@ -466,5 +464,3 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
-
-    
