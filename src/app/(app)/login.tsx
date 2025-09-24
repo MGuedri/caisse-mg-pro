@@ -50,14 +50,14 @@ export const LoginScreen = () => {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.error || 'Une erreur est survenue.');
+                throw new Error(result.error || 'Une erreur est survenue lors de la connexion.');
             }
             
             // On success, refresh the page. The layout will re-render and show the app.
             router.refresh();
 
         } catch (err: any) {
-            setError(err.message);
+            setError(err.message || 'Erreur de connexion. Vérifiez la console pour plus de détails.');
         } finally {
             setIsPending(false);
         }

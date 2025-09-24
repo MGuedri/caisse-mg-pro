@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       if (error.message.includes('Invalid login credentials')) {
         errorMessage = 'Email ou mot de passe incorrect';
       }
+      // You can add more specific error messages here if needed
       return NextResponse.json(
         { success: false, error: errorMessage },
         { status: 401 }
@@ -42,10 +43,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
+    console.error('Server action error:', error.message);
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Erreur serveur interne lors de l\'authentification' 
+        error: 'Erreur serveur interne lors de l\'authentification. Les variables d\'environnement Supabase sont-elles bien configurées ?' 
       },
       { status: 500 }
     );
