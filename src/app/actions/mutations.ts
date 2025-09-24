@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -66,11 +67,14 @@ export async function createCommerce(commerceData: Commerce, ownerPassword?: str
         }
         const owner_id = authData.user!.id;
         
+        const commerceToInsert = { ...commerceData };
+        // Remove fields that are not in the table or should be auto-generated
+        delete (commerceToInsert as any).id;
+        
         return handleMutation(supabase => 
             supabase.from('commerces').insert({
-                ...commerceData,
-                id: undefined, 
-                owner_id,
+                ...commerceToInsert,
+                owner_id, // Ensure owner_id is set correctly
             }),
             ['/'] 
         );
