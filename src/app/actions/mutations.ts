@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -52,13 +51,7 @@ async function handleMutation(callback: (supabase: any) => Promise<any>, revalid
 export async function createCommerce(commerceData: Commerce, ownerPassword?: string) {
      const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
-        }
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     try {
@@ -93,7 +86,7 @@ export async function updateCommerce(id: string, commerceData: Partial<Commerce>
     );
 }
 
-export async function deleteCommerce(id: string) {
+export async function deleteCommerce(id: string, owner_id: string) {
     const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -106,19 +99,14 @@ export async function deleteCommerce(id: string) {
     );
      
     try {
-        const { data: commerce, error: fetchError } = await supabaseAdmin.from('commerces').select('owner_id').eq('id', id).single();
-        if (fetchError || !commerce) {
-            return { error: 'Commerce non trouvé.'};
-        }
-        
         const { error: deleteCommerceError } = await supabaseAdmin.from('commerces').delete().eq('id', id);
         if(deleteCommerceError) {
             return { error: `Erreur suppression commerce: ${deleteCommerceError.message}` };
         }
 
-        const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(commerce.owner_id);
-         if(deleteUserError) {
-            console.error(`Failed to delete auth user ${commerce.owner_id}: ${deleteUserError.message}`);
+        const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(owner_id);
+        if(deleteUserError && deleteUserError.message !== 'User not found') {
+            console.error(`Failed to delete auth user ${owner_id}: ${deleteUserError.message}`);
         }
 
         revalidatePath('/');

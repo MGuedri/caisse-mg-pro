@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useState, useEffect, useTransition } from 'react';
@@ -127,7 +126,7 @@ export const SuperAdminScreen: React.FC = () => {
 
   const handleDeleteCommerce = async (commerce: Commerce) => {
     startTransition(async () => {
-      const result = await deleteCommerce(commerce.id);
+      const result = await deleteCommerce(commerce.id, commerce.owner_id!);
       if(result.error) {
           toast({variant: 'destructive', title: 'Erreur', description: result.error});
       } else {
@@ -461,5 +460,3 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
-
-    
