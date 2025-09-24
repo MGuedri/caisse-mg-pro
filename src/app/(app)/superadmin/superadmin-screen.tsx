@@ -65,7 +65,8 @@ export const SuperAdminScreen: React.FC = () => {
   const { 
     user,
     commerces,
-    clients, orders,
+    clients: allClients, 
+    orders: allOrders,
     invoices,
     viewedCommerceId, setViewedCommerceId,
     refreshData,
@@ -88,10 +89,10 @@ export const SuperAdminScreen: React.FC = () => {
   const platformStats = useMemo(() => {
     return {
       commerceCount: commerces.length,
-      clientCount: clients.length,
-      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
+      clientCount: allClients.length,
+      totalRevenue: allOrders.reduce((sum, order) => sum + order.total, 0),
     }
-  }, [commerces, clients, orders]);
+  }, [commerces, allClients, allOrders]);
 
   const handleOpenModal = (commerce: Commerce | null = null) => {
     setEditingCommerce(commerce);
@@ -248,7 +249,9 @@ export const SuperAdminScreen: React.FC = () => {
                 <DashboardScreen />
               ) : (
                 <div className="text-center py-20 text-gray-500">
-                  <p>Veuillez sélectionner un commerce pour afficher son tableau de bord.</p>
+                  <Building className="mx-auto h-12 w-12 text-gray-600" />
+                  <h3 className="mt-2 text-lg font-medium text-white">Aucun commerce sélectionné</h3>
+                  <p className="mt-1 text-sm text-gray-400">Veuillez sélectionner un commerce dans le menu déroulant ci-dessus pour voir son tableau de bord.</p>
                 </div>
               )}
             </TabsContent>
@@ -271,7 +274,7 @@ export const SuperAdminScreen: React.FC = () => {
                       <Users className="h-6 w-6 text-purple-400"/>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-4xl font-bold text-white">{clients.length}</p>
+                      <p className="text-4xl font-bold text-white">{platformStats.clientCount}</p>
                     </CardContent>
                   </Card>
                   <Card className="bg-gray-800 border-gray-700">
@@ -280,7 +283,7 @@ export const SuperAdminScreen: React.FC = () => {
                       <DollarSign className="h-6 w-6 text-green-400"/>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-4xl font-bold text-white">{orders.reduce((acc, o) => acc + o.total, 0).toFixed(3)} <span className="text-xl">DT</span></p>
+                      <p className="text-4xl font-bold text-white">{platformStats.totalRevenue.toFixed(3)} <span className="text-xl">DT</span></p>
                     </CardContent>
                   </Card>
                 </div>
@@ -461,3 +464,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
