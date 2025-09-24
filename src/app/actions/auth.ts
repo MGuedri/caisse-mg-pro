@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -56,7 +55,6 @@ export async function signIn(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      console.warn('Supabase Sign-In Error:', error.message);
       // Directly return the raw, potentially more informative, error message.
       return { error: `Erreur Supabase: ${error.message}` };
     }
