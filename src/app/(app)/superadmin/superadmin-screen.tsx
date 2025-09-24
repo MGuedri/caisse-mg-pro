@@ -87,10 +87,12 @@ export const SuperAdminScreen: React.FC = () => {
   }, [user, refreshData]);
 
   const platformStats = useMemo(() => {
+    const activeClients = allClients || [];
+    const activeOrders = allOrders || [];
     return {
       commerceCount: commerces.length,
-      clientCount: allClients.length,
-      totalRevenue: allOrders.reduce((sum, order) => sum + order.total, 0),
+      clientCount: activeClients.length,
+      totalRevenue: activeOrders.reduce((sum, order) => sum + order.total, 0),
     }
   }, [commerces, allClients, allOrders]);
 
@@ -464,3 +466,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
