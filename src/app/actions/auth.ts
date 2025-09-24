@@ -6,39 +6,21 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
 export async function signIn(formData: FormData) {
-  const email = String(formData.get('email'));
-  const password = String(formData.get('password'));
-  const cookieStore = cookies();
-
-  // Étape 1 : Vérification des variables d'environnement
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('SERVER ACTION ERROR: Missing Supabase environment variables.');
-      return { error: 'Erreur de configuration serveur : Clés Supabase manquantes.' };
-  }
-
   try {
-    // Utilisation du client JS standard pour l'authentification
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    // 🔍 Vérification explicite des variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      console.error('Supabase Sign-in error:', error.message);
-      if (error.message.includes('Invalid login credentials')) {
-          return { error: 'Email ou mot de passe incorrect.' };
-      }
-      return { error: `Erreur Supabase: ${error.message}` };
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ Variables Supabase manquantes dans process.env');
+      return { error: 'Erreur de configuration serveur : Clés Supabase manquantes.' };
     }
-    
-    // Si l'authentification réussit, nous devons définir la session dans les cookies manuellement.
-    if(authData.session){
-        const cookieClient = createServerClient(
+
+    // 🔍 Tentative d'initialisation
+    let supabase;
+    const cookieStore = cookies();
+    try {
+        supabase = createServerClient(
             supabaseUrl,
             supabaseAnonKey,
             {
@@ -54,20 +36,38 @@ export async function signIn(formData: FormData) {
                     }
                 }
             }
-        )
-        await cookieClient.auth.setSession(authData.session)
+        );
+    } catch (initError: any) {
+      console.error('❌ Échec initialisation Supabase:', initError);
+      return { error: `Erreur serveur inattendue: ${initError.message}` };
     }
 
+    // 🔍 Extraction des données
+    const email = String(formData.get('email')).trim();
+    const password = String(formData.get('password'));
 
-    // Étape 4 : Succès
+    if (!email || !password) {
+      return { error: 'Veuillez remplir tous les champs.' };
+    }
+
+    // 🔍 Appel d'authentification
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      console.warn('⚠️ Erreur Supabase:', error.message);
+      // Retourne le message d'erreur brut de Supabase
+      return { error: `Erreur Supabase: ${error.message}` };
+    }
+
     return { error: null };
 
-  } catch (e: any) {
-    // Étape 5 : Capture de toute autre exception
-    console.error('CRITICAL SERVER ACTION ERROR:', e.message);
-    return { error: `Erreur serveur inattendue: ${e.message}` };
+  } catch (unexpectedError: any) {
+    // 🔥 Ce bloc attrape TOUTE exception non gérée
+    console.error('💥 Erreur critique dans Server Action:', unexpectedError);
+    return { error: `Erreur serveur inattendue: ${unexpectedError.message}` };
   }
-}
+};
+
 
 export async function signOut() {
     const cookieStore = cookies()
