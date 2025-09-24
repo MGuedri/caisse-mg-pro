@@ -17,8 +17,8 @@ import {
 import {
   Users, Trash2, Edit, Plus, Wallet, DollarSign, Star, UserPlus, Landmark, Loader2,
 } from 'lucide-react';
-import { SalariesTabContent } from './salaries-tab';
-import { ClientForm, EmployeeForm, ExpenseForm } from './management-forms';
+import { SalariesTabContent } from '@/app/(app)/management/salaries-tab';
+import { ClientForm, EmployeeForm, ExpenseForm } from '@/app/(app)/management/management-forms';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { addClient, updateClient, deleteClient, addEmployee, updateEmployee, deleteEmployee, addExpense, updateExpense, deleteExpense } from '@/app/actions/mutations';

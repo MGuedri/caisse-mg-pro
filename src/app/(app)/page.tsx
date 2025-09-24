@@ -7,7 +7,7 @@ import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
 import { ManagementScreen } from '@/app/(app)/management/management-screen';
 import { SuperAdminScreen } from '@/app/(app)/superadmin/superadmin-screen';
-import { LoginScreen } from './login';
+import { LoginScreen } from '@/app/(app)/login';
 import {
   ShoppingCart,
   LayoutGrid,
