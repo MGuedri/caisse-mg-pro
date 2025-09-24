@@ -87,11 +87,10 @@ export const SuperAdminScreen: React.FC = () => {
   }, [user, refreshData]);
 
   const platformStats = useMemo(() => {
-    // These stats are global and should not depend on viewedCommerceId
     return {
       commerceCount: commerces.length,
-      clientCount: clients.length, // This now reflects all clients from all commerces initially
-      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0), // Same for orders
+      clientCount: clients.length,
+      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
     }
   }, [commerces, clients, orders]);
 
@@ -234,7 +233,7 @@ export const SuperAdminScreen: React.FC = () => {
       <main className="p-4 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-gray-800 p-1 mb-6">
-                <TabsTrigger value="dashboard" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
+                <TabsTrigger value="dashboard" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2" disabled={!viewedCommerceId}>
                     <LayoutGrid className="h-4 w-4"/> Tableau de Bord
                 </TabsTrigger>
                 <TabsTrigger value="management" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
@@ -465,5 +464,3 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
-
-    
