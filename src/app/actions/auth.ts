@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -54,7 +55,9 @@ export async function signIn(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      // Directly return the raw, potentially more informative, error message.
+      if (error.message === 'Invalid login credentials') {
+        return { error: 'Email ou mot de passe incorrect.' };
+      }
       return { error: `Erreur Supabase: ${error.message}` };
     }
 
