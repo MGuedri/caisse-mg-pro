@@ -34,16 +34,17 @@ export const LoginScreen = () => {
             const formData = new FormData(e.currentTarget);
             const result = await signIn(formData);
 
-            if (result.error) {
-                throw new Error(result.error);
+            if (result && result.error) {
+                setError(result.error);
+                setIsPending(false);
+                return;
             }
             
             // On success, refresh the page. The layout will re-render and show the app.
             router.refresh();
 
         } catch (err: any) {
-            setError(err.message || 'Erreur de connexion. Vérifiez vos identifiants.');
-        } finally {
+            setError('Une erreur inattendue est survenue.');
             setIsPending(false);
         }
     };
