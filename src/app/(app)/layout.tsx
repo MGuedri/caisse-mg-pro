@@ -1,7 +1,6 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { AppProvider, AppUser } from "@/app/(app)/app-provider";
 import { fetchAllDataForAdmin, fetchDataForCommerce } from '../actions/data';
 
@@ -28,7 +27,7 @@ async function getUserAndData(): Promise<{ user: AppUser | null; initialData: an
     let appUser: AppUser | null = null;
     let initialData = null;
 
-    // Check for SuperAdmin first
+    // 1. Check if the user is a SuperAdmin
     const { data: superAdmin } = await supabase
         .from('superadmins')
         .select('user_id')
@@ -41,11 +40,12 @@ async function getUserAndData(): Promise<{ user: AppUser | null; initialData: an
             name: 'Super Admin',
             email: authUser.email!,
             role: 'SuperAdmin',
-            isSuperAdmin: true
+            isSuperAdmin: true,
         };
         const { data } = await fetchAllDataForAdmin();
         initialData = data;
     } else {
+        // 2. If not a SuperAdmin, check if they are a Commerce Owner
         const { data: commerce } = await supabase
             .from('commerces')
             .select('*')
@@ -68,6 +68,7 @@ async function getUserAndData(): Promise<{ user: AppUser | null; initialData: an
         }
     }
 
+    // If no role is found, the user will be null and redirected to login.
     return { user: appUser, initialData };
 }
 
@@ -79,6 +80,8 @@ export default async function AppLayout({
 }) {
   const { user, initialData } = await getUserAndData();
 
+  // If the user is not found or doesn't have a valid role,
+  // the AppProvider will receive null and the page component will show the LoginScreen.
   return (
     <AppProvider user={user} initialData={initialData}>
       {children}
