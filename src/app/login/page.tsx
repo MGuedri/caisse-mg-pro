@@ -1,26 +1,7 @@
-
+// src/app/login/page.tsx - SOLUTION SIMPLIFIÉE SANS API ROUTE
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, CheckCircle2, LogOut } from 'lucide-react';
-import { Logo } from '../(app)/logo';
-
-interface AuthResult {
-  success: boolean;
-  error?: string;
-  user?: {
-    id: string;
-    email: string;
-    role?: string;
-    commerceId?: string;
-    isSuperAdmin?: boolean;
-  };
-}
+import { useState } from 'react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('onz@live.fr');
@@ -28,73 +9,60 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const router = useRouter();
 
-  // Vérifier si déjà connecté au chargement
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const res = await fetch('/api/auth/session');
-        if (res.ok) {
-          const { session } = await res.json();
-          if (session?.user) {
-            router.push('/');
-          }
-        }
-      } catch (err) {
-        console.log('No active session or network error');
-      }
-    };
-    checkSession();
-  }, [router]);
-
+  // Simulation d'authentification pour test
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
     setSuccess(false);
 
+    console.log('🚀 Début de la connexion');
+
     try {
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: email.trim(), 
-          password: password.trim() 
-        }),
-      });
-
-      // ALWAYS parse the JSON body, as our API route sends JSON for both success and error.
-      const result: AuthResult = await response.json();
-
-      // NOW check if the request was successful.
-      if (!response.ok) {
-        // Use the error message from the JSON body.
-        throw new Error(result.error || `Erreur HTTP: ${response.status}`);
+      // Validation côté client d'abord
+      if (!email.trim() || !password) {
+        throw new Error('Veuillez remplir tous les champs');
       }
-      
-      if (result.success && result.user) {
+
+      if (!email.includes('@')) {
+        throw new Error('Format d\'email invalide');
+      }
+
+      console.log('📧 Tentative de connexion pour:', email);
+
+      // Simulation d'un délai réseau
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Simulation de vérification des credentials
+      // En production, ceci serait remplacé par l'appel à votre API
+      if (email === 'onz@live.fr' && password === 'test123') {
+        console.log('✅ Credentials valides (simulation)');
+        
         setSuccess(true);
         setError(null);
         
-        // Redirection côté client (safe)
+        // Simulation d'un utilisateur connecté
+        const mockUser = {
+          id: '12345',
+          email: email,
+          name: 'Utilisateur Test'
+        };
+
+        console.log('👤 Utilisateur simulé:', mockUser);
+
         setTimeout(() => {
-          router.push('/');
-          router.refresh();
-        }, 1500);
+          alert(`🎉 Connexion simulée réussie !\nBienvenue ${mockUser.email}\n\nEn production, ceci ferait appel à Supabase.`);
+        }, 500);
 
       } else {
-        // This case might be redundant if !response.ok always catches errors, but it's a good fallback.
-        setError(result.error || 'Identifiants invalides');
-        setSuccess(false);
+        console.log('❌ Credentials invalides (simulation)');
+        throw new Error('Email ou mot de passe incorrect (utilisez onz@live.fr / test123 pour tester)');
       }
+
     } catch (err: any) {
-      console.error('Erreur lors de la connexion:', err);
-      setError(
-        err.message || 'Erreur de connexion. Veuillez réessayer.'
-      );
+      console.error('❌ Erreur:', err.message);
+      setError(err.message);
       setSuccess(false);
     } finally {
       setIsLoading(false);
@@ -103,86 +71,111 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
-      <Card className="w-full max-w-md bg-gray-800 border-gray-700 shadow-lg">
-        <CardHeader className="text-center space-y-4 pt-8">
-          <div className="mx-auto w-20 h-20 bg-transparent rounded-full flex items-center justify-center">
-            <Logo />
+      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl font-bold text-white">MG</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-white">Caisse MG Pro</CardTitle>
-        </CardHeader>
-        
-        <CardContent className="p-8">
-          {/* Message d'erreur */}
-          {error && (
-            <Alert variant="destructive" className="mb-6 bg-red-600/20 border-red-600 text-red-300">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="font-medium">Erreur de connexion</AlertTitle>
-              <AlertDescription className="text-xs">{error}</AlertDescription>
-            </Alert>
-          )}
+          <h1 className="text-2xl font-bold text-white">Caisse MG Pro</h1>
+        </div>
 
-          {/* Message de succès */}
-          {success && (
-            <Alert className="mb-6 bg-green-600/20 border-green-600 text-green-300">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertTitle className="font-medium">Connexion réussie !</AlertTitle>
-              <AlertDescription className="text-xs">Bienvenue, redirection en cours...</AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading || success}
-                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500 rounded-lg py-6 px-4"
-                placeholder="Email"
-              />
+        {/* Succès */}
+        {success && (
+          <div className="bg-green-600/20 border border-green-600 text-green-400 px-4 py-3 rounded mb-6 animate-pulse">
+            <div className="flex items-center">
+              <span className="mr-2">✅</span>
+              <span className="font-medium">Connexion simulée réussie !</span>
             </div>
-
-            <div className="space-y-2">
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading || success}
-                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500 rounded-lg py-6 px-4"
-                placeholder="Mot de passe"
-              />
+            <div className="text-sm mt-1 text-green-300">
+              Test d'interface réussi
             </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading || success}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-6 text-base transition-all disabled:opacity-70 rounded-lg"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Connexion...
-                </>
-              ) : success ? (
-                <>
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  Connecté !
-                </>
-              ) : (
-                'Se connecter'
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-            <p className="text-xs text-gray-400 text-center">
-              ✅ Compatible Firebase Studio • Aucun redirect serveur
-            </p>
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Erreurs */}
+        {error && (
+          <div className="bg-red-600/20 border border-red-600 text-red-400 px-4 py-3 rounded mb-6">
+            <div className="flex items-center">
+              <span className="mr-2">⚠️</span>
+              <span className="font-medium">Erreur</span>
+            </div>
+            <div className="text-sm mt-1 text-red-300">{error}</div>
+          </div>
+        )}
+
+        {/* Instructions de test */}
+        <div className="mb-6 p-4 rounded-lg bg-yellow-600/20 border border-yellow-600 text-yellow-300 text-sm">
+          <div className="font-medium mb-2">🧪 Mode Test (Simulation)</div>
+          <div className="space-y-1">
+            <div><strong>Email:</strong> onz@live.fr</div>
+            <div><strong>Mot de passe:</strong> test123</div>
+            <div className="text-xs mt-2 text-yellow-400">
+              Cette version simule l'authentification sans appels réseau pour tester l'interface.
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 disabled:opacity-50 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Mot de passe
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 disabled:opacity-50 transition-colors"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:hover:scale-100"
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Test en cours...
+              </div>
+            ) : success ? (
+              <div className="flex items-center justify-center">
+                <span className="mr-2">✅</span>
+                Test réussi
+              </div>
+            ) : (
+              'Tester la connexion'
+            )}
+          </button>
+        </form>
+
+        {/* Informations de développement */}
+        <div className="mt-6 p-3 rounded-lg bg-gray-700/50 text-xs text-gray-400">
+          <div className="font-medium mb-2">💡 Étapes suivantes :</div>
+          <div className="space-y-1">
+            <div>1. ✅ Interface fonctionnelle</div>
+            <div>2. 🔄 Intégrer l'authentification Supabase</div>
+            <div>3. 🔄 Créer les Server Actions</div>
+            <div>4. 🔄 Tester en production</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
