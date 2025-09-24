@@ -2,7 +2,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { AppProvider, AppUser } from "@/app/(app)/app-provider";
-import { fetchAllDataForAdmin, fetchDataForCommerce } from '../actions/data';
+import { fetchAllDataForAdmin, fetchDataForCommerce } from '@/app/actions/data';
 
 async function getUserAndData(): Promise<{ user: AppUser | null; initialData: any }> {
     const cookieStore = cookies();
