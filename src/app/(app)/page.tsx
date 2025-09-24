@@ -6,7 +6,7 @@ import { POSScreen } from '@/app/(app)/pos/pos-screen';
 import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
 import { ManagementScreen } from '@/app/(app)/management/management-screen';
-import { SuperAdminScreen } from '@/app/(app)/superadmin/superadmin-screen';
+import { SuperAdminScreen } from '@/app/(app)/superadmin/screen';
 import { LoginScreen } from '@/app/(app)/login';
 import {
   ShoppingCart,
