@@ -73,7 +73,7 @@ export const SuperAdminScreen: React.FC = () => {
   } = useApp();
 
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(viewedCommerceId ? 'dashboard' : 'management');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
   const [commerceToInvoiceId, setCommerceToInvoiceId] = useState<string | null>(null);
@@ -87,10 +87,11 @@ export const SuperAdminScreen: React.FC = () => {
   }, [user, refreshData]);
 
   const platformStats = useMemo(() => {
+    // These stats are global and should not depend on viewedCommerceId
     return {
       commerceCount: commerces.length,
-      clientCount: clients.length,
-      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
+      clientCount: clients.length, // This now reflects all clients from all commerces initially
+      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0), // Same for orders
     }
   }, [commerces, clients, orders]);
 
@@ -464,3 +465,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
