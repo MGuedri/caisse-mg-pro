@@ -54,10 +54,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
 import { useRouter } from 'next/navigation';
+import { signOut } from '@/app/actions/auth';
 
 const handleSignOut = async (router: any) => {
-    await fetch('/api/auth/signout', { method: 'POST' });
-    router.push('/');
+    await signOut();
     router.refresh();
 };
 
@@ -460,3 +460,4 @@ export const SuperAdminScreen: React.FC = () => {
       />
     </div>
   );
+};
