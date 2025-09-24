@@ -209,7 +209,7 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
 
         // For owner, data is already filtered. For admin, we filter client-side.
         if (user.isSuperAdmin) {
-            const currentId = viewedCommerceId || (data.commerces && data.commerces.length > 0 ? data.commerces[0].id : null);
+            const currentId = viewedCommerceId;
              if (currentId) {
                 setProducts(data.products?.filter(p => p.commerce_id === currentId) || []);
                 setClients(data.clients?.filter(c => c.commerce_id === currentId) || []);
@@ -217,7 +217,7 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
                 setOrders(data.orders?.filter(o => o.commerce_id === currentId) || []);
                 setExpenses(data.expenses?.filter(e => e.commerce_id === currentId) || []);
              } else {
-                // If no commerce is viewed, clear the data
+                // If no commerce is viewed, clear the data to prevent crashes
                 setProducts([]);
                 setClients([]);
                 setEmployees([]);
