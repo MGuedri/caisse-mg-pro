@@ -8,6 +8,12 @@ export async function signIn(formData: FormData) {
   const email = String(formData.get('email'));
   const password = String(formData.get('password'));
 
+  // Garde de vérification des variables d'environnement
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('SERVER ACTION ERROR: Missing Supabase environment variables.');
+      return { error: 'Erreur de configuration serveur : Clés Supabase manquantes.' };
+  }
+
   const supabase = createServerActionClient({ cookies });
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -16,11 +22,12 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    console.error('Sign-in error:', error.message);
+    console.error('Supabase Sign-in error:', error.message);
     if (error.message.includes('Invalid login credentials')) {
         return { error: 'Email ou mot de passe incorrect.' };
     }
-    return { error: 'Une erreur est survenue lors de la connexion.' };
+    // Retourner le message d'erreur réel de Supabase pour les autres cas
+    return { error: error.message };
   }
 
   return { error: null };

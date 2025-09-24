@@ -44,7 +44,8 @@ export const LoginScreen = () => {
             router.refresh();
 
         } catch (err: any) {
-            setError('Une erreur inattendue est survenue.');
+            console.error("Client-side error during sign-in:", err);
+            setError('Une erreur serveur inattendue est survenue.');
             setIsPending(false);
         }
     };
