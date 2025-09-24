@@ -29,27 +29,15 @@ export const LoginScreen = () => {
         setIsPending(true);
         setError(null);
 
-        const formData = new FormData(e.currentTarget);
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
-
-        if (!email || !password) {
-            setError('Veuillez saisir votre email et votre mot de passe.');
-            setIsPending(false);
-            return;
-        }
-
         try {
-            const response = await fetch('/api/auth/signin', {
+            const res = await fetch('/api/auth/signin', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: new FormData(e.currentTarget),
             });
 
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Une erreur est survenue lors de la connexion.');
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || 'Erreur de connexion');
             }
             
             // On success, refresh the page. The layout will re-render and show the app.
