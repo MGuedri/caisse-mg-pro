@@ -23,11 +23,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
 import { SyncStatusItem } from '@/components/sync-status-item';
 import { useRouter } from 'next/navigation';
+import { signOut } from '@/app/actions/auth';
 
 
 const handleSignOut = async (router: any) => {
-    await fetch('/api/auth/signout', { method: 'POST' });
-    router.push('/');
+    await signOut();
     router.refresh();
 };
 
@@ -44,6 +44,7 @@ const MainApp: React.FC = () => {
   ];
 
   if (!user) {
+    // This case should ideally not be hit if layout protects correctly, but as a fallback.
     return <LoginScreen />;
   }
   
@@ -134,5 +135,9 @@ const MainApp: React.FC = () => {
 };
 
 export default function HomePage() {
+  const { user } = useApp();
+  if (!user) {
+    return <LoginScreen />;
+  }
   return <MainApp />;
 }

@@ -6,6 +6,7 @@ import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
+import { signIn } from '@/app/actions/auth';
 
 function SubmitButton({ pending }: { pending: boolean }) {
     return (
@@ -30,21 +31,18 @@ export const LoginScreen = () => {
         setError(null);
 
         try {
-            const res = await fetch('/api/auth/signin', {
-                method: 'POST',
-                body: new FormData(e.currentTarget),
-            });
+            const formData = new FormData(e.currentTarget);
+            const result = await signIn(formData);
 
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.message || 'Erreur de connexion');
+            if (result.error) {
+                throw new Error(result.error);
             }
             
             // On success, refresh the page. The layout will re-render and show the app.
             router.refresh();
 
         } catch (err: any) {
-            setError(err.message || 'Erreur de connexion. Vérifiez la console pour plus de détails.');
+            setError(err.message || 'Erreur de connexion. Vérifiez vos identifiants.');
         } finally {
             setIsPending(false);
         }
