@@ -1,12 +1,23 @@
 
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppProvider, AppUser } from "@/app/(app)/app-provider";
 import { fetchAllDataForAdmin, fetchDataForCommerce } from '../actions/data';
 
 async function getUserAndData(): Promise<{ user: AppUser | null; initialData: any }> {
-    const supabase = createServerActionClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value
+                },
+            },
+        }
+    );
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
@@ -57,8 +68,6 @@ async function getUserAndData(): Promise<{ user: AppUser | null; initialData: an
         }
     }
 
-    // If no role could be assigned, the user is not authorized for this app.
-    // The component will render the login screen.
     return { user: appUser, initialData };
 }
 
@@ -69,9 +78,6 @@ export default async function AppLayout({
   children: React.ReactNode
 }) {
   const { user, initialData } = await getUserAndData();
-
-  // If there is no user, the AppProvider will receive null and the MainApp component will render the LoginScreen.
-  // No server-side redirect is needed here, which is more flexible.
 
   return (
     <AppProvider user={user} initialData={initialData}>
