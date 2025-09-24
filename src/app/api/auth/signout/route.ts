@@ -1,3 +1,4 @@
+
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,5 +9,6 @@ export async function POST(req: NextRequest) {
   // Sign out the user
   await supabase.auth.signOut();
 
+  // Revalidate the path to ensure the new session state is reflected
   return NextResponse.json({ success: true });
 }

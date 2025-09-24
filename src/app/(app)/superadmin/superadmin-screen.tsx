@@ -57,12 +57,13 @@ import { useRouter } from 'next/navigation';
 
 const handleSignOut = async (router: any) => {
     await fetch('/api/auth/signout', { method: 'POST' });
-    router.push('/login');
+    router.push('/');
+    router.refresh();
 };
 
 export const SuperAdminScreen: React.FC = () => {
   const { 
-    user, setUser, setCurrentView,
+    user,
     commerces,
     clients, orders,
     invoices,

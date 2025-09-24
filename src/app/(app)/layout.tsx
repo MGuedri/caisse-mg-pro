@@ -17,11 +17,18 @@ async function getUserAndData(): Promise<{ user: AppUser | null; initialData: an
     let appUser: AppUser | null = null;
     let initialData = null;
 
-    if (authUser.email?.toLowerCase() === 'onz@live.fr') {
+    // Check for SuperAdmin first
+    const { data: superAdmin } = await supabase
+        .from('superadmins')
+        .select('user_id')
+        .eq('user_id', authUser.id)
+        .single();
+
+    if (superAdmin) {
         appUser = {
             id: authUser.id,
             name: 'Super Admin',
-            email: authUser.email,
+            email: authUser.email!,
             role: 'SuperAdmin',
             isSuperAdmin: true
         };
@@ -50,10 +57,8 @@ async function getUserAndData(): Promise<{ user: AppUser | null; initialData: an
         }
     }
 
-    if (!appUser) {
-       redirect('/login');
-    }
-
+    // If no role could be assigned, the user is not authorized for this app.
+    // The component will render the login screen.
     return { user: appUser, initialData };
 }
 
@@ -65,17 +70,12 @@ export default async function AppLayout({
 }) {
   const { user, initialData } = await getUserAndData();
 
-  if (!user) {
-    return redirect('/login');
-  }
+  // If there is no user, the AppProvider will receive null and the MainApp component will render the LoginScreen.
+  // No server-side redirect is needed here, which is more flexible.
 
   return (
     <AppProvider user={user} initialData={initialData}>
-      <main>
-        {children}
-      </main>
+      {children}
     </AppProvider>
   )
 }
-
-    

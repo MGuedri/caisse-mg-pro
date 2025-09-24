@@ -1,12 +1,13 @@
 
 'use client';
 
-import { AppProvider, useApp } from '@/app/(app)/app-provider';
+import { useApp } from '@/app/(app)/app-provider';
 import { POSScreen } from '@/app/(app)/pos/pos-screen';
 import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
 import { ManagementScreen } from '@/app/(app)/management/management-screen';
 import { SuperAdminScreen } from '@/app/(app)/superadmin/superadmin-screen';
+import { LoginScreen } from './login';
 import {
   ShoppingCart,
   LayoutGrid,
@@ -17,7 +18,6 @@ import {
   Building,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/app/(app)/logo';
@@ -27,14 +27,14 @@ import { useRouter } from 'next/navigation';
 
 const handleSignOut = async (router: any) => {
     await fetch('/api/auth/signout', { method: 'POST' });
-    router.push('/login');
+    router.push('/');
+    router.refresh();
 };
 
 // --- NAVIGATION PRINCIPALE ---
 const MainApp: React.FC = () => {
-  const { user, setUser, currentView, setCurrentView, refreshData } = useApp();
+  const { user, currentView, setCurrentView } = useApp();
   const router = useRouter();
-
 
   const navigation = [
     { id: 'pos', label: 'Caisse', icon: ShoppingCart, allowedRoles: ['Owner', 'Caissier'] },
@@ -44,8 +44,7 @@ const MainApp: React.FC = () => {
   ];
 
   if (!user) {
-    // This should theoretically not be reached if the layout handles redirection
-    return null;
+    return <LoginScreen />;
   }
   
   if (user.isSuperAdmin) {
