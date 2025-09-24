@@ -163,7 +163,7 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
   const [invoices, setInvoices] = useState<Invoice[]>(initialData?.invoices || []);
   const [commerces, setCommerces] = useState<Commerce[]>(initialData?.commerces || []);
 
-  const [currentView, setCurrentView] = useState<string>(initialUser?.isSuperAdmin ? 'dashboard' : 'pos');
+  const [currentView, setCurrentView] = useState<string>(initialUser?.isSuperAdmin ? 'superadmin' : 'pos');
   const [includeVAT, setIncludeVAT] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'synced' | 'error'>('synced');
   const [lastSync, setLastSync] = useState<Date | null>(new Date());
@@ -210,11 +210,11 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
         if (user.isSuperAdmin) {
             const currentId = viewedCommerceId;
              if (currentId) {
-                setProducts(data.products?.filter(p => p.commerce_id === currentId) || []);
-                setClients(data.clients?.filter(c => c.commerce_id === currentId) || []);
-                setEmployees(data.employees?.filter(e => e.commerce_id === currentId) || []);
-                setOrders(data.orders?.filter(o => o.commerce_id === currentId) || []);
-                setExpenses(data.expenses?.filter(e => e.commerce_id === currentId) || []);
+                setProducts(data.products?.filter((p: Product) => p.commerce_id === currentId) || []);
+                setClients(data.clients?.filter((c: Client) => c.commerce_id === currentId) || []);
+                setEmployees(data.employees?.filter((e: Employee) => e.commerce_id === currentId) || []);
+                setOrders(data.orders?.filter((o: Order) => o.commerce_id === currentId) || []);
+                setExpenses(data.expenses?.filter((e: Expense) => e.commerce_id === currentId) || []);
              } else {
                 setProducts([]);
                 setClients([]);
@@ -245,6 +245,8 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
   }, [initialUser]);
 
   useEffect(() => {
+    // This effect ensures data is refreshed for the Super Admin when the viewed commerce changes.
+    // For regular users, data is fetched once on login via initialData.
     if (user?.isSuperAdmin) {
       refreshData();
     }
