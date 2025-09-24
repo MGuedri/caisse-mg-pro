@@ -49,35 +49,57 @@ async function handleMutation(callback: (supabase: any) => Promise<any>, revalid
 // COMMERCE MUTATIONS (SuperAdmin only)
 // ======================
 
-export async function createCommerce(commerceData: Commerce, ownerPassword?: string) {
+export async function createCommerce(commerceData: Partial<Commerce>, ownerPassword?: string) {
      const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
     try {
+        if (!commerceData.owneremail || !ownerPassword) {
+            return { error: 'Email and password for owner are required.' };
+        }
+
         const { data: authData, error: authError } = await supabaseAdmin.auth.createUser({
             email: commerceData.owneremail,
-            password: ownerPassword!,
-            email_confirm: true,
+            password: ownerPassword,
+            email_confirm: true, // Auto-confirms the email
         });
 
         if (authError) {
-            return { error: `Erreur Auth: ${authError.message}` };
+            return { error: `Auth Error: ${authError.message}` };
         }
+        
         const owner_id = authData.user!.id;
         
-        const commerceToInsert = { ...commerceData };
-        // Remove fields that are not in the table or should be auto-generated
-        delete (commerceToInsert as any).id;
+        // Prepare data for insertion, ensuring owner_id is included
+        const commerceToInsert = {
+            ...commerceData,
+            owner_id: owner_id,
+        };
+        delete (commerceToInsert as any).id; // Remove id if it exists
+
+
+        const { data, error } = await createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { cookies }
+        )
+        .from('commerces')
+        .insert(commerceToInsert)
+        .select()
+        .single();
+
+        if (error) {
+            // If creating commerce fails, we should ideally delete the created user
+            await supabaseAdmin.auth.admin.deleteUser(owner_id);
+            return { error: `Commerce Creation Error: ${error.message}` };
+        }
         
-        return handleMutation(supabase => 
-            supabase.from('commerces').insert({
-                ...commerceToInsert,
-                owner_id, // Ensure owner_id is set correctly
-            }),
-            ['/'] 
-        );
+        revalidatePath('/');
+        return { data, error: null };
+
     } catch (e: any) {
         return { data: null, error: e.message };
     }
@@ -167,7 +189,7 @@ export async function updateClient(id: string, clientData: Partial<Client>) {
     return handleMutation(supabase => supabase.from('clients').update(clientData).eq('id', id), ['/']);
 }
 export async function deleteClient(id: string) {
-    return handleMutation(supabase => supabase.from('clients').delete().eq('id', id), ['/']);
+    return handleMutation(supabase => supabase.from('clients').delete().eq('id',id), ['/']);
 }
 
 export async function addEmployee(employeeData: Omit<Employee, 'id'>) {
