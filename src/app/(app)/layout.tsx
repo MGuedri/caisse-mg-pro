@@ -2,11 +2,7 @@
 'use client';
 
 import React from 'react';
-import { useApp, Commerce, AppUser } from '@/app/(app)/app-provider';
-import { POSScreen } from '@/app/(app)/pos/pos-screen';
-import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
-import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
-import { ManagementScreen } from '@/app/(app)/management/management-screen';
+import { useApp, AppProvider, AppUser } from '@/app/(app)/app-provider';
 import { SuperAdminScreen } from '@/app/(app)/superadmin/screen';
 import { LoginScreen } from '@/app/(app)/login';
 import {
@@ -25,15 +21,14 @@ import { Logo } from '@/app/(app)/logo';
 import { SyncStatusItem } from '@/components/sync-status-item';
 import { useRouter } from 'next/navigation';
 import { signOut } from '@/app/actions/auth';
-import { AppProvider } from "@/app/(app)/app-provider";
 
-// This layout component will now act as the main shell for the authenticated part of the app.
 const handleSignOut = async (router: any) => {
     await signOut();
     router.refresh();
 };
 
-const AppShell: React.FC = ({ children }: { children: React.ReactNode }) => {
+// This component is the main application shell for authenticated users.
+const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, currentView, setCurrentView } = useApp();
   const router = useRouter();
 
@@ -47,12 +42,13 @@ const AppShell: React.FC = ({ children }: { children: React.ReactNode }) => {
       { id: 'pos', label: 'Caisse', icon: ShoppingCart },
   ];
   
-  // Login screen is shown if no user is authenticated.
+  // This should theoretically not be reached if the layout logic is correct,
+  // but it's a safe fallback.
   if (!user) {
     return <LoginScreen />;
   }
 
-  // If user is a SuperAdmin, render ONLY the SuperAdminScreen.
+  // SuperAdmin has a completely separate interface.
   if (user.isSuperAdmin) {
      return <SuperAdminScreen />;
   }
@@ -141,17 +137,20 @@ const AppShell: React.FC = ({ children }: { children: React.ReactNode }) => {
 };
 
 
-// This is the actual layout component required by Next.js
+// This is the actual layout component required by Next.js.
+// It wraps the entire authenticated part of the app in the AppProvider.
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // We wrap the entire authenticated app in the AppProvider
-  // The AppShell component, which contains the main UI, will be a child of AppProvider.
-  // The actual page content (from page.tsx) will be passed as `children` to the AppShell.
+  // `user` and `initialData` are props that would be passed from a server component if we were fetching
+  // session data here. For now, we pass null and let the provider handle it client-side.
+  const user: AppUser | null = null;
+  const initialData = null;
+
   return (
-    <AppProvider user={null} initialData={null}>
+    <AppProvider user={user} initialData={initialData}>
       <AppShell>
         {children}
       </AppShell>

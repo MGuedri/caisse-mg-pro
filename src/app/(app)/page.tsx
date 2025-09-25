@@ -17,26 +17,23 @@ const ActiveView = () => {
   // Set initial view based on user role when the component mounts or user changes.
   React.useEffect(() => {
     if (user) {
-        if (user.isSuperAdmin) {
-            // SuperAdmin view is handled by the layout now.
-            // This component won't even render for SuperAdmin.
-        } else if (user.role === 'Owner') {
+        // The layout handles the SuperAdmin case. This component will only render
+        // for regular users, so we can safely set their default view.
+        if (user.role === 'Owner') {
             setCurrentView('dashboard');
-        } else {
+        } else if (user.role === 'Caissier') {
             setCurrentView('pos');
         }
     }
   }, [user, setCurrentView]);
 
-  if (!user) {
-    // Should be handled by the layout, but as a fallback.
-    return <LoginScreen />;
-  }
-
-  if (user.isSuperAdmin) {
-    // This case is now handled by the layout to prevent crashes.
-    // The layout renders SuperAdminScreen directly.
-    return <SuperAdminScreen />;
+  // The AppShell in the layout handles the !user and isSuperAdmin cases.
+  // We only need to render the view for a logged-in, regular user.
+  if (!user || user.isSuperAdmin) {
+    // This part should not be reached if the layout is working correctly.
+    // It's a fallback. SuperAdminScreen is rendered in the layout.
+    // LoginScreen is also handled by the layout.
+    return null;
   }
   
   // Render the current view for normal users
@@ -50,7 +47,7 @@ const ActiveView = () => {
     case 'management':
       return <ManagementScreen />;
     default:
-      // Default to POS for cashiers, dashboard for owners.
+      // Fallback default view if `currentView` is not set.
       return user.role === 'Owner' ? <DashboardScreen /> : <POSScreen />;
   }
 }
@@ -58,6 +55,16 @@ const ActiveView = () => {
 
 export default function HomePage() {
   // This page now simply renders the ActiveView component.
-  // All the layout shell (header, nav) is handled by `layout.tsx`.
+  // All the layout shell (header, nav) is handled by `src/app/(app)/layout.tsx`.
+  const { user } = useApp();
+
+  // The layout now contains the AppProvider and the main AppShell.
+  // This page component's only job is to render the correct "screen"
+  // based on the context provided by the layout.
+  // The layout will show LoginScreen if there is no user.
+  if (!user) {
+      return null;
+  }
+  
   return <ActiveView />;
 }
