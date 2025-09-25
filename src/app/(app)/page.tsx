@@ -149,7 +149,7 @@ export default function HomePage() {
   React.useEffect(() => {
     if (user) {
         if (user.isSuperAdmin) {
-            // SuperAdmin view is handled directly by MainApp.
+            // SuperAdmin view is handled directly by MainApp. No need to set a view.
         } else if (user.role === 'Owner') {
             setCurrentView('dashboard');
         } else {

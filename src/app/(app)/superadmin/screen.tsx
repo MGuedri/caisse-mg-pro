@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, useState, useEffect, useTransition } from 'react';
+import React, { useMemo, useState, useTransition } from 'react';
 import { useApp } from '@/app/(app)/app-provider';
 import type { Commerce, Invoice } from '@/app/(app)/app-provider';
 import {
@@ -61,7 +61,6 @@ export const SuperAdminScreen: React.FC = () => {
     user,
     commerces,
     invoices,
-    viewedCommerceId, setViewedCommerceId,
   } = useApp();
 
   const router = useRouter();
@@ -71,14 +70,6 @@ export const SuperAdminScreen: React.FC = () => {
   const [commerceToInvoiceId, setCommerceToInvoiceId] = useState<string | null>(null);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    // When returning to this screen, ensure no commerce is being viewed.
-    if (viewedCommerceId) {
-      setViewedCommerceId(null);
-    }
-  }, []);
-
 
   const platformStats = useMemo(() => {
     return {
@@ -125,9 +116,6 @@ export const SuperAdminScreen: React.FC = () => {
           toast({variant: 'destructive', title: 'Erreur', description: result.error});
       } else {
           toast({variant: 'success', title: 'Commerce Supprimé'});
-          if (viewedCommerceId === commerce.id) {
-            setViewedCommerceId(null);
-          }
       }
     });
   };
@@ -225,7 +213,7 @@ export const SuperAdminScreen: React.FC = () => {
                         <div>
                             <CardTitle className="text-white">Gestion des Commerces ({platformStats.commerceCount})</CardTitle>
                             <CardDescription className="text-gray-400">
-                                Pour voir le tableau de bord d'un commerce, veuillez vous connecter avec le compte propriétaire correspondant.
+                                Pour voir les détails d'un commerce, veuillez vous connecter avec le compte propriétaire correspondant.
                             </CardDescription>
                         </div>
                          <Button onClick={() => handleOpenModal()} className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto" disabled={isPending}>
@@ -396,3 +384,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
