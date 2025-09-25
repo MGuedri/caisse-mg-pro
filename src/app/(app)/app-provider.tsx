@@ -168,26 +168,40 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
   const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'synced' | 'error'>('synced');
   const [lastSync, setLastSync] = useState<Date | null>(new Date());
   const [isOnline, setIsOnline] = useState(true);
-  const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(initialData?.commerces?.[0]?.id || null);
+  const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(null);
 
-  const clearData = useCallback(() => {
-      setProducts([]);
-      setClients([]);
-      setEmployees([]);
-      setOrders([]);
-      setExpenses([]);
-      setInvoices([]);
-      setCommerces([]);
+  const clearCommerceData = useCallback(() => {
+    setProducts([]);
+    setClients([]);
+    setEmployees([]);
+    setOrders([]);
+    setExpenses([]);
   }, []);
 
   const refreshData = useCallback(async () => {
     if (!user) return;
     setSyncStatus('syncing');
+
     try {
         let result;
         if (user.isSuperAdmin) {
-            result = await fetchAllDataForAdmin();
+            // SuperAdmin initially fetches only non-commerce-specific data
+            const adminResult = await fetchAllDataForAdmin();
+            setCommerces(adminResult.data?.commerces || []);
+            setInvoices(adminResult.data?.invoices || []);
+
+            if (viewedCommerceId) {
+                // If a commerce is selected, fetch its specific data
+                result = await fetchDataForCommerce(viewedCommerceId);
+            } else {
+                 // If no commerce is selected, ensure commerce data is cleared
+                clearCommerceData();
+                setSyncStatus('synced');
+                setLastSync(new Date());
+                return; // End here if no commerce is selected
+            }
         } else if (user.commerceId) {
+            // Owner fetches data for their own commerce
             result = await fetchDataForCommerce(user.commerceId);
         } else {
           result = { data: null, error: "No commerceId found for user" };
@@ -196,39 +210,13 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
         if (result.error || !result.data) {
           throw new Error(result.error || 'Failed to fetch data');
         }
-
+        
         const data = result.data;
-
-        if (data.commerces) {
-            setCommerces(data.commerces);
-            if (!viewedCommerceId && data.commerces.length > 0) {
-              setViewedCommerceId(data.commerces[0].id);
-            }
-        }
-        if (data.invoices) setInvoices(data.invoices);
-
-        if (user.isSuperAdmin) {
-            const currentId = viewedCommerceId;
-             if (currentId) {
-                setProducts(data.products?.filter((p: Product) => p.commerce_id === currentId) || []);
-                setClients(data.clients?.filter((c: Client) => c.commerce_id === currentId) || []);
-                setEmployees(data.employees?.filter((e: Employee) => e.commerce_id === currentId) || []);
-                setOrders(data.orders?.filter((o: Order) => o.commerce_id === currentId) || []);
-                setExpenses(data.expenses?.filter((e: Expense) => e.commerce_id === currentId) || []);
-             } else {
-                setProducts([]);
-                setClients([]);
-                setEmployees([]);
-                setOrders([]);
-                setExpenses([]);
-             }
-        } else {
-             setProducts(data.products || []);
-             setClients(data.clients || []);
-             setEmployees(data.employees || []);
-             setOrders(data.orders || []);
-             setExpenses(data.expenses || []);
-        }
+        setProducts(data.products || []);
+        setClients(data.clients || []);
+        setEmployees(data.employees || []);
+        setOrders(data.orders || []);
+        setExpenses(data.expenses || []);
         
         setSyncStatus('synced');
         setLastSync(new Date());
@@ -236,28 +224,25 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
         console.error("Failed to fetch data:", error.message);
         setSyncStatus('error');
     }
-  }, [user, viewedCommerceId]);
+  }, [user, viewedCommerceId, clearCommerceData]);
 
   useEffect(() => {
     if (initialUser) {
         setUser(initialUser);
+        if (initialUser.isSuperAdmin && initialData?.commerces) {
+            setCommerces(initialData.commerces);
+            setInvoices(initialData.invoices || []);
+            // Don't set viewedCommerceId initially to avoid auto-fetching
+        }
     }
-  }, [initialUser]);
+  }, [initialUser, initialData]);
 
+  // This effect triggers a refresh when the viewedCommerceId changes for SuperAdmin
   useEffect(() => {
     if (user?.isSuperAdmin) {
-      if (viewedCommerceId) {
         refreshData();
-      } else {
-        // If SuperAdmin and no commerce is viewed, clear the commerce-specific data to prevent crashes
-        setProducts([]);
-        setClients([]);
-        setEmployees([]);
-        setOrders([]);
-        setExpenses([]);
-      }
     }
-  }, [user?.isSuperAdmin, viewedCommerceId, refreshData]);
+  }, [user?.isSuperAdmin, viewedCommerceId]); // Dependency on refreshData removed to avoid loop
 
   const value: AppContextType = {
     user, setUser,

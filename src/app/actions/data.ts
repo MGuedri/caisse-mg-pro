@@ -62,30 +62,22 @@ export async function fetchAllDataForAdmin() {
         const [
             commercesRes,
             invoicesRes,
-            productsRes,
-            clientsRes,
-            employeesRes,
-            ordersRes,
-            expensesRes,
         ] = await Promise.all([
             supabase.from('commerces').select('*'),
             supabase.from('invoices').select('*').order('created_at', { ascending: false }),
-            supabase.from('products').select('*'),
-            supabase.from('clients').select('*'),
-            supabase.from('employees').select('*'),
-            supabase.from('orders').select('*'),
-            supabase.from('expenses').select('*'),
         ]);
         
+        // For SuperAdmin, we initially only fetch data that is not commerce-specific.
+        // Commerce-specific data will be fetched on demand when a commerce is selected.
         return {
             data: {
                 commerces: commercesRes.data || [],
                 invoices: invoicesRes.data || [],
-                products: productsRes.data || [],
-                clients: clientsRes.data || [],
-                employees: employeesRes.data || [],
-                orders: ordersRes.data || [],
-                expenses: expensesRes.data || [],
+                products: [],
+                clients: [],
+                employees: [],
+                orders: [],
+                expenses: [],
             }
         };
     });
