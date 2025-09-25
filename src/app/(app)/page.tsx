@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { useApp } from '@/app/(app)/app-provider';
 import { POSScreen } from '@/app/(app)/pos/pos-screen';
 import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
@@ -135,7 +136,14 @@ const MainApp: React.FC = () => {
 };
 
 export default function HomePage() {
-  const { user } = useApp();
+  const { user, setCurrentView } = useApp();
+  
+  React.useEffect(() => {
+    if (user && !user.isSuperAdmin && user.role === 'Owner') {
+      setCurrentView('dashboard');
+    }
+  }, [user, setCurrentView]);
+
   if (!user) {
     return <LoginScreen />;
   }
