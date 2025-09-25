@@ -96,7 +96,7 @@ const MainApp: React.FC = () => {
                   size="sm"
                   className={`
                     ${currentView === item.id 
-                      ? "bg-orange-500 hover:bg-orange-600 text-white" 
+                      ? "bg-blue-500 hover:bg-blue-600 text-white" 
                       : "text-gray-300 hover:bg-gray-700"}
                     flex items-center gap-2
                   `}
@@ -138,7 +138,7 @@ const MainApp: React.FC = () => {
                 <DropdownMenuSeparator className="bg-gray-700"/>
                 <DropdownMenuItem 
                   onClick={() => handleSignOut(router)} 
-                  className="cursor-pointer hover:!bg-orange-500/80"
+                  className="cursor-pointer hover:!bg-blue-500/80"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Déconnexion</span>
@@ -194,7 +194,7 @@ const SuperAdminHeader: React.FC = () => {
                                 size="sm"
                                 className={`
                                     ${currentView === item.id 
-                                    ? "bg-orange-500 hover:bg-orange-600 text-white" 
+                                    ? "bg-blue-500 hover:bg-blue-600 text-white" 
                                     : "text-gray-300 hover:bg-gray-700"}
                                     flex items-center gap-2
                                 `}
@@ -209,7 +209,7 @@ const SuperAdminHeader: React.FC = () => {
                     <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-                        <Avatar className="h-10 w-10 border-2 border-orange-400">
+                        <Avatar className="h-10 w-10 border-2 border-blue-400">
                             <AvatarImage src={`https://i.pravatar.cc/150?u=${user.email}`} alt={user.name} />
                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -265,5 +265,3 @@ export default function HomePage() {
   }
   return <MainApp />;
 }
-
-    

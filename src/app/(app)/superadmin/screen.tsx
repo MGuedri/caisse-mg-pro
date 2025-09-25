@@ -77,11 +77,12 @@ export const SuperAdminScreen: React.FC = () => {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    // This effect ensures that when we land on this screen, we're not viewing a commerce.
-    // The main page component will handle switching to the commerce view if needed.
+    // When returning to this screen, ensure no commerce is being viewed.
     if (viewedCommerceId) {
       setViewedCommerceId(null);
     }
+     // Default to the management tab
+    setCurrentView('management');
   }, []);
 
 
@@ -180,7 +181,7 @@ export const SuperAdminScreen: React.FC = () => {
       <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-4">
           <Logo size="sm" />
-          <div className="hidden sm:flex items-center gap-2 text-orange-400">
+          <div className="hidden sm:flex items-center gap-2 text-blue-400">
             <Shield className="h-5 w-5" />
             <h1 className="text-xl font-bold hidden md:block">Super Admin</h1>
           </div>
@@ -189,7 +190,7 @@ export const SuperAdminScreen: React.FC = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-                  <Avatar className="h-10 w-10 border-2 border-orange-400">
+                  <Avatar className="h-10 w-10 border-2 border-blue-400">
                     <AvatarImage src={`https://i.pravatar.cc/150?u=${user.email}`} alt={user.name} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
@@ -215,10 +216,10 @@ export const SuperAdminScreen: React.FC = () => {
       <main className="p-4 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-gray-800 p-1 mb-6">
-                <TabsTrigger value="management" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
+                <TabsTrigger value="management" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white flex items-center gap-2">
                     <Settings className="h-4 w-4"/> Gestion Commerces
                 </TabsTrigger>
-                <TabsTrigger value="invoicing" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
+                <TabsTrigger value="invoicing" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white flex items-center gap-2">
                     <FileText className="h-4 w-4"/> Facturation
                 </TabsTrigger>
             </TabsList>
@@ -233,7 +234,7 @@ export const SuperAdminScreen: React.FC = () => {
                                 Sélectionnez un commerce pour voir son tableau de bord, ou gérez les commerces ci-dessous.
                             </CardDescription>
                         </div>
-                         <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto" disabled={isPending}>
+                         <Button onClick={() => handleOpenModal()} className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto" disabled={isPending}>
                             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4"/>}
                             Ajouter Commerce
                         </Button>
@@ -381,7 +382,7 @@ export const SuperAdminScreen: React.FC = () => {
                                             toast({variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner un commerce.'})
                                         }
                                     }}
-                                    className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto"
+                                    className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto"
                                     disabled={isPending || !commerceToInvoiceId}
                                 >
                                     {isPending ? <Loader2 className="mr-2h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
@@ -406,5 +407,3 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
-
-    
