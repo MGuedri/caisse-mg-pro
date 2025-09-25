@@ -231,7 +231,7 @@ export const SuperAdminScreen: React.FC = () => {
                         <div>
                             <CardTitle className="text-white">Gestion des Commerces ({platformStats.commerceCount})</CardTitle>
                             <CardDescription className="text-gray-400">
-                                Sélectionnez un commerce pour voir son tableau de bord, ou gérez les commerces ci-dessous.
+                                Pour voir le tableau de bord d'un commerce, veuillez vous connecter avec le compte propriétaire correspondant.
                             </CardDescription>
                         </div>
                          <Button onClick={() => handleOpenModal()} className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto" disabled={isPending}>
@@ -249,7 +249,7 @@ export const SuperAdminScreen: React.FC = () => {
                                     <TableHead className="text-white hidden md:table-cell">Abonnement</TableHead>
                                     <TableHead className="text-white">Prix</TableHead>
                                     <TableHead className="text-white hidden lg:table-cell">Date Création</TableHead>
-                                    <TableHead className="text-right w-[100px]">Actions</TableHead>
+                                    <TableHead className="text-right w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -263,47 +263,42 @@ export const SuperAdminScreen: React.FC = () => {
                                         </TableCell>
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{new Date(commerce.creationdate).toLocaleDateString('fr-FR')}</TableCell>
                                         <TableCell className="text-right">
-                                            <div className='flex gap-1 justify-end'>
-                                                <Button size="sm" variant="outline" className="border-gray-600 text-white" onClick={() => { setViewedCommerceId(commerce.id); setCurrentView('dashboard');}}>
-                                                   Voir
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreVertical className="h-4 w-4" />
                                                 </Button>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
-                                                        <span className="sr-only">Open menu</span>
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
-                                                    <DropdownMenuItem onClick={() => handleOpenModal(commerce)} className="cursor-pointer">
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Modifier
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
+                                                <DropdownMenuItem onClick={() => handleOpenModal(commerce)} className="cursor-pointer">
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Modifier
+                                                </DropdownMenuItem>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-400 focus:text-red-400 focus:!bg-red-900/50">
+                                                        <Trash2 className="mr-2h-4 w-4" />
+                                                        Supprimer
                                                     </DropdownMenuItem>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-400 focus:text-red-400 focus:!bg-red-900/50">
-                                                            <Trash2 className="mr-2h-4 w-4" />
-                                                            Supprimer
-                                                        </DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
-                                                                <AlertDialogDescription className="text-gray-400">
-                                                                    Cette action est irréversible.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel className="border-gray-600">Annuler</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteCommerce(commerce)} className="bg-red-600 hover:bg-red-700">
-                                                                    Confirmer la Suppression
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-gray-400">
+                                                                Cette action est irréversible.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel className="border-gray-600">Annuler</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteCommerce(commerce)} className="bg-red-600 hover:bg-red-700">
+                                                                Confirmer la Suppression
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))}
