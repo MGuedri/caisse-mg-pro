@@ -65,32 +65,37 @@ export const SuperAdminScreen: React.FC = () => {
   const { 
     user,
     commerces,
+    // Note: We get clients and orders from the context, but they are only populated
+    // when a specific commerce is selected.
     clients, 
     orders,
     invoices,
     viewedCommerceId, setViewedCommerceId,
-    refreshData,
   } = useApp();
 
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(viewedCommerceId ? 'dashboard' : 'management');
+  const [activeTab, setActiveTab] = useState('management');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCommerce, setEditingCommerce] = useState<Commerce | null>(null);
   const [commerceToInvoiceId, setCommerceToInvoiceId] = useState<string | null>(null);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
+  // This effect ensures that if a commerce is selected, the view switches to the dashboard
   useEffect(() => {
-    if (user?.isSuperAdmin) {
-      refreshData();
+    if (viewedCommerceId) {
+      setActiveTab('dashboard');
     }
-  }, [user, refreshData]);
+  }, [viewedCommerceId]);
 
   const platformStats = useMemo(() => {
+    // These stats are now based on the globally available data for the Super Admin
+    // which is the complete list of commerces.
+    // Client and revenue stats are for the *currently viewed* commerce, if any.
     return {
       commerceCount: commerces.length,
-      clientCount: clients.length,
-      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
+      clientCountOfViewedCommerce: clients.length,
+      totalRevenueOfViewedCommerce: orders.reduce((sum, order) => sum + order.total, 0),
     }
   }, [commerces, clients, orders]);
 
@@ -252,6 +257,7 @@ export const SuperAdminScreen: React.FC = () => {
                   <Building className="mx-auto h-12 w-12 text-gray-600" />
                   <h3 className="mt-2 text-lg font-medium text-white">Aucun commerce sélectionné</h3>
                   <p className="mt-1 text-sm text-gray-400">Veuillez sélectionner un commerce dans le menu déroulant ci-dessus pour voir son tableau de bord.</p>
+                  <p className="mt-1 text-sm text-gray-400">Ou allez à la <Button variant="link" className="p-0 h-auto text-orange-400" onClick={() => setActiveTab('management')}>gestion des commerces</Button> pour en créer un.</p>
                 </div>
               )}
             </TabsContent>
@@ -261,29 +267,31 @@ export const SuperAdminScreen: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card className="bg-gray-800 border-gray-700">
                     <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-lg text-gray-300">Commerces Actifs</CardTitle>
+                      <CardTitle className="text-lg text-gray-300">Commerces sur la Plateforme</CardTitle>
                       <Building className="h-6 w-6 text-blue-400"/>
                     </CardHeader>
                     <CardContent>
                       <p className="text-4xl font-bold text-white">{platformStats.commerceCount}</p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-gray-800 border-gray-700">
+                   <Card className="bg-gray-800 border-gray-700">
                     <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-lg text-gray-300">Clients Totaux</CardTitle>
+                      <CardTitle className="text-lg text-gray-300">Clients (Commerce Actif)</CardTitle>
                       <Users className="h-6 w-6 text-purple-400"/>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-4xl font-bold text-white">{platformStats.clientCount}</p>
+                      <p className="text-4xl font-bold text-white">{viewedCommerceId ? platformStats.clientCountOfViewedCommerce : 'N/A'}</p>
+                      <p className="text-xs text-gray-500">{!viewedCommerceId && "Sélectionnez un commerce"}</p>
                     </CardContent>
                   </Card>
                   <Card className="bg-gray-800 border-gray-700">
                     <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-lg text-gray-300">Revenu Total (estimé)</CardTitle>
+                      <CardTitle className="text-lg text-gray-300">Revenu (Commerce Actif)</CardTitle>
                       <DollarSign className="h-6 w-6 text-green-400"/>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-4xl font-bold text-white">{platformStats.totalRevenue.toFixed(3)} <span className="text-xl">DT</span></p>
+                      <p className="text-4xl font-bold text-white">{viewedCommerceId ? platformStats.totalRevenueOfViewedCommerce.toFixed(3) : 'N/A'} <span className="text-xl">DT</span></p>
+                       <p className="text-xs text-gray-500">{!viewedCommerceId && "Sélectionnez un commerce"}</p>
                     </CardContent>
                   </Card>
                 </div>
