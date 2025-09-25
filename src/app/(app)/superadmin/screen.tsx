@@ -203,6 +203,7 @@ export const SuperAdminScreen: React.FC = () => {
                 <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
               <SelectContent className="bg-gray-700 border-gray-600 text-white">
+                <SelectItem value="">Aucun</SelectItem>
                 {commerces.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -472,3 +473,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
