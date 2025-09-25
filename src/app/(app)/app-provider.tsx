@@ -231,10 +231,15 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
   useEffect(() => {
     if (initialUser) {
         setUser(initialUser);
-        if (initialUser.isSuperAdmin && initialData?.commerces) {
-            setCommerces(initialData.commerces);
-            setInvoices(initialData.invoices || []);
+        if (initialUser.isSuperAdmin) {
+            if(initialData?.commerces) {
+              setCommerces(initialData.commerces);
+            }
+            if(initialData?.invoices) {
+              setInvoices(initialData.invoices || []);
+            }
             // Initially, no commerce is viewed, so we clear the data.
+            // This is the failsafe to prevent crashes.
             clearCommerceData();
         }
     }
@@ -274,5 +279,3 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
     </AppContext.Provider>
   );
 };
-
-    
