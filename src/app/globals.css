@@ -14,23 +14,23 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 27 95% 55%;
-    --primary-foreground: 27 85% 95%;
+    --primary: 210 95% 55%; /* CHANGED FROM ORANGE TO BLUE */
+    --primary-foreground: 210 85% 95%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 34 100% 63.9%;
-    --accent-foreground: 34 100% 10%;
+    --accent: 210 100% 63.9%; /* CHANGED FROM ORANGE TO BLUE */
+    --accent-foreground: 210 100% 10%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 27 95% 55%;
-    --chart-1: 27 100% 55.1%;
-    --chart-2: 34 100% 63.9%;
-    --chart-3: 20 90% 50%;
-    --chart-4: 40 95% 55%;
+    --ring: 210 95% 55%; /* CHANGED FROM ORANGE TO BLUE */
+    --chart-1: 210 100% 55.1%;
+    --chart-2: 220 100% 63.9%;
+    --chart-3: 200 90% 50%;
+    --chart-4: 230 95% 55%;
     --chart-5: 0 0% 80%;
     --radius: 0.5rem;
   }
@@ -42,23 +42,23 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 27 95% 55%;
-    --primary-foreground: 27 85% 95%;
+    --primary: 210 95% 55%; /* CHANGED FROM ORANGE TO BLUE */
+    --primary-foreground: 210 85% 95%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 34 100% 63.9%;
-    --accent-foreground: 34 100% 10%;
+    --accent: 210 100% 63.9%; /* CHANGED FROM ORANGE TO BLUE */
+    --accent-foreground: 210 100% 10%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 27 95% 55%;
-    --chart-1: 27 100% 55.1%;
-    --chart-2: 34 100% 63.9%;
-    --chart-3: 20 90% 50%;
-    --chart-4: 40 95% 55%;
+    --ring: 210 95% 55%; /* CHANGED FROM ORANGE TO BLUE */
+    --chart-1: 210 100% 55.1%;
+    --chart-2: 220 100% 63.9%;
+    --chart-3: 200 90% 50%;
+    --chart-4: 230 95% 55%;
     --chart-5: 0 0% 80%;
   }
 }
@@ -71,5 +71,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-    
