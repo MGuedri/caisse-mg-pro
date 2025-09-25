@@ -94,10 +94,10 @@ export const SuperAdminScreen: React.FC = () => {
     // Client and revenue stats are for the *currently viewed* commerce, if any.
     return {
       commerceCount: commerces.length,
-      clientCountOfViewedCommerce: clients.length,
-      totalRevenueOfViewedCommerce: orders.reduce((sum, order) => sum + order.total, 0),
+      clientCountOfViewedCommerce: viewedCommerceId ? clients.length : 0,
+      totalRevenueOfViewedCommerce: viewedCommerceId ? orders.reduce((sum, order) => sum + order.total, 0) : 0,
     }
-  }, [commerces, clients, orders]);
+  }, [commerces, clients, orders, viewedCommerceId]);
 
   const handleOpenModal = (commerce: Commerce | null = null) => {
     setEditingCommerce(commerce);
@@ -198,7 +198,7 @@ export const SuperAdminScreen: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <Building className="h-5 w-5 text-gray-400" />
-            <Select value={viewedCommerceId || ''} onValueChange={(id) => setViewedCommerceId(id)}>
+            <Select value={viewedCommerceId || ''} onValueChange={(id) => setViewedCommerceId(id === '' ? null : id)}>
               <SelectTrigger className="w-[150px] sm:w-[200px] bg-gray-700 border-gray-600">
                 <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
@@ -472,6 +472,6 @@ export const SuperAdminScreen: React.FC = () => {
       />
     </div>
   );
-};
+}
 
     
