@@ -17,7 +17,6 @@ import {
   LogOut,
   User,
   Building,
-  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -52,7 +51,7 @@ const MainApp: React.FC = () => {
     return <LoginScreen />;
   }
   
-  // If user is a SuperAdmin, render ONLY the SuperAdminScreen. No more complexity.
+  // If user is a SuperAdmin, render ONLY the SuperAdminScreen.
   if (user.isSuperAdmin) {
      return <SuperAdminScreen />;
   }
@@ -79,7 +78,7 @@ const MainApp: React.FC = () => {
                   size="sm"
                   className={`
                     ${currentView === item.id 
-                      ? "bg-orange-500 hover:bg-orange-600 text-white" 
+                      ? "bg-primary hover:bg-primary/90" 
                       : "text-gray-300 hover:bg-gray-700"}
                     flex items-center gap-2
                   `}
@@ -150,7 +149,7 @@ export default function HomePage() {
   React.useEffect(() => {
     if (user) {
         if (user.isSuperAdmin) {
-            // SuperAdmin view is handled by MainApp, no specific view to set.
+            // SuperAdmin view is handled directly by MainApp.
         } else if (user.role === 'Owner') {
             setCurrentView('dashboard');
         } else {
@@ -164,3 +163,5 @@ export default function HomePage() {
   }
   return <MainApp />;
 }
+
+    

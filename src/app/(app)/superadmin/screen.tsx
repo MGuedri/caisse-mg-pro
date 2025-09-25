@@ -32,14 +32,11 @@ import {
 import {
   LogOut,
   Shield,
-  Users,
-  DollarSign,
   Plus,
   MoreVertical,
   Edit,
   Trash2,
   Settings,
-  Building,
   FileText,
   CheckCircle,
   Loader2
@@ -65,7 +62,6 @@ export const SuperAdminScreen: React.FC = () => {
     commerces,
     invoices,
     viewedCommerceId, setViewedCommerceId,
-    setCurrentView
   } = useApp();
 
   const router = useRouter();
@@ -81,8 +77,6 @@ export const SuperAdminScreen: React.FC = () => {
     if (viewedCommerceId) {
       setViewedCommerceId(null);
     }
-     // Default to the management tab
-    setCurrentView('management');
   }, []);
 
 
@@ -402,3 +396,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
