@@ -466,5 +466,3 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
-
-    
