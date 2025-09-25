@@ -1,90 +1,160 @@
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { AppProvider, AppUser } from "@/app/(app)/app-provider";
-import { fetchAllDataForAdmin, fetchDataForCommerce } from '@/app/actions/data';
+'use client';
 
-async function getUserAndData(): Promise<{ user: AppUser | null; initialData: any }> {
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value
-                },
-            },
-        }
-    );
-    const { data: { session } } = await supabase.auth.getSession();
+import React from 'react';
+import { useApp, Commerce, AppUser } from '@/app/(app)/app-provider';
+import { POSScreen } from '@/app/(app)/pos/pos-screen';
+import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
+import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
+import { ManagementScreen } from '@/app/(app)/management/management-screen';
+import { SuperAdminScreen } from '@/app/(app)/superadmin/screen';
+import { LoginScreen } from '@/app/(app)/login';
+import {
+  ShoppingCart,
+  LayoutGrid,
+  Package,
+  Users,
+  LogOut,
+  User,
+  Building,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Logo } from '@/app/(app)/logo';
+import { SyncStatusItem } from '@/components/sync-status-item';
+import { useRouter } from 'next/navigation';
+import { signOut } from '@/app/actions/auth';
+import { AppProvider } from "@/app/(app)/app-provider";
 
-    if (!session) {
-        return { user: null, initialData: null };
-    }
+// This layout component will now act as the main shell for the authenticated part of the app.
+const handleSignOut = async (router: any) => {
+    await signOut();
+    router.refresh();
+};
 
-    const { user: authUser } = session;
-    let appUser: AppUser | null = null;
-    let initialData = null;
+const AppShell: React.FC = ({ children }: { children: React.ReactNode }) => {
+  const { user, currentView, setCurrentView } = useApp();
+  const router = useRouter();
 
-    // 1. Check if the user is a SuperAdmin
-    const { data: superAdmin } = await supabase
-        .from('superadmins')
-        .select('user_id')
-        .eq('user_id', authUser.id)
-        .single();
+  const ownerNavigation = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
+    { id: 'products', label: 'Inventaire', icon: Package },
+    { id: 'management', label: 'Gestion', icon: Users },
+  ];
 
-    if (superAdmin) {
-        appUser = {
-            id: authUser.id,
-            name: 'Super Admin',
-            email: authUser.email!,
-            role: 'SuperAdmin',
-            isSuperAdmin: true,
-        };
-        const { data } = await fetchAllDataForAdmin();
-        initialData = data;
-    } else {
-        // 2. If not a SuperAdmin, check if they are a Commerce Owner
-        const { data: commerce } = await supabase
-            .from('commerces')
-            .select('*')
-            .eq('owner_id', authUser.id)
-            .single();
-        
-        if (commerce) {
-            appUser = {
-                id: authUser.id,
-                name: commerce.ownername,
-                email: commerce.owneremail,
-                role: 'Owner',
-                isSuperAdmin: false,
-                commerceId: commerce.id,
-                commerceName: commerce.name,
-                owneremail: commerce.owneremail
-            };
-            const { data } = await fetchDataForCommerce(commerce.id);
-            initialData = data;
-        }
-    }
+  const cashierNavigation = [
+      { id: 'pos', label: 'Caisse', icon: ShoppingCart },
+  ];
+  
+  // Login screen is shown if no user is authenticated.
+  if (!user) {
+    return <LoginScreen />;
+  }
 
-    // If no role is found, the user will be null and redirected to login.
-    return { user: appUser, initialData };
-}
+  // If user is a SuperAdmin, render ONLY the SuperAdminScreen.
+  if (user.isSuperAdmin) {
+     return <SuperAdminScreen />;
+  }
+
+  // --- Regular User Views (Owner/Caissier) ---
+  const navigation = user.role === 'Owner' 
+    ? [...ownerNavigation, ...cashierNavigation]
+    : cashierNavigation;
+  
+  const visibleNav = navigation;
+
+  return (
+    <div className="min-h-screen bg-gray-900 flex flex-col text-white">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Logo size="sm" />
+            <nav className="flex gap-1">
+              {visibleNav.map(item => (
+                <Button
+                  key={item.id}
+                  variant={currentView === item.id ? "default" : "ghost"}
+                  onClick={() => setCurrentView(item.id)}
+                  size="sm"
+                  className={`
+                    ${currentView === item.id 
+                      ? "bg-primary hover:bg-primary/90" 
+                      : "text-gray-300 hover:bg-gray-700"}
+                    flex items-center gap-2
+                  `}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="hidden md:inline">{item.label}</span>
+                </Button>
+              ))}
+            </nav>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={`https://i.pravatar.cc/150?u=${user.email}`} alt={user.name} />
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 bg-gray-800 border-gray-700 text-white" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-2 p-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-400"/>
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                    </div>
+                     {user.commerceName && <div className="flex items-center gap-2">
+                       <Building className="h-4 w-4 text-gray-400"/>
+                       <p className="text-xs leading-none text-gray-400">{user.commerceName}</p>
+                    </div>}
+                     <div className="flex items-center gap-2">
+                       <p className="text-xs leading-none text-gray-400">{user.email}</p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-700"/>
+                <SyncStatusItem />
+                <DropdownMenuSeparator className="bg-gray-700"/>
+                <DropdownMenuItem 
+                  onClick={() => handleSignOut(router)} 
+                  className="cursor-pointer hover:!bg-red-600/80"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-auto h-[calc(100vh-65px)]">
+        {children}
+      </main>
+
+    </div>
+  );
+};
 
 
-export default async function AppLayout({
+// This is the actual layout component required by Next.js
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user, initialData } = await getUserAndData();
-
-  // If the user is not found or doesn't have a valid role,
-  // the AppProvider will receive null and the page component will show the LoginScreen.
+  // We wrap the entire authenticated app in the AppProvider
+  // The AppShell component, which contains the main UI, will be a child of AppProvider.
+  // The actual page content (from page.tsx) will be passed as `children` to the AppShell.
   return (
-    <AppProvider user={user} initialData={initialData}>
-      {children}
+    <AppProvider user={null} initialData={null}>
+      <AppShell>
+        {children}
+      </AppShell>
     </AppProvider>
   )
 }
