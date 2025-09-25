@@ -65,8 +65,6 @@ export const SuperAdminScreen: React.FC = () => {
   const { 
     user,
     commerces,
-    // Note: We get clients and orders from the context, but they are only populated
-    // when a specific commerce is selected.
     clients, 
     orders,
     invoices,
@@ -81,7 +79,6 @@ export const SuperAdminScreen: React.FC = () => {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  // This effect ensures that if a commerce is selected, the view switches to the dashboard
   useEffect(() => {
     if (viewedCommerceId) {
       setActiveTab('dashboard');
@@ -89,9 +86,6 @@ export const SuperAdminScreen: React.FC = () => {
   }, [viewedCommerceId]);
 
   const platformStats = useMemo(() => {
-    // These stats are now based on the globally available data for the Super Admin
-    // which is the complete list of commerces.
-    // Client and revenue stats are for the *currently viewed* commerce, if any.
     return {
       commerceCount: commerces.length,
       clientCountOfViewedCommerce: viewedCommerceId ? clients.length : 0,
@@ -171,7 +165,6 @@ export const SuperAdminScreen: React.FC = () => {
       }
     });
   };
-
 
   const getSubscriptionBadge = (status: Commerce['subscription']) => {
     switch (status) {
@@ -472,4 +465,4 @@ export const SuperAdminScreen: React.FC = () => {
       />
     </div>
   );
-}
+};

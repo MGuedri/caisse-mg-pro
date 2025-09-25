@@ -167,7 +167,6 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
   const [includeVAT, setIncludeVAT] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'synced' | 'error'>('synced');
   const [lastSync, setLastSync] = useState<Date | null>(new Date());
-  const [isOnline, setIsOnline] = useState(true);
   const [viewedCommerceId, setViewedCommerceId] = useState<string | null>(null);
 
   const clearCommerceData = useCallback(() => {
@@ -185,26 +184,21 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
     try {
         let result;
         if (user.isSuperAdmin) {
-            // SuperAdmin always re-fetches the list of commerces and invoices
             const adminResult = await fetchAllDataForAdmin();
             setCommerces(adminResult.data?.commerces || []);
             setInvoices(adminResult.data?.invoices || []);
 
             if (viewedCommerceId) {
-                // If a specific commerce is being viewed, fetch its data
                 result = await fetchDataForCommerce(viewedCommerceId);
             } else {
-                 // If no commerce is selected, ensure all commerce-specific data is cleared
                 clearCommerceData();
                 setSyncStatus('synced');
                 setLastSync(new Date());
-                return; // Stop here if no commerce is selected
+                return;
             }
         } else if (user.commerceId) {
-            // Owner or Caissier fetches data for their own commerce
             result = await fetchDataForCommerce(user.commerceId);
         } else {
-          // This case should not happen for a logged-in non-admin user
           result = { data: null, error: "User is not a SuperAdmin and has no commerceId." };
         }
 
@@ -212,7 +206,6 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
           throw new Error(result.error || 'Failed to fetch commerce-specific data');
         }
         
-        // Set the fetched data for the selected commerce
         const data = result.data;
         setProducts(data.products || []);
         setClients(data.clients || []);
@@ -232,28 +225,17 @@ export const AppProvider: React.FC<{ user: AppUser | null, children: ReactNode, 
     if (initialUser) {
         setUser(initialUser);
         if (initialUser.isSuperAdmin) {
-            if(initialData?.commerces) {
-              setCommerces(initialData.commerces);
-            }
-            if(initialData?.invoices) {
-              setInvoices(initialData.invoices || []);
-            }
-            // Initially, no commerce is viewed, so we clear the data.
-            // This is the failsafe to prevent crashes.
+            if(initialData?.commerces) setCommerces(initialData.commerces);
+            if(initialData?.invoices) setInvoices(initialData.invoices || []);
             clearCommerceData();
         }
     }
   }, [initialUser, initialData, clearCommerceData]);
 
-  // This effect triggers a data refresh whenever the viewedCommerceId changes for a SuperAdmin.
   useEffect(() => {
-    // We only run this if the user is a super admin.
-    // The refreshData function already handles the logic of what to fetch.
     if (user?.isSuperAdmin) {
         refreshData();
     }
-    // The dependency on refreshData is correct here, as it's memoized by useCallback
-    // and will only change if its own dependencies change.
   }, [user?.isSuperAdmin, viewedCommerceId, refreshData]);
 
   const value: AppContextType = {
