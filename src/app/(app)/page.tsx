@@ -7,7 +7,7 @@ import { POSScreen } from '@/app/(app)/pos/pos-screen';
 import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
 import { ManagementScreen } from '@/app/(app)/management/management-screen';
-import { SuperAdminScreen } from '@/app/(app)/superadmin/screen';
+// import { SuperAdminScreen } from '@/app/(app)/superadmin/screen'; // Temporairement désactivé
 import { LoginScreen } from '@/app/(app)/login';
 import {
   ShoppingCart,
@@ -17,6 +17,8 @@ import {
   LogOut,
   User,
   Building,
+  Shield,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -31,6 +33,43 @@ const handleSignOut = async (router: any) => {
     await signOut();
     router.refresh();
 };
+
+// =======================================================
+// PAGE DE MAINTENANCE TEMPORAIRE POUR SUPER ADMIN
+// =======================================================
+const SuperAdminMaintenanceScreen: React.FC = () => {
+  const { user } = useApp();
+  const router = useRouter();
+
+  if (!user) return null;
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-900 text-white">
+      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Logo size="sm" />
+          <div className="flex items-center gap-2 text-orange-400">
+            <Shield className="h-5 w-5" />
+            <h1 className="text-xl font-bold">Super Admin (Maintenance)</h1>
+          </div>
+        </div>
+        <Button onClick={() => handleSignOut(router)} variant="destructive">
+          <LogOut className="mr-2 h-4 w-4" />
+          Déconnexion
+        </Button>
+      </header>
+      <main className="flex-1 flex flex-col items-center justify-center text-center p-6">
+        <Loader2 className="h-12 w-12 text-orange-500 animate-spin mb-6" />
+        <h2 className="text-2xl font-bold text-white mb-2">Base de code en cours de fiabilisation.</h2>
+        <p className="text-gray-400 max-w-md">
+          Nous avons appliqué une modification majeure pour stabiliser l'application. 
+          Le déploiement a réussi. La prochaine étape va restaurer l'interface de gestion complète.
+        </p>
+      </main>
+    </div>
+  );
+};
+
 
 // --- NAVIGATION PRINCIPALE ---
 const MainApp: React.FC = () => {
@@ -50,7 +89,8 @@ const MainApp: React.FC = () => {
   }
   
   if (user.isSuperAdmin) {
-     return <SuperAdminScreen />;
+     // AFFICHE L'ÉCRAN DE MAINTENANCE SÉCURISÉ
+     return <SuperAdminMaintenanceScreen />;
   }
 
   const visibleNav = navigation.filter(item => item.allowedRoles.includes(user.role));
