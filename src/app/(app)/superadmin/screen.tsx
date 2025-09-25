@@ -32,7 +32,6 @@ import {
 import {
   LogOut,
   Shield,
-  LayoutGrid,
   Users,
   DollarSign,
   Plus,
@@ -49,7 +48,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CommerceForm } from '@/app/(app)/superadmin/superadmin-forms';
 import { Logo } from '@/app/(app)/logo';
-import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { createCommerce, deleteCommerce, updateCommerce, createInvoice, markInvoiceAsPaid } from '@/app/actions/mutations';
@@ -65,10 +63,9 @@ export const SuperAdminScreen: React.FC = () => {
   const { 
     user,
     commerces,
-    clients, 
-    orders,
     invoices,
     viewedCommerceId, setViewedCommerceId,
+    setCurrentView
   } = useApp();
 
   const router = useRouter();
@@ -80,18 +77,19 @@ export const SuperAdminScreen: React.FC = () => {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    // This effect ensures that when we land on this screen, we're not viewing a commerce.
+    // The main page component will handle switching to the commerce view if needed.
     if (viewedCommerceId) {
-      setActiveTab('dashboard');
+      setViewedCommerceId(null);
     }
-  }, [viewedCommerceId]);
+  }, []);
+
 
   const platformStats = useMemo(() => {
     return {
       commerceCount: commerces.length,
-      clientCountOfViewedCommerce: viewedCommerceId ? clients.length : 0,
-      totalRevenueOfViewedCommerce: viewedCommerceId ? orders.reduce((sum, order) => sum + order.total, 0) : 0,
     }
-  }, [commerces, clients, orders, viewedCommerceId]);
+  }, [commerces]);
 
   const handleOpenModal = (commerce: Commerce | null = null) => {
     setEditingCommerce(commerce);
@@ -133,7 +131,7 @@ export const SuperAdminScreen: React.FC = () => {
       } else {
           toast({variant: 'success', title: 'Commerce Supprimé'});
           if (viewedCommerceId === commerce.id) {
-            setViewedCommerceId(commerces.length > 1 ? commerces.find(c => c.id !== commerce.id)!.id : null);
+            setViewedCommerceId(null);
           }
       }
     });
@@ -186,21 +184,6 @@ export const SuperAdminScreen: React.FC = () => {
             <Shield className="h-5 w-5" />
             <h1 className="text-xl font-bold hidden md:block">Super Admin</h1>
           </div>
-          
-          <div className="w-px h-6 bg-gray-600 mx-2 sm:mx-4"></div>
-
-          <div className="flex items-center gap-2">
-            <Building className="h-5 w-5 text-gray-400" />
-            <Select value={viewedCommerceId || ''} onValueChange={(id) => setViewedCommerceId(id === '' ? null : id)}>
-              <SelectTrigger className="w-[150px] sm:w-[200px] bg-gray-700 border-gray-600">
-                <SelectValue placeholder="Sélectionner..." />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-700 border-gray-600 text-white">
-                <SelectItem value="">Aucun</SelectItem>
-                {commerces.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
         <div className="flex items-center gap-4">
             <DropdownMenu>
@@ -232,9 +215,6 @@ export const SuperAdminScreen: React.FC = () => {
       <main className="p-4 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-gray-800 p-1 mb-6">
-                <TabsTrigger value="dashboard" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2" disabled={!viewedCommerceId}>
-                    <LayoutGrid className="h-4 w-4"/> Tableau de Bord
-                </TabsTrigger>
                 <TabsTrigger value="management" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white flex items-center gap-2">
                     <Settings className="h-4 w-4"/> Gestion Commerces
                 </TabsTrigger>
@@ -242,66 +222,21 @@ export const SuperAdminScreen: React.FC = () => {
                     <FileText className="h-4 w-4"/> Facturation
                 </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="dashboard">
-              {viewedCommerceId ? (
-                <DashboardScreen />
-              ) : (
-                <div className="text-center py-20 text-gray-500">
-                  <Building className="mx-auto h-12 w-12 text-gray-600" />
-                  <h3 className="mt-2 text-lg font-medium text-white">Aucun commerce sélectionné</h3>
-                  <p className="mt-1 text-sm text-gray-400">Veuillez sélectionner un commerce dans le menu déroulant ci-dessus pour voir son tableau de bord.</p>
-                  <p className="mt-1 text-sm text-gray-400">Ou allez à la <Button variant="link" className="p-0 h-auto text-orange-400" onClick={() => setActiveTab('management')}>gestion des commerces</Button> pour en créer un.</p>
-                </div>
-              )}
-            </TabsContent>
 
             <TabsContent value="management">
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-lg text-gray-300">Commerces sur la Plateforme</CardTitle>
-                      <Building className="h-6 w-6 text-blue-400"/>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-4xl font-bold text-white">{platformStats.commerceCount}</p>
-                    </CardContent>
-                  </Card>
-                   <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-lg text-gray-300">Clients (Commerce Actif)</CardTitle>
-                      <Users className="h-6 w-6 text-purple-400"/>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-4xl font-bold text-white">{viewedCommerceId ? platformStats.clientCountOfViewedCommerce : 'N/A'}</p>
-                      <p className="text-xs text-gray-500">{!viewedCommerceId && "Sélectionnez un commerce"}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-lg text-gray-300">Revenu (Commerce Actif)</CardTitle>
-                      <DollarSign className="h-6 w-6 text-green-400"/>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-4xl font-bold text-white">{viewedCommerceId ? platformStats.totalRevenueOfViewedCommerce.toFixed(3) : 'N/A'} <span className="text-xl">DT</span></p>
-                       <p className="text-xs text-gray-500">{!viewedCommerceId && "Sélectionnez un commerce"}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-                
                 <Card className="bg-gray-800 border-gray-700">
                     <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <CardTitle className="text-white">Gestion des Commerces</CardTitle>
-                            <CardDescription className="text-gray-400">Ajouter, modifier ou supprimer des commerces.</CardDescription>
+                            <CardTitle className="text-white">Gestion des Commerces ({platformStats.commerceCount})</CardTitle>
+                            <CardDescription className="text-gray-400">
+                                Sélectionnez un commerce pour voir son tableau de bord, ou gérez les commerces ci-dessous.
+                            </CardDescription>
                         </div>
-                        <div className='flex gap-2 flex-col sm:flex-row w-full sm:w-auto'>
-                            <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto" disabled={isPending}>
-                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4"/>}
-                                Ajouter Commerce
-                            </Button>
-                        </div>
+                         <Button onClick={() => handleOpenModal()} className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto" disabled={isPending}>
+                            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4"/>}
+                            Ajouter Commerce
+                        </Button>
                     </CardHeader>
                     <CardContent>
                        <div className="overflow-x-auto">
@@ -313,7 +248,7 @@ export const SuperAdminScreen: React.FC = () => {
                                     <TableHead className="text-white hidden md:table-cell">Abonnement</TableHead>
                                     <TableHead className="text-white">Prix</TableHead>
                                     <TableHead className="text-white hidden lg:table-cell">Date Création</TableHead>
-                                    <TableHead className="text-right w-[50px]"></TableHead>
+                                    <TableHead className="text-right w-[100px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -327,42 +262,47 @@ export const SuperAdminScreen: React.FC = () => {
                                         </TableCell>
                                         <TableCell className="text-gray-300 hidden lg:table-cell">{new Date(commerce.creationdate).toLocaleDateString('fr-FR')}</TableCell>
                                         <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreVertical className="h-4 w-4" />
+                                            <div className='flex gap-1 justify-end'>
+                                                <Button size="sm" variant="outline" className="border-gray-600 text-white" onClick={() => { setViewedCommerceId(commerce.id); setCurrentView('dashboard');}}>
+                                                   Voir
                                                 </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
-                                                <DropdownMenuItem onClick={() => handleOpenModal(commerce)} className="cursor-pointer">
-                                                    <Edit className="mr-2 h-4 w-4" />
-                                                    Modifier
-                                                </DropdownMenuItem>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-400 focus:text-red-400 focus:!bg-red-900/50">
-                                                        <Trash2 className="mr-2h-4 w-4" />
-                                                        Supprimer
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
+                                                        <span className="sr-only">Open menu</span>
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
+                                                    <DropdownMenuItem onClick={() => handleOpenModal(commerce)} className="cursor-pointer">
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Modifier
                                                     </DropdownMenuItem>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
-                                                            <AlertDialogDescription className="text-gray-400">
-                                                                Cette action est irréversible.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel className="border-gray-600">Annuler</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteCommerce(commerce)} className="bg-red-600 hover:bg-red-700">
-                                                                Confirmer la Suppression
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-red-400 focus:text-red-400 focus:!bg-red-900/50">
+                                                            <Trash2 className="mr-2h-4 w-4" />
+                                                            Supprimer
+                                                        </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Supprimer {commerce.name}?</AlertDialogTitle>
+                                                                <AlertDialogDescription className="text-gray-400">
+                                                                    Cette action est irréversible.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="border-gray-600">Annuler</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteCommerce(commerce)} className="bg-red-600 hover:bg-red-700">
+                                                                    Confirmer la Suppression
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -466,3 +406,5 @@ export const SuperAdminScreen: React.FC = () => {
     </div>
   );
 };
+
+    
