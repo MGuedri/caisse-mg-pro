@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -47,6 +46,27 @@ export const MainApp: React.FC = () => {
       { id: 'pos', label: 'Caisse', icon: ShoppingCart },
   ]
 
+  // --- Vues pour les utilisateurs normaux (Owner/Caissier) ---
+  const navigation = user?.role === 'Owner' 
+    ? [...ownerNavigation, ...cashierNavigation]
+    : cashierNavigation;
+  
+  const visibleNav = navigation;
+  
+  // Définit la vue par défaut en fonction du rôle
+  React.useEffect(() => {
+    if (user) {
+        if (user.isSuperAdmin) {
+            // L'écran SuperAdmin est géré directement
+        } else if (user.role === 'Owner') {
+            setCurrentView('dashboard');
+        } else {
+            setCurrentView('pos');
+        }
+    }
+  }, [user, setCurrentView]);
+
+
   if (!user) {
     return <LoginScreen />;
   }
@@ -55,13 +75,6 @@ export const MainApp: React.FC = () => {
   if (user.isSuperAdmin) {
      return <SuperAdminScreen />;
   }
-
-  // --- Vues pour les utilisateurs normaux (Owner/Caissier) ---
-  const navigation = user.role === 'Owner' 
-    ? [...ownerNavigation, ...cashierNavigation]
-    : cashierNavigation;
-  
-  const visibleNav = navigation;
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col text-white">
