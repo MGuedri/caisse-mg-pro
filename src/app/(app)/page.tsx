@@ -7,7 +7,6 @@ import { POSScreen } from '@/app/(app)/pos/pos-screen';
 import { DashboardScreen } from '@/app/(app)/dashboard/dashboard-screen';
 import { InventoryScreen } from '@/app/(app)/inventory/inventory-screen';
 import { ManagementScreen } from '@/app/(app)/management/management-screen';
-import { SuperAdminScreen } from '@/app/(app)/superadmin/screen';
 import { LoginScreen } from '@/app/(app)/login';
 
 // This component determines which view to show based on the user's role and the current view state.
@@ -31,7 +30,7 @@ const ActiveView = () => {
   // We only need to render the view for a logged-in, regular user.
   if (!user || user.isSuperAdmin) {
     // This part should not be reached if the layout is working correctly.
-    // It's a fallback. SuperAdminScreen is rendered in the layout.
+    // SuperAdminScreen is rendered in the layout.
     // LoginScreen is also handled by the layout.
     return null;
   }
@@ -54,17 +53,17 @@ const ActiveView = () => {
 
 
 export default function HomePage() {
-  // This page now simply renders the ActiveView component.
-  // All the layout shell (header, nav) is handled by `src/app/(app)/layout.tsx`.
   const { user } = useApp();
 
-  // The layout now contains the AppProvider and the main AppShell.
-  // This page component's only job is to render the correct "screen"
-  // based on the context provided by the layout.
+  // The layout contains the AppProvider and the main AppShell.
   // The layout will show LoginScreen if there is no user.
   if (!user) {
+      // While AppProvider is handling login state, returning null here
+      // prevents trying to render client components that need the user.
+      // The LoginScreen is rendered by the layout's AppShell.
       return null;
   }
   
   return <ActiveView />;
 }
+
